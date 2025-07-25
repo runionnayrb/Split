@@ -725,8 +725,36 @@ document.addEventListener('DOMContentLoaded', () => {
     // Create global instance
     window.splitMateApp = new SplitMate();
     
-    // Focus on amount field for immediate use
-    document.getElementById('amount').focus();
+    // Focus on amount field for immediate use on desktop, skip on mobile to prevent keyboard popup
+    if (window.innerWidth > 768) {
+        document.getElementById('amount').focus();
+    }
+    
+    // Add touch-friendly behavior for iOS
+    if (navigator.platform.match(/iPhone|iPad|iPod/)) {
+        document.body.classList.add('ios-device');
+        
+        // Prevent zoom on input focus for iOS
+        const inputs = document.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                if (input.type !== 'number') {
+                    input.style.fontSize = '16px';
+                }
+            });
+        });
+        
+        // Add haptic feedback simulation for buttons (visual feedback)
+        const buttons = document.querySelectorAll('button');
+        buttons.forEach(button => {
+            button.addEventListener('touchstart', function() {
+                this.style.transform = 'scale(0.95)';
+            });
+            button.addEventListener('touchend', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
+    }
 });
 
 // Service worker registration for offline capability (future enhancement)

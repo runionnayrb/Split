@@ -167,6 +167,18 @@ body {
     overflow-x: auto;
 }
 
+/* Ensure both tab content containers have identical styling */
+#unpaidTransactions .table-container,
+#paidTransactions .table-container {
+    overflow-x: auto;
+    width: 100%;
+}
+
+#unpaidTransactions,
+#paidTransactions {
+    width: 100%;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
@@ -177,36 +189,62 @@ table {
 #unpaidTransactionsTable,
 #paidTransactionsTable {
     table-layout: fixed;
+    width: 100%;
 }
 
+/* Force exact column widths for both headers and data cells */
 #unpaidTransactionsTable th:nth-child(1),
-#paidTransactionsTable th:nth-child(1) {
+#unpaidTransactionsTable td:nth-child(1),
+#paidTransactionsTable th:nth-child(1),
+#paidTransactionsTable td:nth-child(1) {
     width: 15%; /* Date */
+    min-width: 15%;
+    max-width: 15%;
 }
 
 #unpaidTransactionsTable th:nth-child(2),
-#paidTransactionsTable th:nth-child(2) {
+#unpaidTransactionsTable td:nth-child(2),
+#paidTransactionsTable th:nth-child(2),
+#paidTransactionsTable td:nth-child(2) {
     width: 15%; /* Who Paid */
+    min-width: 15%;
+    max-width: 15%;
 }
 
 #unpaidTransactionsTable th:nth-child(3),
-#paidTransactionsTable th:nth-child(3) {
+#unpaidTransactionsTable td:nth-child(3),
+#paidTransactionsTable th:nth-child(3),
+#paidTransactionsTable td:nth-child(3) {
     width: 15%; /* Amount */
+    min-width: 15%;
+    max-width: 15%;
 }
 
 #unpaidTransactionsTable th:nth-child(4),
-#paidTransactionsTable th:nth-child(4) {
+#unpaidTransactionsTable td:nth-child(4),
+#paidTransactionsTable th:nth-child(4),
+#paidTransactionsTable td:nth-child(4) {
     width: 15%; /* Category */
+    min-width: 15%;
+    max-width: 15%;
 }
 
 #unpaidTransactionsTable th:nth-child(5),
-#paidTransactionsTable th:nth-child(5) {
+#unpaidTransactionsTable td:nth-child(5),
+#paidTransactionsTable th:nth-child(5),
+#paidTransactionsTable td:nth-child(5) {
     width: 25%; /* Notes */
+    min-width: 25%;
+    max-width: 25%;
 }
 
 #unpaidTransactionsTable th:nth-child(6),
-#paidTransactionsTable th:nth-child(6) {
+#unpaidTransactionsTable td:nth-child(6),
+#paidTransactionsTable th:nth-child(6),
+#paidTransactionsTable td:nth-child(6) {
     width: 15%; /* You Owe / Settled Date */
+    min-width: 15%;
+    max-width: 15%;
 }
 
 table th {

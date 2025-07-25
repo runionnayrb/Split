@@ -93,16 +93,14 @@ async function extractPdfText(base64Pdf) {
         
         console.log('Attempting to extract text from PDF...');
         
-        // Extract text from PDF with custom options
-        const data = await pdf(pdfBuffer, {
-            // Additional options for better text extraction
-            pagerender: async function(pageData) {
-                // Let pdf-parse render the text content of the page
-                return pageData.getTextContent();
-            }
-        });
+        // Extract text from PDF
+        const data = await pdf(pdfBuffer);
         
-        console.log('PDF text extraction result:', data.text ? `Found ${data.text.length} characters: ${data.text.substring(0, 500)}...` : 'No text found');
+        console.log('PDF text extraction result:', data.text ? `Found ${data.text.length} characters` : 'No text found');
+        console.log('First 1000 characters of extracted text:');
+        console.log('---START TEXT---');
+        console.log(data.text ? data.text.substring(0, 1000) : 'NO TEXT');
+        console.log('---END TEXT---');
         
         if (!data.text || data.text.trim().length < 10) {
             throw new Error('No readable text found in PDF - it may be a scanned image');

@@ -7,6 +7,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
+const pdf2pic = require('pdf2pic');
 
 const PORT = process.env.PORT || 5000;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -42,7 +43,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     try {
-        // API endpoint to process receipts
+        // API endpoint to process receipts (supports both images and PDFs)
         if (pathname === '/api/process-receipt' && req.method === 'POST') {
             await handleReceiptProcessing(req, res);
             return;
@@ -83,6 +84,58 @@ const server = http.createServer(async (req, res) => {
 });
 
 /**
+ * Convert PDF to image using pdf2pic
+ */
+async function convertPdfToImage(base64Pdf) {
+    try {
+        // Create temp directory for PDF processing
+        const tempDir = path.join(__dirname, 'temp');
+        if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir);
+        }
+
+        // Generate unique filename
+        const tempId = Date.now() + Math.random().toString(36).substr(2, 9);
+        const pdfPath = path.join(tempDir, `${tempId}.pdf`);
+        
+        // Write PDF to temp file
+        const pdfBuffer = Buffer.from(base64Pdf, 'base64');
+        fs.writeFileSync(pdfPath, pdfBuffer);
+
+        // Convert PDF to image (first page only)
+        const convert = pdf2pic.fromPath(pdfPath, {
+            density: 300,           // Higher density for better text recognition
+            saveFilename: tempId,
+            savePath: tempDir,
+            format: "jpeg",
+            width: 2480,           // High resolution for better OCR
+            height: 3508
+        });
+
+        const result = await convert(1); // Convert first page only
+        
+        // Read the converted image
+        const imagePath = result.path;
+        const imageBuffer = fs.readFileSync(imagePath);
+        const base64Image = imageBuffer.toString('base64');
+
+        // Clean up temp files
+        try {
+            fs.unlinkSync(pdfPath);
+            fs.unlinkSync(imagePath);
+        } catch (cleanupError) {
+            console.warn('Cleanup warning:', cleanupError.message);
+        }
+
+        return base64Image;
+        
+    } catch (error) {
+        console.error('PDF conversion error:', error);
+        throw new Error('Failed to convert PDF to image');
+    }
+}
+
+/**
  * Handle receipt processing using OpenAI API
  */
 async function handleReceiptProcessing(req, res) {
@@ -101,12 +154,26 @@ async function handleReceiptProcessing(req, res) {
 
         req.on('end', async () => {
             try {
-                const { image } = JSON.parse(body);
+                const { image, isPdf } = JSON.parse(body);
 
                 if (!image) {
                     res.writeHead(400, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ error: 'No image provided' }));
+                    res.end(JSON.stringify({ error: 'No image or PDF provided' }));
                     return;
+                }
+
+                let imageToProcess = image;
+                
+                // If it's a PDF, convert it to image first
+                if (isPdf) {
+                    try {
+                        imageToProcess = await convertPdfToImage(image);
+                    } catch (pdfError) {
+                        console.error('PDF conversion error:', pdfError);
+                        res.writeHead(400, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ error: 'Failed to process PDF file. Please ensure it\'s a valid PDF with readable content.' }));
+                        return;
+                    }
                 }
 
                 // Call OpenAI API
@@ -155,7 +222,7 @@ Rules:
                                     {
                                         type: "image_url",
                                         image_url: {
-                                            url: `data:image/jpeg;base64,${image}`
+                                            url: `data:image/jpeg;base64,${imageToProcess}`
                                         }
                                     }
                                 ]

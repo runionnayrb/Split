@@ -245,13 +245,27 @@ class SplitMate {
             }
             
             // Validate file
-            this.receiptProcessor.validateImageFile(file);
+            this.receiptProcessor.validateReceiptFile(file);
             
-            // Show preview
-            const imageUrl = URL.createObjectURL(file);
-            this.previewImage.src = imageUrl;
+            // Check if it's a PDF
+            const isPdf = this.receiptProcessor.isPdfFile(file);
+            
+            // Show appropriate preview
             this.receiptPreview.classList.remove('hidden');
             this.uploadArea.style.display = 'none';
+            
+            if (isPdf) {
+                // Show PDF preview
+                this.previewImage.classList.add('hidden');
+                document.getElementById('pdfPreview').classList.remove('hidden');
+                document.getElementById('pdfFileName').textContent = file.name;
+            } else {
+                // Show image preview
+                document.getElementById('pdfPreview').classList.add('hidden');
+                this.previewImage.classList.remove('hidden');
+                const imageUrl = URL.createObjectURL(file);
+                this.previewImage.src = imageUrl;
+            }
             
             // Store file for processing
             this.currentReceiptFile = file;
@@ -263,7 +277,7 @@ class SplitMate {
     }
     
     /**
-     * Process the current receipt image
+     * Process the current receipt file (image or PDF)
      */
     async processCurrentReceipt() {
         if (!this.currentReceiptFile || !this.receiptProcessor) {
@@ -275,9 +289,12 @@ class SplitMate {
             this.receiptPreview.classList.add('hidden');
             this.processingStatus.classList.remove('hidden');
             
-            // Convert image to base64 and process
-            const base64Image = await this.receiptProcessor.imageToBase64(this.currentReceiptFile);
-            const receiptData = await this.receiptProcessor.processReceipt(base64Image);
+            // Check if it's a PDF
+            const isPdf = this.receiptProcessor.isPdfFile(this.currentReceiptFile);
+            
+            // Convert file to base64 and process
+            const base64Data = await this.receiptProcessor.imageToBase64(this.currentReceiptFile);
+            const receiptData = await this.receiptProcessor.processReceipt(base64Data, isPdf);
             
             // Store receipt data
             this.currentReceiptData = receiptData;
@@ -296,8 +313,10 @@ class SplitMate {
             let errorMessage = 'Failed to process receipt. ';
             if (error.message.includes('API')) {
                 errorMessage += 'Please check your internet connection and try again.';
+            } else if (error.message.includes('PDF')) {
+                errorMessage += 'Please ensure the PDF is readable and contains a clear receipt.';
             } else {
-                errorMessage += 'Please try with a clearer image.';
+                errorMessage += 'Please try with a clearer file.';
             }
             
             alert(errorMessage);
@@ -449,10 +468,16 @@ class SplitMate {
         this.processingStatus.classList.add('hidden');
         this.uploadArea.style.display = 'block';
         
+        // Clear image preview
+        this.previewImage.classList.add('hidden');
         if (this.previewImage.src) {
             URL.revokeObjectURL(this.previewImage.src);
             this.previewImage.src = '';
         }
+        
+        // Clear PDF preview
+        document.getElementById('pdfPreview').classList.add('hidden');
+        document.getElementById('pdfFileName').textContent = '';
     }
     
     /**

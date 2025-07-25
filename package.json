@@ -10,6 +10,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "openai": "^5.10.2"
+    "openai": "^5.10.2",
+    "pdf-poppler": "^0.2.1",
+    "pdf2pic": "^3.2.0"
   }
 }

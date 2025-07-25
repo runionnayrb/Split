@@ -89,7 +89,7 @@ The application now requires server-side configuration for receipt scanning, but
 - **Data Persistence**: Relies on localStorage, so data is browser-specific
 - **No User Authentication**: Single-user application per browser session
 - **Hybrid Offline/Online**: Manual entry works offline, receipt scanning requires internet
-- **Image Processing**: Supports JPG, PNG, WebP up to 10MB for receipt scanning
+- **File Processing**: Supports JPG, PNG, WebP, and PDF files up to 10MB for receipt scanning
 - **AI Integration**: Uses OpenAI GPT-4o Vision API for receipt text extraction and categorization
 
 ## Recent Changes (July 25, 2025)
@@ -114,3 +114,8 @@ The application now requires server-side configuration for receipt scanning, but
 ✓ Created Procfile with "web: node server.js" for deployment health checks
 ✓ Added executable start.sh script for alternative deployment methods
 ✓ Confirmed server uses process.env.PORT for dynamic port binding
+✓ Extended receipt scanning to support PDF files alongside images
+✓ Implemented PDF to image conversion using pdf2pic library
+✓ Added PDF-specific preview interface with file icon and name display
+✓ Enhanced file validation to accept both images and PDFs up to 10MB
+✓ Updated backend to convert PDF first page to high-resolution image for AI processing

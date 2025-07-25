@@ -9,18 +9,22 @@ class ReceiptProcessor {
     }
 
     /**
-     * Process receipt image and extract expense data via server API
-     * @param {string} base64Image - Base64 encoded image data
+     * Process receipt file (image or PDF) and extract expense data via server API
+     * @param {string} base64Data - Base64 encoded file data
+     * @param {boolean} isPdf - Whether the file is a PDF
      * @returns {Promise<Object>} Parsed receipt data
      */
-    async processReceipt(base64Image) {
+    async processReceipt(base64Data, isPdf = false) {
         try {
             const response = await fetch('/api/process-receipt', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ image: base64Image })
+                body: JSON.stringify({ 
+                    image: base64Data,
+                    isPdf: isPdf
+                })
             });
 
             if (!response.ok) {
@@ -128,23 +132,32 @@ class ReceiptProcessor {
     }
 
     /**
-     * Validate image file
-     * @param {File} file - Image file
+     * Validate receipt file (image or PDF)
+     * @param {File} file - Receipt file
      * @returns {boolean} True if valid
      */
-    validateImageFile(file) {
+    validateReceiptFile(file) {
         const maxSize = 10 * 1024 * 1024; // 10MB
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
         
         if (file.size > maxSize) {
-            throw new Error('Image file is too large. Please use an image smaller than 10MB.');
+            throw new Error('File is too large. Please use a file smaller than 10MB.');
         }
         
         if (!allowedTypes.includes(file.type)) {
-            throw new Error('Unsupported image format. Please use JPG, PNG, or WebP.');
+            throw new Error('Unsupported file format. Please use JPG, PNG, WebP, or PDF.');
         }
         
         return true;
+    }
+
+    /**
+     * Check if file is a PDF
+     * @param {File} file - File to check
+     * @returns {boolean} True if PDF
+     */
+    isPdfFile(file) {
+        return file.type === 'application/pdf';
     }
 }
 

@@ -846,8 +846,11 @@ class SplitMate {
             }
         }
         
-        // Mark the transaction as settled by setting youOwe to 0
-        transaction.youOwe = 0;
+        // Remove the settled transaction from the history
+        const transactionIndex = this.transactions.indexOf(transaction);
+        if (transactionIndex > -1) {
+            this.transactions.splice(transactionIndex, 1);
+        }
         
         // Save and update display
         this.saveToStorage();

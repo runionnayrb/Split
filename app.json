@@ -1,0 +1,25 @@
+{
+  "name": "SplitMate",
+  "description": "Expense Splitter for Couples",
+  "repository": "",
+  "logo": "",
+  "keywords": ["expense", "splitter", "couples", "nodejs"],
+  "image": "heroku/nodejs",
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "env": {
+    "OPENAI_API_KEY": {
+      "description": "OpenAI API key for receipt scanning (optional)",
+      "required": false
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  }
+}

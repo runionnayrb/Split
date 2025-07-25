@@ -7,7 +7,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
-const pdf2pic = require('pdf2pic');
+const pdf = require('pdf-parse');
 
 const PORT = process.env.PORT || 5000;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -84,54 +84,25 @@ const server = http.createServer(async (req, res) => {
 });
 
 /**
- * Convert PDF to image using pdf2pic
+ * Extract text from PDF using pdf-parse
  */
-async function convertPdfToImage(base64Pdf) {
+async function extractPdfText(base64Pdf) {
     try {
-        // Create temp directory for PDF processing
-        const tempDir = path.join(__dirname, 'temp');
-        if (!fs.existsSync(tempDir)) {
-            fs.mkdirSync(tempDir);
-        }
-
-        // Generate unique filename
-        const tempId = Date.now() + Math.random().toString(36).substr(2, 9);
-        const pdfPath = path.join(tempDir, `${tempId}.pdf`);
-        
-        // Write PDF to temp file
+        // Convert base64 to buffer
         const pdfBuffer = Buffer.from(base64Pdf, 'base64');
-        fs.writeFileSync(pdfPath, pdfBuffer);
-
-        // Convert PDF to image (first page only)
-        const convert = pdf2pic.fromPath(pdfPath, {
-            density: 300,           // Higher density for better text recognition
-            saveFilename: tempId,
-            savePath: tempDir,
-            format: "jpeg",
-            width: 2480,           // High resolution for better OCR
-            height: 3508
-        });
-
-        const result = await convert(1); // Convert first page only
         
-        // Read the converted image
-        const imagePath = result.path;
-        const imageBuffer = fs.readFileSync(imagePath);
-        const base64Image = imageBuffer.toString('base64');
-
-        // Clean up temp files
-        try {
-            fs.unlinkSync(pdfPath);
-            fs.unlinkSync(imagePath);
-        } catch (cleanupError) {
-            console.warn('Cleanup warning:', cleanupError.message);
+        // Extract text from PDF
+        const data = await pdf(pdfBuffer);
+        
+        if (!data.text || data.text.trim().length === 0) {
+            throw new Error('No readable text found in PDF');
         }
-
-        return base64Image;
+        
+        return data.text;
         
     } catch (error) {
-        console.error('PDF conversion error:', error);
-        throw new Error('Failed to convert PDF to image');
+        console.error('PDF text extraction error:', error);
+        throw new Error('Failed to extract text from PDF. Please ensure the PDF contains readable text and is not password-protected.');
     }
 }
 
@@ -162,37 +133,86 @@ async function handleReceiptProcessing(req, res) {
                     return;
                 }
 
-                let imageToProcess = image;
+                let openaiResponse;
                 
-                // If it's a PDF, convert it to image first
+                // Handle PDF vs Image processing differently
                 if (isPdf) {
                     try {
-                        imageToProcess = await convertPdfToImage(image);
+                        // Extract text from PDF
+                        const pdfText = await extractPdfText(image);
+                        
+                        // Process PDF text with OpenAI (text-only)
+                        openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${OPENAI_API_KEY}`
+                            },
+                            body: JSON.stringify({
+                                model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+                                messages: [
+                                    {
+                                        role: "user",
+                                        content: `Analyze this receipt text and extract all itemized expenses. I need to split expenses with my partner, where:
+
+Receipt Text:
+${pdfText}
+
+1. Extract each individual item with its price
+2. Identify subtotal, taxes, tips, delivery fees, and other charges
+3. Calculate the total amount
+4. Return in JSON format with this structure:
+
+{
+  "items": [
+    {"name": "item name", "price": 12.99, "category": "groceries|dining|travel|shopping|other"}
+  ],
+  "subtotal": 45.67,
+  "tax": 3.65,
+  "tip": 8.00,
+  "fees": 2.50,
+  "total": 59.82,
+  "merchant": "Store Name",
+  "date": "2024-01-15"
+}
+
+Rules:
+- Only include actual purchased items in "items" array
+- Put taxes, tips, delivery fees, service charges in separate fields
+- Guess the most appropriate category for each item
+- Ensure all prices are numbers (not strings)
+- Make sure subtotal + tax + tip + fees = total`
+                                    }
+                                ],
+                                response_format: { type: "json_object" },
+                                max_tokens: 1000
+                            })
+                        });
+                        
                     } catch (pdfError) {
-                        console.error('PDF conversion error:', pdfError);
+                        console.error('PDF processing error:', pdfError);
                         res.writeHead(400, { 'Content-Type': 'application/json' });
                         res.end(JSON.stringify({ error: 'Failed to process PDF file. Please ensure it\'s a valid PDF with readable content.' }));
                         return;
                     }
-                }
-
-                // Call OpenAI API
-                const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${OPENAI_API_KEY}`
-                    },
-                    body: JSON.stringify({
-                        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-                        messages: [
-                            {
-                                role: "user",
-                                content: [
-                                    {
-                                        type: "text",
-                                        text: `Analyze this receipt image and extract all itemized expenses. I need to split expenses with my partner, where:
-                                        
+                } else {
+                    // Process image with OpenAI Vision API
+                    openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${OPENAI_API_KEY}`
+                        },
+                        body: JSON.stringify({
+                            model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+                            messages: [
+                                {
+                                    role: "user",
+                                    content: [
+                                        {
+                                            type: "text",
+                                            text: `Analyze this receipt image and extract all itemized expenses. I need to split expenses with my partner, where:
+                                            
 1. Extract each individual item with its price
 2. Identify subtotal, taxes, tips, delivery fees, and other charges
 3. Calculate the total amount
@@ -218,20 +238,21 @@ Rules:
 - If you can't read something clearly, make your best estimate
 - Ensure all prices are numbers (not strings)
 - Make sure subtotal + tax + tip + fees = total`
-                                    },
-                                    {
-                                        type: "image_url",
-                                        image_url: {
-                                            url: `data:image/jpeg;base64,${imageToProcess}`
+                                        },
+                                        {
+                                            type: "image_url",
+                                            image_url: {
+                                                url: `data:image/jpeg;base64,${image}`
+                                            }
                                         }
-                                    }
-                                ]
-                            }
-                        ],
-                        response_format: { type: "json_object" },
-                        max_tokens: 1000
-                    })
-                });
+                                    ]
+                                }
+                            ],
+                            response_format: { type: "json_object" },
+                            max_tokens: 1000
+                        })
+                    });
+                }
 
                 if (!openaiResponse.ok) {
                     const errorData = await openaiResponse.json();

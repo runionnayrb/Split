@@ -142,33 +142,69 @@ class SplitMate {
         });
         
         // Pay All button
-        this.payAllBtn.addEventListener('click', () => {
-            this.showConfirmModal();
-        });
+        if (this.payAllBtn) {
+            this.payAllBtn.addEventListener('click', (e) => {
+                console.log('Pay All button clicked');
+                e.preventDefault();
+                this.showConfirmModal();
+            });
+        } else {
+            console.error('Pay All button not found!');
+        }
         
         // Modal buttons
-        this.confirmPayAllBtn.addEventListener('click', () => {
-            this.payAllTransactions();
-            this.hideConfirmModal();
-        });
+        if (this.confirmPayAllBtn) {
+            this.confirmPayAllBtn.addEventListener('click', (e) => {
+                console.log('Confirm Pay All clicked');
+                e.preventDefault();
+                this.payAllTransactions();
+                this.hideConfirmModal();
+            });
+        } else {
+            console.error('Confirm Pay All button not found!');
+        }
         
-        this.cancelPayAllBtn.addEventListener('click', () => {
-            this.hideConfirmModal();
-        });
+        if (this.cancelPayAllBtn) {
+            this.cancelPayAllBtn.addEventListener('click', (e) => {
+                console.log('Cancel Pay All clicked');
+                e.preventDefault();
+                this.hideConfirmModal();
+            });
+        } else {
+            console.error('Cancel Pay All button not found!');
+        }
         
         // Individual payment modal buttons
-        this.confirmPayTransactionBtn.addEventListener('click', () => {
-            this.payTransaction();
-            this.hidePayTransactionModal();
-        });
+        if (this.confirmPayTransactionBtn) {
+            this.confirmPayTransactionBtn.addEventListener('click', (e) => {
+                console.log('Confirm individual payment clicked');
+                e.preventDefault();
+                this.payTransaction();
+                this.hidePayTransactionModal();
+            });
+        } else {
+            console.error('Confirm Pay Transaction button not found!');
+        }
         
-        this.cancelPayTransactionBtn.addEventListener('click', () => {
-            this.hidePayTransactionModal();
-        });
+        if (this.cancelPayTransactionBtn) {
+            this.cancelPayTransactionBtn.addEventListener('click', (e) => {
+                console.log('Cancel individual payment clicked');
+                e.preventDefault();
+                this.hidePayTransactionModal();
+            });
+        } else {
+            console.error('Cancel Pay Transaction button not found!');
+        }
         
-        this.closeBottomSheetBtn.addEventListener('click', () => {
-            this.hidePayTransactionModal();
-        });
+        if (this.closeBottomSheetBtn) {
+            this.closeBottomSheetBtn.addEventListener('click', (e) => {
+                console.log('Close bottom sheet clicked');
+                e.preventDefault();
+                this.hidePayTransactionModal();
+            });
+        } else {
+            console.error('Close bottom sheet button not found!');
+        }
         
         // Click outside modal to close
         this.confirmModal.addEventListener('click', (e) => {

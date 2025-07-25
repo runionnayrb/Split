@@ -23,12 +23,15 @@ class SplitMate {
         this.confirmSettleBtn = document.getElementById('confirmSettle');
         this.cancelSettleBtn = document.getElementById('cancelSettle');
         
-        // Individual payment modal elements
+        // Individual payment modal elements (iOS style bottom sheet)
         this.payTransactionModal = document.getElementById('payTransactionModal');
         this.payTransactionDetails = document.getElementById('payTransactionDetails');
         this.payTransactionMessage = document.getElementById('payTransactionMessage');
         this.confirmPayTransactionBtn = document.getElementById('confirmPayTransaction');
         this.cancelPayTransactionBtn = document.getElementById('cancelPayTransaction');
+        this.closeBottomSheetBtn = document.getElementById('closeBottomSheet');
+        this.receiptImageContainer = document.getElementById('receiptImageContainer');
+        this.receiptImage = document.getElementById('receiptImage');
         this.currentPaymentTransaction = null;
         
         // Receipt upload elements
@@ -150,6 +153,10 @@ class SplitMate {
             this.hidePayTransactionModal();
         });
         
+        this.closeBottomSheetBtn.addEventListener('click', () => {
+            this.hidePayTransactionModal();
+        });
+        
         // Click outside modal to close
         this.confirmModal.addEventListener('click', (e) => {
             if (e.target === this.confirmModal) {
@@ -157,8 +164,9 @@ class SplitMate {
             }
         });
         
+        // Bottom sheet backdrop click
         this.payTransactionModal.addEventListener('click', (e) => {
-            if (e.target === this.payTransactionModal) {
+            if (e.target.classList.contains('bottom-sheet-backdrop')) {
                 this.hidePayTransactionModal();
             }
         });
@@ -448,7 +456,8 @@ class SplitMate {
                 amount: item.price,
                 category: item.category,
                 notes: `${item.name} (from receipt)`,
-                youOwe: whoPaid === 'spouse' ? item.price / 2 : -(item.price / 2)
+                youOwe: whoPaid === 'spouse' ? item.price / 2 : -(item.price / 2),
+                receiptImage: this.currentReceiptFile ? this.getReceiptImageData() : null
             };
             
             this.transactions.unshift(transaction);
@@ -465,7 +474,8 @@ class SplitMate {
                 amount: totalFees,
                 category: 'other',
                 notes: 'Tax, tips & fees (split 50/50)',
-                youOwe: whoPaid === 'spouse' ? totalFees / 2 : -(totalFees / 2)
+                youOwe: whoPaid === 'spouse' ? totalFees / 2 : -(totalFees / 2),
+                receiptImage: this.currentReceiptFile ? this.getReceiptImageData() : null
             };
             
             this.transactions.unshift(feesTransaction);
@@ -508,6 +518,26 @@ class SplitMate {
         document.getElementById('pdfFileName').textContent = '';
     }
     
+    /**
+     * Get receipt image data as data URL
+     */
+    getReceiptImageData() {
+        if (!this.currentReceiptFile) return null;
+        
+        // If it's an image file, return the preview image source
+        if (this.previewImage && this.previewImage.src && !this.previewImage.classList.contains('hidden')) {
+            return this.previewImage.src;
+        }
+        
+        // For PDF files, we'll need to create a data URL
+        if (this.receiptProcessor && this.receiptProcessor.isPdfFile(this.currentReceiptFile)) {
+            // PDF files will use a placeholder or the converted image
+            return null; // Could implement PDF thumbnail generation here
+        }
+        
+        return null;
+    }
+
     /**
      * Clear receipt results
      */
@@ -746,6 +776,14 @@ class SplitMate {
             </div>
         `;
         
+        // Show receipt if available
+        if (transaction.receiptImage) {
+            this.receiptImage.src = transaction.receiptImage;
+            this.receiptImageContainer.classList.remove('hidden');
+        } else {
+            this.receiptImageContainer.classList.add('hidden');
+        }
+        
         // Set payment message
         if (transaction.youOwe > 0) {
             this.payTransactionMessage.textContent = `Pay your share: ${this.formatCurrency(youOweAmount)}`;
@@ -755,17 +793,29 @@ class SplitMate {
             this.confirmPayTransactionBtn.textContent = `Mark as Settled`;
         }
         
+        // Show modal with iOS-style animation
         this.payTransactionModal.style.display = 'block';
         document.body.style.overflow = 'hidden';
+        
+        // Trigger animation after a small delay to ensure display is set
+        requestAnimationFrame(() => {
+            this.payTransactionModal.classList.add('show');
+        });
     }
 
     /**
-     * Hide individual payment modal
+     * Hide individual payment modal with iOS-style animation
      */
     hidePayTransactionModal() {
-        this.payTransactionModal.style.display = 'none';
-        document.body.style.overflow = 'auto';
-        this.currentPaymentTransaction = null;
+        // Start exit animation
+        this.payTransactionModal.classList.remove('show');
+        
+        // After animation completes, hide the modal
+        setTimeout(() => {
+            this.payTransactionModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+            this.currentPaymentTransaction = null;
+        }, 300); // Match the CSS transition duration
     }
 
     /**

@@ -294,6 +294,115 @@ table tr:hover {
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
 
+/* iOS Style Bottom Sheet Modal */
+.bottom-sheet-modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.bottom-sheet-modal.show {
+    display: block;
+    pointer-events: all;
+}
+
+.bottom-sheet-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.bottom-sheet-modal.show .bottom-sheet-backdrop {
+    opacity: 1;
+}
+
+.bottom-sheet-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3);
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    max-height: 90vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.bottom-sheet-modal.show .bottom-sheet-content {
+    transform: translateY(0);
+}
+
+.bottom-sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: #c7c7cc;
+    border-radius: 2px;
+    margin: 8px auto 0;
+}
+
+.bottom-sheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 20px 10px;
+    border-bottom: 1px solid #e5e5ea;
+}
+
+.bottom-sheet-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #1c1c1e;
+}
+
+.close-button {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: #f2f2f7;
+    border-radius: 50%;
+    font-size: 20px;
+    color: #8e8e93;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+}
+
+.close-button:hover {
+    background: #e5e5ea;
+}
+
+.bottom-sheet-body {
+    padding: 20px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.bottom-sheet-actions {
+    padding: 20px;
+    padding-top: 10px;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    background: white;
+    border-top: 1px solid #e5e5ea;
+}
+
 .modal-content h3 {
     margin-bottom: 15px;
     color: #2d3748;
@@ -617,6 +726,25 @@ table tr:hover {
     color: #2d3748;
     display: inline-block;
     width: 80px;
+}
+
+.receipt-image-container {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.receipt-image-container h4 {
+    margin-bottom: 15px;
+    color: #2d3748;
+    font-size: 1rem;
+}
+
+.receipt-image {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border: 1px solid #e2e8f0;
 }
 
 .hidden {

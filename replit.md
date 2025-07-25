@@ -123,3 +123,8 @@ The application now requires server-side configuration for receipt scanning, but
 ✓ Added hybrid PDF processing: frontend conversion for better compatibility with Publix app PDFs
 ✓ Integrated PDF.js CDN for client-side PDF rendering and image extraction
 ✓ Enhanced receipt processor to automatically detect and convert PDF files to images
+✓ Implemented iOS-style bottom sheet modal for individual transaction payments
+✓ Added smooth slide-up/slide-down animations with cubic-bezier easing
+✓ Integrated receipt image storage and display within transaction modals
+✓ Enhanced transaction rows with hover effects and clickable indicators
+✓ Added receipt image preservation for transactions created from receipt scanning

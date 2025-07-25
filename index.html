@@ -204,15 +204,26 @@
         </div>
     </div>
 
-    <!-- Individual Payment Modal -->
-    <div id="payTransactionModal" class="modal">
-        <div class="modal-content">
-            <h3>💸 Pay Individual Item</h3>
-            <div id="payTransactionDetails">
-                <!-- Transaction details will be inserted here -->
+    <!-- iOS Style Bottom Sheet Modal -->
+    <div id="payTransactionModal" class="bottom-sheet-modal">
+        <div class="bottom-sheet-backdrop"></div>
+        <div class="bottom-sheet-content">
+            <div class="bottom-sheet-handle"></div>
+            <div class="bottom-sheet-header">
+                <h3>💸 Pay Individual Item</h3>
+                <button id="closeBottomSheet" class="close-button">×</button>
             </div>
-            <p id="payTransactionMessage"></p>
-            <div class="modal-buttons">
+            <div class="bottom-sheet-body">
+                <div id="payTransactionDetails">
+                    <!-- Transaction details will be inserted here -->
+                </div>
+                <div id="receiptImageContainer" class="receipt-image-container hidden">
+                    <h4>Receipt</h4>
+                    <img id="receiptImage" class="receipt-image" alt="Receipt">
+                </div>
+                <p id="payTransactionMessage"></p>
+            </div>
+            <div class="bottom-sheet-actions">
                 <button id="confirmPayTransaction" class="btn-primary">Pay Your Share</button>
                 <button id="cancelPayTransaction" class="btn-secondary">Cancel</button>
             </div>

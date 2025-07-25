@@ -23,6 +23,14 @@ class SplitMate {
         this.confirmSettleBtn = document.getElementById('confirmSettle');
         this.cancelSettleBtn = document.getElementById('cancelSettle');
         
+        // Individual payment modal elements
+        this.payTransactionModal = document.getElementById('payTransactionModal');
+        this.payTransactionDetails = document.getElementById('payTransactionDetails');
+        this.payTransactionMessage = document.getElementById('payTransactionMessage');
+        this.confirmPayTransactionBtn = document.getElementById('confirmPayTransaction');
+        this.cancelPayTransactionBtn = document.getElementById('cancelPayTransaction');
+        this.currentPaymentTransaction = null;
+        
         // Receipt upload elements
         this.manualTab = document.getElementById('manualTab');
         this.receiptTab = document.getElementById('receiptTab');
@@ -132,6 +140,16 @@ class SplitMate {
             this.hideConfirmModal();
         });
         
+        // Individual payment modal buttons
+        this.confirmPayTransactionBtn.addEventListener('click', () => {
+            this.payTransaction();
+            this.hidePayTransactionModal();
+        });
+        
+        this.cancelPayTransactionBtn.addEventListener('click', () => {
+            this.hidePayTransactionModal();
+        });
+        
         // Click outside modal to close
         this.confirmModal.addEventListener('click', (e) => {
             if (e.target === this.confirmModal) {
@@ -139,10 +157,20 @@ class SplitMate {
             }
         });
         
+        this.payTransactionModal.addEventListener('click', (e) => {
+            if (e.target === this.payTransactionModal) {
+                this.hidePayTransactionModal();
+            }
+        });
+        
         // Escape key to close modal
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.confirmModal.style.display === 'block') {
-                this.hideConfirmModal();
+            if (e.key === 'Escape') {
+                if (this.confirmModal.style.display === 'block') {
+                    this.hideConfirmModal();
+                } else if (this.payTransactionModal.style.display === 'block') {
+                    this.hidePayTransactionModal();
+                }
             }
         });
         
@@ -628,6 +656,23 @@ class SplitMate {
                 <td class="${youOweClass}">${youOweDisplay}</td>
             `;
             
+            // Add click handler for individual transaction payment
+            row.style.cursor = 'pointer';
+            row.classList.add('transaction-row');
+            row.setAttribute('data-transaction-id', transaction.id);
+            
+            // Only make rows clickable if there's money owed
+            if (Math.abs(youOweAmount) >= 0.01) {
+                row.addEventListener('click', () => {
+                    this.showPayTransactionModal(transaction);
+                });
+                row.title = 'Tap to pay this item individually';
+            } else {
+                row.style.cursor = 'default';
+                row.title = 'This item is already settled';
+                row.classList.add('settled');
+            }
+            
             this.transactionsBody.appendChild(row);
         });
     }
@@ -678,6 +723,79 @@ class SplitMate {
     hideConfirmModal() {
         this.confirmModal.style.display = 'none';
         document.body.style.overflow = 'auto'; // Restore scrolling
+    }
+
+    /**
+     * Show individual payment modal for a specific transaction
+     */
+    showPayTransactionModal(transaction) {
+        this.currentPaymentTransaction = transaction;
+        
+        // Format transaction details
+        const youOweAmount = Math.abs(transaction.youOwe);
+        const whoPaidDisplay = transaction.whoPaid === 'me' ? 'You' : 'Your spouse';
+        const categoryDisplay = this.getCategoryDisplay(transaction.category);
+        
+        this.payTransactionDetails.innerHTML = `
+            <div class="payment-transaction-details">
+                <p><strong>Item:</strong> ${transaction.notes || categoryDisplay}</p>
+                <p><strong>Amount:</strong> ${this.formatCurrency(transaction.amount)}</p>
+                <p><strong>Paid by:</strong> ${whoPaidDisplay}</p>
+                <p><strong>Category:</strong> ${categoryDisplay}</p>
+                <p><strong>Date:</strong> ${new Date(transaction.date).toLocaleDateString()}</p>
+            </div>
+        `;
+        
+        // Set payment message
+        if (transaction.youOwe > 0) {
+            this.payTransactionMessage.textContent = `Pay your share: ${this.formatCurrency(youOweAmount)}`;
+            this.confirmPayTransactionBtn.textContent = `Pay ${this.formatCurrency(youOweAmount)}`;
+        } else {
+            this.payTransactionMessage.textContent = `Settle this item: ${this.formatCurrency(youOweAmount)} owed to you`;
+            this.confirmPayTransactionBtn.textContent = `Mark as Settled`;
+        }
+        
+        this.payTransactionModal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+
+    /**
+     * Hide individual payment modal
+     */
+    hidePayTransactionModal() {
+        this.payTransactionModal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        this.currentPaymentTransaction = null;
+    }
+
+    /**
+     * Pay/settle individual transaction
+     */
+    payTransaction() {
+        if (!this.currentPaymentTransaction) return;
+        
+        const transaction = this.currentPaymentTransaction;
+        const originalAmount = Math.abs(transaction.youOwe);
+        
+        // Set the youOwe amount to 0 to mark as settled
+        transaction.youOwe = 0;
+        
+        // Adjust totals to balance the payment
+        if (this.currentPaymentTransaction.youOwe > 0) {
+            // User was owing money, so increase their total paid
+            this.totals.me += originalAmount;
+        } else {
+            // Spouse was owing money, so increase spouse's total paid
+            this.totals.spouse += originalAmount;
+        }
+        
+        // Save and update display
+        this.saveToStorage();
+        this.updateDisplay();
+        
+        // Show success message
+        const itemName = transaction.notes || this.getCategoryDisplay(transaction.category);
+        alert(`✅ Payment completed! You've settled "${itemName}" for ${this.formatCurrency(originalAmount)}.`);
     }
     
     /**

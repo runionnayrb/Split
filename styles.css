@@ -190,6 +190,25 @@ table tr:hover {
     background: #f7fafc;
 }
 
+.transaction-row {
+    transition: all 0.2s ease;
+}
+
+.transaction-row:hover {
+    background: #edf2f7 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.transaction-row.settled {
+    opacity: 0.6;
+}
+
+.transaction-row.settled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
 .no-transactions td {
     text-align: center;
     color: #a0aec0;
@@ -579,6 +598,25 @@ table tr:hover {
     display: flex;
     gap: 15px;
     justify-content: center;
+}
+
+.payment-transaction-details {
+    background: #f7fafc;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid #667eea;
+}
+
+.payment-transaction-details p {
+    margin: 8px 0;
+    font-size: 0.95rem;
+}
+
+.payment-transaction-details strong {
+    color: #2d3748;
+    display: inline-block;
+    width: 80px;
 }
 
 .hidden {

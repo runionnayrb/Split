@@ -828,13 +828,22 @@ class SplitMate {
         const originalYouOwe = transaction.youOwe; // Save original before modifying
         const originalAmount = Math.abs(originalYouOwe);
         
-        // Add the payment to the appropriate person's total
+        // When someone pays their share, we need to adjust the transaction as if 
+        // they had paid their half from the beginning
         if (originalYouOwe > 0) {
-            // You were owing money, so add to your total
-            this.totals.me += originalAmount;
+            // You were owing money - adjust as if you paid your half originally
+            // Remove the amount you owed from the original payer's total
+            // and add your half to your total
+            if (transaction.whoPaid === 'spouse') {
+                this.totals.spouse -= originalAmount;
+                this.totals.me += originalAmount;
+            }
         } else {
-            // Spouse was owing money, so add to spouse's total  
-            this.totals.spouse += originalAmount;
+            // Spouse was owing money - adjust as if spouse paid their half originally
+            if (transaction.whoPaid === 'me') {
+                this.totals.me -= originalAmount;
+                this.totals.spouse += originalAmount;
+            }
         }
         
         // Mark the transaction as settled by setting youOwe to 0

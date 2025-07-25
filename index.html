@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SplitMate - Expense Splitter for Couples</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Top Section: Title + Balance Summary -->
+        <header class="header">
+            <h1>💰 SplitMate</h1>
+            <p class="subtitle">Expense Splitter for Couples</p>
+            
+            <div class="balance-summary">
+                <div class="balance-item">
+                    <span class="label">You've paid:</span>
+                    <span class="amount" id="myTotal">$0.00</span>
+                </div>
+                <div class="balance-item">
+                    <span class="label">Spouse has paid:</span>
+                    <span class="amount" id="spouseTotal">$0.00</span>
+                </div>
+                <div class="net-balance" id="netBalance">
+                    All settled up! 🎉
+                </div>
+            </div>
+        </header>
+
+        <!-- Middle Section: Transaction Form -->
+        <section class="transaction-form">
+            <h2>Add New Expense</h2>
+            <form id="expenseForm">
+                <div class="form-group">
+                    <label for="whoPaid">Who paid?</label>
+                    <select id="whoPaid" required>
+                        <option value="me">Me</option>
+                        <option value="spouse">Spouse</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="amount">Amount ($)</label>
+                    <input type="number" id="amount" step="0.01" min="0" required placeholder="0.00">
+                </div>
+
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category" required>
+                        <option value="groceries">🛒 Groceries</option>
+                        <option value="dining">🍽️ Dining</option>
+                        <option value="travel">✈️ Travel</option>
+                        <option value="shopping">🛍️ Shopping</option>
+                        <option value="other">📋 Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="notes">Notes (optional)</label>
+                    <input type="text" id="notes" placeholder="What was this for?">
+                </div>
+
+                <button type="submit" class="btn-primary">Add Expense</button>
+            </form>
+        </section>
+
+        <!-- Bottom Section: Transaction History -->
+        <section class="transaction-history">
+            <h2>Transaction History</h2>
+            <div class="table-container">
+                <table id="transactionsTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Who Paid</th>
+                            <th>Amount</th>
+                            <th>Category</th>
+                            <th>Notes</th>
+                            <th>You Owe</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionsBody">
+                        <tr class="no-transactions">
+                            <td colspan="6">No transactions yet. Add your first expense above! 👆</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Footer: Settle Up Button -->
+        <footer class="footer">
+            <button id="settleUpBtn" class="btn-settle" disabled>
+                Settle Up & Clear History
+            </button>
+        </footer>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <h3>⚠️ Confirm Settle Up</h3>
+            <p>This will reset all balances and clear your transaction history. This action cannot be undone.</p>
+            <div class="modal-buttons">
+                <button id="confirmSettle" class="btn-danger">Yes, Settle Up</button>
+                <button id="cancelSettle" class="btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

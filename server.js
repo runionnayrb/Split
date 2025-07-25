@@ -84,25 +84,35 @@ const server = http.createServer(async (req, res) => {
 });
 
 /**
- * Extract text from PDF using pdf-parse
+ * Extract text from PDF using pdf-parse with better error handling
  */
 async function extractPdfText(base64Pdf) {
     try {
         // Convert base64 to buffer
         const pdfBuffer = Buffer.from(base64Pdf, 'base64');
         
-        // Extract text from PDF
-        const data = await pdf(pdfBuffer);
+        console.log('Attempting to extract text from PDF...');
         
-        if (!data.text || data.text.trim().length === 0) {
-            throw new Error('No readable text found in PDF');
+        // Extract text from PDF with custom options
+        const data = await pdf(pdfBuffer, {
+            // Additional options for better text extraction
+            pagerender: async function(pageData) {
+                // Let pdf-parse render the text content of the page
+                return pageData.getTextContent();
+            }
+        });
+        
+        console.log('PDF text extraction result:', data.text ? data.text.substring(0, 200) + '...' : 'No text found');
+        
+        if (!data.text || data.text.trim().length < 10) {
+            throw new Error('No readable text found in PDF - it may be a scanned image');
         }
         
         return data.text;
         
     } catch (error) {
         console.error('PDF text extraction error:', error);
-        throw new Error('Failed to extract text from PDF. Please ensure the PDF contains readable text and is not password-protected.');
+        throw new Error('Failed to extract text from PDF: ' + error.message);
     }
 }
 
@@ -153,7 +163,7 @@ async function handleReceiptProcessing(req, res) {
                                 messages: [
                                     {
                                         role: "user",
-                                        content: `Analyze this receipt text and extract all itemized expenses. I need to split expenses with my partner, where:
+                                        content: `Analyze this receipt text from a Publix PDF and extract all itemized expenses. I need to split expenses with my partner, where:
 
 Receipt Text:
 ${pdfText}
@@ -179,7 +189,7 @@ ${pdfText}
 Rules:
 - Only include actual purchased items in "items" array
 - Put taxes, tips, delivery fees, service charges in separate fields
-- Guess the most appropriate category for each item
+- For groceries from Publix, categorize appropriately
 - Ensure all prices are numbers (not strings)
 - Make sure subtotal + tax + tip + fees = total`
                                     }
@@ -192,7 +202,7 @@ Rules:
                     } catch (pdfError) {
                         console.error('PDF processing error:', pdfError);
                         res.writeHead(400, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({ error: 'Failed to process PDF file. Please ensure it\'s a valid PDF with readable content.' }));
+                        res.end(JSON.stringify({ error: 'Failed to process PDF file. The PDF may be a scanned image rather than text-based. Please try uploading the receipt as an image (JPG/PNG) instead.' }));
                         return;
                     }
                 } else {

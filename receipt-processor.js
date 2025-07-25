@@ -16,13 +16,22 @@ class ReceiptProcessor {
      */
     async processReceipt(base64Data, isPdf = false) {
         try {
+            let processedData = base64Data;
+            
+            // If it's a PDF, convert it to an image first
+            if (isPdf) {
+                console.log('Converting PDF to image for better processing...');
+                processedData = await this.convertPdfToImage(base64Data);
+                isPdf = false; // Now treat as image
+            }
+            
             const response = await fetch('/api/process-receipt', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ 
-                    image: base64Data,
+                    image: processedData,
                     isPdf: isPdf
                 })
             });
@@ -38,6 +47,63 @@ class ReceiptProcessor {
         } catch (error) {
             console.error('Receipt processing error:', error);
             throw error;
+        }
+    }
+
+    /**
+     * Convert PDF to image using PDF.js
+     * @param {string} base64Pdf - Base64 encoded PDF data
+     * @returns {Promise<string>} Base64 encoded image data
+     */
+    async convertPdfToImage(base64Pdf) {
+        try {
+            // Convert base64 to Uint8Array
+            const binaryString = atob(base64Pdf);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+
+            // Set PDF.js worker path
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+            // Load PDF document
+            const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+            
+            // Get first page
+            const page = await pdf.getPage(1);
+            
+            // Set scale for high resolution
+            const scale = 2.0;
+            const viewport = page.getViewport({ scale });
+            
+            // Create canvas
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            
+            // Set white background
+            context.fillStyle = 'white';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Render page to canvas
+            await page.render({
+                canvasContext: context,
+                viewport: viewport
+            }).promise;
+            
+            // Convert canvas to base64 image
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+            const base64Image = dataUrl.split(',')[1]; // Remove data:image/jpeg;base64, prefix
+            
+            console.log('PDF successfully converted to image');
+            
+            return base64Image;
+            
+        } catch (error) {
+            console.error('PDF to image conversion error:', error);
+            throw new Error('Failed to convert PDF to image. Please try uploading an image file instead.');
         }
     }
 

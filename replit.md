@@ -119,3 +119,7 @@ The application now requires server-side configuration for receipt scanning, but
 ✓ Added PDF-specific preview interface with file icon and name display
 ✓ Enhanced file validation to accept both images and PDFs up to 10MB
 ✓ Updated backend to convert PDF first page to high-resolution image for AI processing
+✓ Implemented frontend PDF to image conversion using PDF.js for scanned PDF receipts
+✓ Added hybrid PDF processing: frontend conversion for better compatibility with Publix app PDFs
+✓ Integrated PDF.js CDN for client-side PDF rendering and image extraction
+✓ Enhanced receipt processor to automatically detect and convert PDF files to images

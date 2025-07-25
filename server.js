@@ -7,7 +7,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
-const pdf = require('pdf-parse');
+// Remove PDF processing for now - will handle on frontend
 
 const PORT = process.env.PORT || 5000;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -83,36 +83,7 @@ const server = http.createServer(async (req, res) => {
     }
 });
 
-/**
- * Extract text from PDF using pdf-parse with better error handling
- */
-async function extractPdfText(base64Pdf) {
-    try {
-        // Convert base64 to buffer
-        const pdfBuffer = Buffer.from(base64Pdf, 'base64');
-        
-        console.log('Attempting to extract text from PDF...');
-        
-        // Extract text from PDF
-        const data = await pdf(pdfBuffer);
-        
-        console.log('PDF text extraction result:', data.text ? `Found ${data.text.length} characters` : 'No text found');
-        console.log('First 1000 characters of extracted text:');
-        console.log('---START TEXT---');
-        console.log(data.text ? data.text.substring(0, 1000) : 'NO TEXT');
-        console.log('---END TEXT---');
-        
-        if (!data.text || data.text.trim().length < 10) {
-            throw new Error('No readable text found in PDF - it may be a scanned image');
-        }
-        
-        return data.text;
-        
-    } catch (error) {
-        console.error('PDF text extraction error:', error);
-        throw new Error('Failed to extract text from PDF: ' + error.message);
-    }
-}
+// PDF processing removed - handling this on frontend side
 
 /**
  * Handle receipt processing using OpenAI API
@@ -141,46 +112,24 @@ async function handleReceiptProcessing(req, res) {
                     return;
                 }
 
-                let openaiResponse;
-                
-                // Handle PDF vs Image processing differently
-                if (isPdf) {
-                    try {
-                        // Extract text from PDF
-                        const pdfText = await extractPdfText(image);
-                        
-                        // Process PDF text with OpenAI (text-only)
-                        openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${OPENAI_API_KEY}`
-                            },
-                            body: JSON.stringify({
-                                model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-                                messages: [
-                                    {
-                                        role: "user",
-                                        content: `Analyze this Publix receipt text and extract all itemized expenses. Parse carefully as Publix receipts have specific formatting:
-
-Receipt Text:
-${pdfText}
+                // For now, treat both PDFs and images the same way using Vision API
+                // (PDF conversion will be handled on frontend)
+                const promptText = isPdf ? 
+                    `Analyze this Publix receipt image (converted from PDF) and extract all itemized expenses. Based on the receipt format, this appears to be from Publix grocery store:
 
 IMPORTANT PARSING INSTRUCTIONS FOR PUBLIX RECEIPTS:
 - Look for item names followed by prices (usually right-aligned)
-- Prices are typically in format like "3.99" or "$3.99" 
-- Items may have product codes, weights, or unit prices - focus on the final price per item
-- Look for patterns like "ITEM NAME    $X.XX" or similar
-- Subtotal is usually labeled "SUBTOTAL" 
-- Tax is labeled "TAX" or "FL TAX"
-- Total is labeled "TOTAL"
-- Store discounts/coupons should be ignored (negative amounts)
+- Items are listed with descriptions like "HONEYDEW CHUNKS SM", "CRUNCHY SHRIMP TEM", etc.
+- Prices appear to the right, typically in format like "3.11", "10.99 T F"
+- The "T" indicates taxable items, "F" indicates food/non-taxable
+- Look for "Order Total", "Sales Tax", "Grand Total"
+- Ignore promotional savings and discounts
 
 Extract and return in this JSON format:
 
 {
   "items": [
-    {"name": "item name", "price": 12.99, "category": "groceries|dining|travel|shopping|other"}
+    {"name": "item name", "price": 12.99, "category": "groceries"}
   ],
   "subtotal": 45.67,
   "tax": 3.65,
@@ -192,42 +141,12 @@ Extract and return in this JSON format:
 }
 
 RULES:
-- Only include purchased items with positive prices in "items" array
-- Skip coupons, discounts, and promotional items (negative amounts)
-- Categorize all items as "groceries" unless clearly something else
+- Only include purchased items with positive prices
+- Skip promotional savings (negative amounts)
+- All items should be categorized as "groceries"
 - Parse prices as numbers without $ symbol
-- Ensure subtotal + tax = total (fees and tips are usually 0 for Publix)
-- If you see multiple prices for an item, use the final price charged`
-                                    }
-                                ],
-                                response_format: { type: "json_object" },
-                                max_tokens: 1000
-                            })
-                        });
-                        
-                    } catch (pdfError) {
-                        console.error('PDF processing error:', pdfError);
-                        res.writeHead(400, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({ error: 'Failed to process PDF file. The PDF may be a scanned image rather than text-based. Please try uploading the receipt as an image (JPG/PNG) instead.' }));
-                        return;
-                    }
-                } else {
-                    // Process image with OpenAI Vision API
-                    openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${OPENAI_API_KEY}`
-                        },
-                        body: JSON.stringify({
-                            model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-                            messages: [
-                                {
-                                    role: "user",
-                                    content: [
-                                        {
-                                            type: "text",
-                                            text: `Analyze this receipt image and extract all itemized expenses. I need to split expenses with my partner, where:
+- Use "Order Total" as subtotal, "Sales Tax" as tax, "Grand Total" as total` :
+                    `Analyze this receipt image and extract all itemized expenses. I need to split expenses with my partner, where:
                                             
 1. Extract each individual item with its price
 2. Identify subtotal, taxes, tips, delivery fees, and other charges
@@ -253,22 +172,38 @@ Rules:
 - Guess the most appropriate category for each item
 - If you can't read something clearly, make your best estimate
 - Ensure all prices are numbers (not strings)
-- Make sure subtotal + tax + tip + fees = total`
-                                        },
-                                        {
-                                            type: "image_url",
-                                            image_url: {
-                                                url: `data:image/jpeg;base64,${image}`
-                                            }
+- Make sure subtotal + tax + tip + fees = total`;
+
+                // Call OpenAI Vision API
+                const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${OPENAI_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+                        messages: [
+                            {
+                                role: "user",
+                                content: [
+                                    {
+                                        type: "text",
+                                        text: promptText
+                                    },
+                                    {
+                                        type: "image_url",
+                                        image_url: {
+                                            url: `data:image/jpeg;base64,${image}`
                                         }
-                                    ]
-                                }
-                            ],
-                            response_format: { type: "json_object" },
-                            max_tokens: 1000
-                        })
-                    });
-                }
+                                    }
+                                ]
+                            }
+                        ],
+                        response_format: { type: "json_object" },
+                        max_tokens: 1000
+                    })
+                });
 
                 if (!openaiResponse.ok) {
                     const errorData = await openaiResponse.json();

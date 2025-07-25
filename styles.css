@@ -170,6 +170,43 @@ body {
 table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
+}
+
+/* Consistent column widths for both unpaid and paid transaction tables */
+#unpaidTransactionsTable,
+#paidTransactionsTable {
+    table-layout: fixed;
+}
+
+#unpaidTransactionsTable th:nth-child(1),
+#paidTransactionsTable th:nth-child(1) {
+    width: 15%; /* Date */
+}
+
+#unpaidTransactionsTable th:nth-child(2),
+#paidTransactionsTable th:nth-child(2) {
+    width: 15%; /* Who Paid */
+}
+
+#unpaidTransactionsTable th:nth-child(3),
+#paidTransactionsTable th:nth-child(3) {
+    width: 15%; /* Amount */
+}
+
+#unpaidTransactionsTable th:nth-child(4),
+#paidTransactionsTable th:nth-child(4) {
+    width: 15%; /* Category */
+}
+
+#unpaidTransactionsTable th:nth-child(5),
+#paidTransactionsTable th:nth-child(5) {
+    width: 25%; /* Notes */
+}
+
+#unpaidTransactionsTable th:nth-child(6),
+#paidTransactionsTable th:nth-child(6) {
+    width: 15%; /* You Owe / Settled Date */
 }
 
 table th {
@@ -184,6 +221,14 @@ table th {
 table td {
     padding: 15px 10px;
     border-bottom: 1px solid #e2e8f0;
+    word-wrap: break-word;
+    overflow: hidden;
+}
+
+#unpaidTransactionsTable td,
+#paidTransactionsTable td {
+    text-align: left;
+    vertical-align: middle;
 }
 
 table tr:hover {

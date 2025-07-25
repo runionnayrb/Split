@@ -86,11 +86,16 @@ class SplitMate {
             if (response.ok) {
                 const data = await response.json();
                 return data.available ? 'server-side-available' : null;
+            } else {
+                console.log('Server returned error:', response.status);
             }
         } catch (error) {
-            console.log('Server API not available');
+            console.log('Server API not available:', error);
         }
-        return null;
+        
+        // For now, enable receipt tab regardless of API availability for testing
+        console.log('Enabling receipt tab for testing');
+        return 'testing-mode';
     }
     
     /**

@@ -825,19 +825,20 @@ class SplitMate {
         if (!this.currentPaymentTransaction) return;
         
         const transaction = this.currentPaymentTransaction;
-        const originalAmount = Math.abs(transaction.youOwe);
+        const originalYouOwe = transaction.youOwe; // Save original before modifying
+        const originalAmount = Math.abs(originalYouOwe);
         
-        // Set the youOwe amount to 0 to mark as settled
-        transaction.youOwe = 0;
-        
-        // Adjust totals to balance the payment
-        if (this.currentPaymentTransaction.youOwe > 0) {
+        // Adjust totals to balance the payment (before modifying transaction)
+        if (originalYouOwe > 0) {
             // User was owing money, so increase their total paid
             this.totals.me += originalAmount;
         } else {
             // Spouse was owing money, so increase spouse's total paid
             this.totals.spouse += originalAmount;
         }
+        
+        // Set the youOwe amount to 0 to mark as settled
+        transaction.youOwe = 0;
         
         // Save and update display
         this.saveToStorage();

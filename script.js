@@ -71,6 +71,11 @@ class SplitMate {
      * Initialize the application - load data and set up event listeners
      */
     init() {
+        console.log('Initializing SplitMate...');
+        console.log('Pay All Button:', this.payAllBtn);
+        console.log('Confirm Pay Transaction Button:', this.confirmPayTransactionBtn);
+        console.log('Cancel Pay Transaction Button:', this.cancelPayTransactionBtn);
+        
         this.loadFromStorage();
         this.setupEventListeners();
         this.updateDisplay();
@@ -757,10 +762,14 @@ class SplitMate {
             // Add click handler for individual transaction payment
             if (Math.abs(youOweAmount) >= 0.01) {
                 row.style.cursor = 'pointer';
-                row.addEventListener('click', () => {
+                row.addEventListener('click', (e) => {
+                    console.log('Transaction row clicked:', transaction);
+                    e.preventDefault();
+                    e.stopPropagation();
                     this.showPayTransactionModal(transaction);
                 });
                 row.title = 'Tap to pay this item individually';
+                console.log('Added click handler for transaction:', transaction.id);
             }
         } else {
             // Paid transaction - show "Settled Date" column
@@ -831,6 +840,7 @@ class SplitMate {
      * Show individual payment modal for a specific transaction
      */
     showPayTransactionModal(transaction) {
+        console.log('showPayTransactionModal called with transaction:', transaction);
         this.currentPaymentTransaction = transaction;
         
         // Format transaction details

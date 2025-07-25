@@ -1094,6 +1094,29 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => window.location.reload(), 2000);
     };
     
+    // Automatically clear old incompatible data if found
+    const storedData = localStorage.getItem('splitmate-data');
+    if (storedData) {
+        try {
+            const data = JSON.parse(storedData);
+            // Check if data has old structure that needs clearing
+            if (data.transactions && data.transactions.length > 0) {
+                const hasOldTransaction = data.transactions.some(t => 
+                    t.amount === 100 || !t.hasOwnProperty('youOwe')
+                );
+                if (hasOldTransaction) {
+                    console.log('Found old incompatible transaction data, clearing...');
+                    localStorage.removeItem('splitmate-data');
+                    window.location.reload();
+                }
+            }
+        } catch (e) {
+            console.log('Invalid stored data found, clearing...');
+            localStorage.removeItem('splitmate-data');
+            window.location.reload();
+        }
+    }
+    
     // Focus on amount field for immediate use on desktop, skip on mobile to prevent keyboard popup
     if (window.innerWidth > 768) {
         document.getElementById('amount').focus();

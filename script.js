@@ -73,8 +73,16 @@ class SplitMate {
     init() {
         console.log('Initializing SplitMate...');
         console.log('Pay All Button:', this.payAllBtn);
+        console.log('Pay All Button type:', typeof this.payAllBtn);
+        console.log('Pay All Button nodeName:', this.payAllBtn?.nodeName);
+        console.log('Pay All Button classList:', this.payAllBtn?.classList);
         console.log('Confirm Pay Transaction Button:', this.confirmPayTransactionBtn);
         console.log('Cancel Pay Transaction Button:', this.cancelPayTransactionBtn);
+        
+        // Try alternative selection methods
+        const payAllBtnAlt = document.querySelector('#payAllBtn');
+        console.log('Pay All Button (querySelector):', payAllBtnAlt);
+        console.log('Pay All Button (querySelector) type:', typeof payAllBtnAlt);
         
         this.loadFromStorage();
         this.setupEventListeners();

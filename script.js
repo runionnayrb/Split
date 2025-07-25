@@ -71,19 +71,6 @@ class SplitMate {
      * Initialize the application - load data and set up event listeners
      */
     init() {
-        console.log('Initializing SplitMate...');
-        console.log('Pay All Button:', this.payAllBtn);
-        console.log('Pay All Button type:', typeof this.payAllBtn);
-        console.log('Pay All Button nodeName:', this.payAllBtn?.nodeName);
-        console.log('Pay All Button classList:', this.payAllBtn?.classList);
-        console.log('Confirm Pay Transaction Button:', this.confirmPayTransactionBtn);
-        console.log('Cancel Pay Transaction Button:', this.cancelPayTransactionBtn);
-        
-        // Try alternative selection methods
-        const payAllBtnAlt = document.querySelector('#payAllBtn');
-        console.log('Pay All Button (querySelector):', payAllBtnAlt);
-        console.log('Pay All Button (querySelector) type:', typeof payAllBtnAlt);
-        
         this.loadFromStorage();
         this.setupEventListeners();
         this.updateDisplay();
@@ -152,7 +139,6 @@ class SplitMate {
         // Pay All button
         if (this.payAllBtn) {
             this.payAllBtn.addEventListener('click', (e) => {
-                console.log('Pay All button clicked');
                 e.preventDefault();
                 this.showConfirmModal();
             });
@@ -163,7 +149,6 @@ class SplitMate {
         // Modal buttons
         if (this.confirmPayAllBtn) {
             this.confirmPayAllBtn.addEventListener('click', (e) => {
-                console.log('Confirm Pay All clicked');
                 e.preventDefault();
                 this.payAllTransactions();
                 this.hideConfirmModal();
@@ -174,7 +159,6 @@ class SplitMate {
         
         if (this.cancelPayAllBtn) {
             this.cancelPayAllBtn.addEventListener('click', (e) => {
-                console.log('Cancel Pay All clicked');
                 e.preventDefault();
                 this.hideConfirmModal();
             });
@@ -185,7 +169,6 @@ class SplitMate {
         // Individual payment modal buttons
         if (this.confirmPayTransactionBtn) {
             this.confirmPayTransactionBtn.addEventListener('click', (e) => {
-                console.log('Confirm individual payment clicked');
                 e.preventDefault();
                 this.payTransaction();
                 this.hidePayTransactionModal();
@@ -196,7 +179,6 @@ class SplitMate {
         
         if (this.cancelPayTransactionBtn) {
             this.cancelPayTransactionBtn.addEventListener('click', (e) => {
-                console.log('Cancel individual payment clicked');
                 e.preventDefault();
                 this.hidePayTransactionModal();
             });
@@ -206,7 +188,6 @@ class SplitMate {
         
         if (this.closeBottomSheetBtn) {
             this.closeBottomSheetBtn.addEventListener('click', (e) => {
-                console.log('Close bottom sheet clicked');
                 e.preventDefault();
                 this.hidePayTransactionModal();
             });
@@ -807,13 +788,11 @@ class SplitMate {
             if (Math.abs(youOweAmount) >= 0.01) {
                 row.style.cursor = 'pointer';
                 row.addEventListener('click', (e) => {
-                    console.log('Transaction row clicked:', transaction);
                     e.preventDefault();
                     e.stopPropagation();
                     this.showPayTransactionModal(transaction);
                 });
                 row.title = 'Tap to pay this item individually';
-                console.log('Added click handler for transaction:', transaction.id);
             }
         } else {
             // Paid transaction - show "Settled Date" column
@@ -884,7 +863,6 @@ class SplitMate {
      * Show individual payment modal for a specific transaction
      */
     showPayTransactionModal(transaction) {
-        console.log('showPayTransactionModal called with transaction:', transaction);
         this.currentPaymentTransaction = transaction;
         
         // Format transaction details
@@ -1055,6 +1033,31 @@ class SplitMate {
     }
     
     /**
+     * Clear all data and reset the application
+     */
+    clearAllData() {
+        console.log('Clearing all stored data...');
+        try {
+            // Clear localStorage
+            localStorage.removeItem('splitmate-data');
+            
+            // Reset application state
+            this.transactions = [];
+            this.totals = {
+                me: 0,
+                spouse: 0
+            };
+            
+            // Update display
+            this.updateDisplay();
+            
+            console.log('All data cleared successfully');
+        } catch (error) {
+            console.error('Failed to clear data:', error);
+        }
+    }
+    
+    /**
      * Load data from localStorage
      */
     loadFromStorage() {
@@ -1083,6 +1086,13 @@ class SplitMate {
 document.addEventListener('DOMContentLoaded', () => {
     // Create global instance
     window.splitMateApp = new SplitMate();
+    
+    // Add global function to clear data for troubleshooting
+    window.clearSplitMateData = () => {
+        window.splitMateApp.clearAllData();
+        console.log('SplitMate data cleared. Page will refresh in 2 seconds...');
+        setTimeout(() => window.location.reload(), 2000);
+    };
     
     // Focus on amount field for immediate use on desktop, skip on mobile to prevent keyboard popup
     if (window.innerWidth > 768) {

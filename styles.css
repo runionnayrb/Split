@@ -455,7 +455,7 @@ table tr:hover {
     margin-bottom: 25px;
 }
 
-.upload-tabs {
+.upload-tabs, .transaction-tabs {
     display: flex;
     margin-bottom: 20px;
     border-bottom: 2px solid #e2e8f0;
@@ -471,6 +471,14 @@ table tr:hover {
     cursor: pointer;
     transition: all 0.2s ease;
     border-bottom: 2px solid transparent;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
 }
 
 .tab-button.active {

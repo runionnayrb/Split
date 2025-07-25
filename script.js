@@ -14,7 +14,7 @@ class SplitMate {
         
         // DOM elements
         this.form = document.getElementById('expenseForm');
-        this.transactionsBody = document.getElementById('transactionsBody');
+        this.transactionsBody = document.getElementById('transactionsBody'); // Legacy element (will be replaced)
         this.myTotalElement = document.getElementById('myTotal');
         this.spouseTotalElement = document.getElementById('spouseTotal');
         this.netBalanceElement = document.getElementById('netBalance');
@@ -22,6 +22,14 @@ class SplitMate {
         this.confirmModal = document.getElementById('confirmModal');
         this.confirmSettleBtn = document.getElementById('confirmSettle');
         this.cancelSettleBtn = document.getElementById('cancelSettle');
+        
+        // Transaction tab elements
+        this.unpaidTab = document.getElementById('unpaidTab');
+        this.paidTab = document.getElementById('paidTab');
+        this.unpaidTransactions = document.getElementById('unpaidTransactions');
+        this.paidTransactions = document.getElementById('paidTransactions');
+        this.unpaidTransactionsBody = document.getElementById('unpaidTransactionsBody');
+        this.paidTransactionsBody = document.getElementById('paidTransactionsBody');
         
         // Individual payment modal elements (iOS style bottom sheet)
         this.payTransactionModal = document.getElementById('payTransactionModal');
@@ -191,6 +199,15 @@ class SplitMate {
             if (!this.receiptTab.disabled) {
                 this.switchTab('receipt');
             }
+        });
+        
+        // Transaction tabs
+        this.unpaidTab.addEventListener('click', () => {
+            this.switchTransactionTab('unpaid');
+        });
+        
+        this.paidTab.addEventListener('click', () => {
+            this.switchTransactionTab('paid');
         });
         
         // Receipt upload events
@@ -633,36 +650,87 @@ class SplitMate {
     }
     
     /**
-     * Update the transaction history table
+     * Switch between transaction tabs (unpaid/paid)
+     */
+    switchTransactionTab(tab) {
+        // Update tab buttons
+        this.unpaidTab.classList.toggle('active', tab === 'unpaid');
+        this.paidTab.classList.toggle('active', tab === 'paid');
+        
+        // Update tab content
+        this.unpaidTransactions.classList.toggle('active', tab === 'unpaid');
+        this.paidTransactions.classList.toggle('active', tab === 'paid');
+    }
+
+    /**
+     * Update the transaction history tables (both unpaid and paid)
      */
     updateTransactionTable() {
-        // Clear existing rows
-        this.transactionsBody.innerHTML = '';
+        // Separate transactions into unpaid and paid
+        const unpaidTransactions = this.transactions.filter(t => !t.settled);
+        const paidTransactions = this.transactions.filter(t => t.settled);
         
-        if (this.transactions.length === 0) {
-            // Show empty state
+        // Update unpaid transactions table
+        this.updateUnpaidTransactionsTable(unpaidTransactions);
+        
+        // Update paid transactions table
+        this.updatePaidTransactionsTable(paidTransactions);
+    }
+    
+    /**
+     * Update unpaid transactions table
+     */
+    updateUnpaidTransactionsTable(unpaidTransactions) {
+        this.unpaidTransactionsBody.innerHTML = '';
+        
+        if (unpaidTransactions.length === 0) {
             const row = document.createElement('tr');
             row.className = 'no-transactions';
-            row.innerHTML = '<td colspan="6">No transactions yet. Add your first expense above! 👆</td>';
-            this.transactionsBody.appendChild(row);
+            row.innerHTML = '<td colspan="6">No unpaid transactions! 🎉</td>';
+            this.unpaidTransactionsBody.appendChild(row);
             return;
         }
         
-        // Add transaction rows
-        this.transactions.forEach(transaction => {
+        unpaidTransactions.forEach(transaction => {
+            const row = this.createTransactionRow(transaction, true);
+            this.unpaidTransactionsBody.appendChild(row);
+        });
+    }
+    
+    /**
+     * Update paid transactions table
+     */
+    updatePaidTransactionsTable(paidTransactions) {
+        this.paidTransactionsBody.innerHTML = '';
+        
+        if (paidTransactions.length === 0) {
             const row = document.createElement('tr');
-            
-            // Format date
-            const date = new Date(transaction.date);
-            const dateStr = date.toLocaleDateString();
-            
-            // Get category display with emoji
-            const categoryDisplay = this.getCategoryDisplay(transaction.category);
-            
-            // Format who paid
-            const whoPaidDisplay = transaction.whoPaid === 'me' ? 'You' : 'Spouse';
-            
-            // Format you owe amount
+            row.className = 'no-transactions';
+            row.innerHTML = '<td colspan="6">No settled transactions yet.</td>';
+            this.paidTransactionsBody.appendChild(row);
+            return;
+        }
+        
+        paidTransactions.forEach(transaction => {
+            const row = this.createTransactionRow(transaction, false);
+            this.paidTransactionsBody.appendChild(row);
+        });
+    }
+    
+    /**
+     * Create a transaction row element
+     */
+    createTransactionRow(transaction, isUnpaid) {
+        const row = document.createElement('tr');
+        row.className = 'transaction-row';
+        
+        const date = new Date(transaction.date).toLocaleDateString();
+        const whoPaidDisplay = transaction.whoPaid === 'me' ? 'You' : 'Spouse';
+        const category = this.getCategoryDisplay(transaction.category);
+        const notes = transaction.notes || '-';
+        
+        if (isUnpaid) {
+            // Unpaid transaction - show "You Owe" column
             const youOweAmount = transaction.youOwe;
             let youOweDisplay = '';
             let youOweClass = 'you-owe-cell';
@@ -678,33 +746,37 @@ class SplitMate {
             }
             
             row.innerHTML = `
-                <td>${dateStr}</td>
+                <td>${date}</td>
                 <td><strong>${whoPaidDisplay}</strong></td>
                 <td class="amount-cell">${this.formatCurrency(transaction.amount)}</td>
-                <td class="category-cell">${categoryDisplay}</td>
-                <td>${transaction.notes}</td>
+                <td class="category-cell">${category}</td>
+                <td>${notes}</td>
                 <td class="${youOweClass}">${youOweDisplay}</td>
             `;
             
             // Add click handler for individual transaction payment
-            row.style.cursor = 'pointer';
-            row.classList.add('transaction-row');
-            row.setAttribute('data-transaction-id', transaction.id);
-            
-            // Only make rows clickable if there's money owed
             if (Math.abs(youOweAmount) >= 0.01) {
+                row.style.cursor = 'pointer';
                 row.addEventListener('click', () => {
                     this.showPayTransactionModal(transaction);
                 });
                 row.title = 'Tap to pay this item individually';
-            } else {
-                row.style.cursor = 'default';
-                row.title = 'This item is already settled';
-                row.classList.add('settled');
             }
+        } else {
+            // Paid transaction - show "Settled Date" column
+            const settledDate = transaction.settledDate ? new Date(transaction.settledDate).toLocaleDateString() : '-';
             
-            this.transactionsBody.appendChild(row);
-        });
+            row.innerHTML = `
+                <td>${date}</td>
+                <td><strong>${whoPaidDisplay}</strong></td>
+                <td class="amount-cell">${this.formatCurrency(transaction.amount)}</td>
+                <td class="category-cell">${category}</td>
+                <td>${notes}</td>
+                <td>${settledDate}</td>
+            `;
+        }
+        
+        return row;
     }
     
     /**
@@ -846,11 +918,10 @@ class SplitMate {
             }
         }
         
-        // Remove the settled transaction from the history
-        const transactionIndex = this.transactions.indexOf(transaction);
-        if (transactionIndex > -1) {
-            this.transactions.splice(transactionIndex, 1);
-        }
+        // Mark the transaction as settled by setting youOwe to 0
+        transaction.youOwe = 0;
+        transaction.settled = true;
+        transaction.settledDate = new Date().toISOString();
         
         // Save and update display
         this.saveToStorage();

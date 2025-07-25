@@ -163,24 +163,57 @@
         <!-- Bottom Section: Transaction History -->
         <section class="transaction-history">
             <h2>Transaction History</h2>
-            <div class="table-container">
-                <table id="transactionsTable">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Who Paid</th>
-                            <th>Amount</th>
-                            <th>Category</th>
-                            <th>Notes</th>
-                            <th>You Owe</th>
-                        </tr>
-                    </thead>
-                    <tbody id="transactionsBody">
-                        <tr class="no-transactions">
-                            <td colspan="6">No transactions yet. Add your first expense above! 👆</td>
-                        </tr>
-                    </tbody>
-                </table>
+            
+            <!-- Transaction Tabs -->
+            <div class="transaction-tabs">
+                <button id="unpaidTab" class="tab-button active">Unpaid</button>
+                <button id="paidTab" class="tab-button">Paid</button>
+            </div>
+            
+            <!-- Unpaid Transactions Table -->
+            <div id="unpaidTransactions" class="tab-content active">
+                <div class="table-container">
+                    <table id="unpaidTransactionsTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Who Paid</th>
+                                <th>Amount</th>
+                                <th>Category</th>
+                                <th>Notes</th>
+                                <th>You Owe</th>
+                            </tr>
+                        </thead>
+                        <tbody id="unpaidTransactionsBody">
+                            <tr class="no-transactions">
+                                <td colspan="6">No unpaid transactions! 🎉</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Paid Transactions Table -->
+            <div id="paidTransactions" class="tab-content">
+                <div class="table-container">
+                    <table id="paidTransactionsTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Who Paid</th>
+                                <th>Amount</th>
+                                <th>Category</th>
+                                <th>Notes</th>
+                                <th>Settled Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paidTransactionsBody">
+                            <tr class="no-transactions">
+                                <td colspan="6">No settled transactions yet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 

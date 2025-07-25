@@ -18,10 +18,10 @@ class SplitMate {
         this.myTotalElement = document.getElementById('myTotal');
         this.spouseTotalElement = document.getElementById('spouseTotal');
         this.netBalanceElement = document.getElementById('netBalance');
-        this.settleUpBtn = document.getElementById('settleUpBtn');
+        this.payAllBtn = document.getElementById('payAllBtn');
         this.confirmModal = document.getElementById('confirmModal');
-        this.confirmSettleBtn = document.getElementById('confirmSettle');
-        this.cancelSettleBtn = document.getElementById('cancelSettle');
+        this.confirmPayAllBtn = document.getElementById('confirmPayAll');
+        this.cancelPayAllBtn = document.getElementById('cancelPayAll');
         
         // Transaction tab elements
         this.unpaidTab = document.getElementById('unpaidTab');
@@ -136,18 +136,18 @@ class SplitMate {
             this.addTransaction();
         });
         
-        // Settle up button
-        this.settleUpBtn.addEventListener('click', () => {
+        // Pay All button
+        this.payAllBtn.addEventListener('click', () => {
             this.showConfirmModal();
         });
         
         // Modal buttons
-        this.confirmSettleBtn.addEventListener('click', () => {
-            this.settleUp();
+        this.confirmPayAllBtn.addEventListener('click', () => {
+            this.payAllTransactions();
             this.hideConfirmModal();
         });
         
-        this.cancelSettleBtn.addEventListener('click', () => {
+        this.cancelPayAllBtn.addEventListener('click', () => {
             this.hideConfirmModal();
         });
         
@@ -618,7 +618,7 @@ class SplitMate {
     updateDisplay() {
         this.updateBalanceDisplay();
         this.updateTransactionTable();
-        this.updateSettleUpButton();
+        this.updatePayAllButton();
     }
     
     /**
@@ -782,9 +782,9 @@ class SplitMate {
     /**
      * Update the settle up button state
      */
-    updateSettleUpButton() {
-        const hasTransactions = this.transactions.length > 0;
-        this.settleUpBtn.disabled = !hasTransactions;
+    updatePayAllButton() {
+        const hasUnpaidTransactions = this.transactions.some(t => !t.settled && Math.abs(t.youOwe) > 0.01);
+        this.payAllBtn.disabled = !hasUnpaidTransactions;
     }
     
     /**
@@ -933,30 +933,53 @@ class SplitMate {
     }
     
     /**
-     * Settle up - reset all balances and clear transaction history
+     * Pay all outstanding transactions - settle all unpaid transactions and move them to paid tab
      */
-    settleUp() {
-        // Reset all data
-        this.transactions = [];
-        this.totals = {
-            me: 0,
-            spouse: 0
-        };
+    payAllTransactions() {
+        let totalSettled = 0;
+        let transactionsSettled = 0;
         
-        // Save empty state to localStorage
+        // Process all unpaid transactions
+        this.transactions.forEach(transaction => {
+            if (!transaction.settled && Math.abs(transaction.youOwe) > 0.01) {
+                const originalYouOwe = transaction.youOwe;
+                const originalAmount = Math.abs(originalYouOwe);
+                
+                // Adjust totals to balance the payment (same logic as individual payments)
+                if (originalYouOwe > 0) {
+                    // User was owing money - adjust as if user paid their half originally
+                    if (transaction.whoPaid === 'spouse') {
+                        this.totals.spouse -= originalAmount;
+                        this.totals.me += originalAmount;
+                    }
+                } else {
+                    // Spouse was owing money - adjust as if spouse paid their half originally
+                    if (transaction.whoPaid === 'me') {
+                        this.totals.me -= originalAmount;
+                        this.totals.spouse += originalAmount;
+                    }
+                }
+                
+                // Mark transaction as settled
+                transaction.youOwe = 0;
+                transaction.settled = true;
+                transaction.settledDate = new Date().toISOString();
+                
+                totalSettled += originalAmount;
+                transactionsSettled++;
+            }
+        });
+        
+        // Save and update display
         this.saveToStorage();
-        
-        // Update display
         this.updateDisplay();
         
-        // Show success message briefly
-        const originalText = this.netBalanceElement.textContent;
-        this.netBalanceElement.textContent = 'Successfully settled up! ✅';
-        this.netBalanceElement.className = 'net-balance';
-        
-        setTimeout(() => {
-            this.updateBalanceDisplay();
-        }, 2000);
+        // Show success message
+        if (transactionsSettled > 0) {
+            alert(`✅ Successfully paid ${transactionsSettled} transaction(s) totaling ${this.formatCurrency(totalSettled)}!`);
+        } else {
+            alert('ℹ️ No outstanding transactions to pay.');
+        }
     }
     
     /**

@@ -10,12 +10,13 @@ Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-SplitMate follows a simple client-side architecture with no backend dependencies:
+SplitMate has been enhanced with receipt scanning capabilities using a hybrid architecture:
 
-- **Frontend**: Pure HTML/CSS/JavaScript single-page application
+- **Frontend**: HTML/CSS/JavaScript single-page application with dual input modes
+- **Backend**: Node.js server for OpenAI API integration and secure key handling
 - **Data Storage**: Browser's localStorage for persistence
-- **Architecture Pattern**: Object-oriented JavaScript with a single SplitMate class managing all functionality
-- **No Server Required**: Completely client-side application
+- **Architecture Pattern**: Object-oriented JavaScript with SplitMate class + ReceiptProcessor
+- **API Integration**: OpenAI GPT-4o Vision API for receipt text extraction and parsing
 
 ## Key Components
 
@@ -25,6 +26,9 @@ SplitMate follows a simple client-side architecture with no backend dependencies
 - **script.js**: Core application logic implemented as a SplitMate class
 
 ### 2. Core Functionality
+- **Dual Input Modes**: Manual expense entry and receipt scanning via tabs
+- **Receipt Processing**: AI-powered receipt scanning with itemized expense extraction
+- **Smart Splitting**: Automatic 50/50 split of taxes, tips, and fees from receipts
 - **Transaction Management**: Add, display, and delete expense transactions
 - **Balance Calculation**: Real-time calculation of who owes whom
 - **Data Persistence**: Automatic saving to and loading from localStorage
@@ -32,11 +36,18 @@ SplitMate follows a simple client-side architecture with no backend dependencies
 
 ### 3. User Interface Components
 - **Header Section**: App title, subtitle, and balance summary display
-- **Transaction Form**: Input form for adding new expenses with fields for:
+- **Tabbed Input Interface**: Switch between "Manual Entry" and "Scan Receipt"
+- **Manual Transaction Form**: Traditional input form with fields for:
   - Who paid (Me/Spouse)
   - Amount
-  - Category (appears to be dropdown-based)
+  - Category (groceries, dining, travel, shopping, other)
   - Description
+- **Receipt Upload Interface**: Drag-and-drop or click-to-upload with image preview
+- **Receipt Processing Results**: Interactive itemized list with:
+  - Checkbox selection for each item
+  - Automatic category assignment
+  - Subtotal calculation and 50/50 fee splitting
+  - Summary showing taxes, tips, and fees split evenly
 - **Transaction History**: Table showing all past transactions
 - **Settlement Modal**: Confirmation dialog for settling up balances
 
@@ -51,27 +62,43 @@ SplitMate follows a simple client-side architecture with no backend dependencies
 
 ## External Dependencies
 
-SplitMate has minimal external dependencies:
+SplitMate now includes AI-powered receipt processing:
 
-- **No Framework Dependencies**: Built with vanilla JavaScript
+- **Runtime**: Node.js server for backend API handling
+- **OpenAI Integration**: GPT-4o Vision API for receipt text extraction
+- **No Framework Dependencies**: Frontend built with vanilla JavaScript
 - **No CDN Dependencies**: All code is self-contained
 - **Font Stack**: Uses system fonts (-apple-system, BlinkMacSystemFont, etc.)
-- **No API Calls**: Purely client-side with no external service integrations
+- **API Requirements**: OpenAI API key required for receipt scanning functionality
 
 ## Deployment Strategy
 
-SplitMate can be deployed in several simple ways:
+SplitMate now requires a Node.js server for full functionality:
 
-1. **Static File Hosting**: Can be hosted on any static file server (GitHub Pages, Netlify, Vercel)
-2. **Local Development**: Can be run directly by opening index.html in a browser
-3. **Web Server**: Can be served through any basic HTTP server (Python's http.server, Node's http-server, etc.)
+1. **Node.js Deployment**: Primary deployment method using server.js
+2. **Environment Variables**: OPENAI_API_KEY required for receipt scanning
+3. **Fallback Mode**: Manual entry still works without API key
+4. **Static Hosting**: Basic manual-entry-only version can still be hosted statically
 
-The application requires no build process, database setup, or server-side configuration, making deployment extremely straightforward.
+The application now requires server-side configuration for receipt scanning, but maintains backward compatibility for manual expense entry.
 
 ### Technical Considerations
 
-- **Browser Compatibility**: Uses modern JavaScript features (classes, arrow functions)
-- **Responsive Design**: CSS includes responsive design patterns
+- **Browser Compatibility**: Uses modern JavaScript features (classes, arrow functions, fetch API)
+- **Responsive Design**: CSS includes responsive design patterns for mobile devices
 - **Data Persistence**: Relies on localStorage, so data is browser-specific
 - **No User Authentication**: Single-user application per browser session
-- **Offline Capable**: Works completely offline once loaded
+- **Hybrid Offline/Online**: Manual entry works offline, receipt scanning requires internet
+- **Image Processing**: Supports JPG, PNG, WebP up to 10MB for receipt scanning
+- **AI Integration**: Uses OpenAI GPT-4o Vision API for receipt text extraction and categorization
+
+## Recent Changes (July 25, 2025)
+
+✓ Added receipt scanning functionality with OpenAI Vision API integration
+✓ Implemented tabbed interface for manual vs receipt entry modes
+✓ Created Node.js server backend for secure API key handling
+✓ Added drag-and-drop receipt upload with image preview
+✓ Built intelligent expense parsing with automatic categorization
+✓ Implemented 50/50 splitting logic for taxes, tips, and delivery fees
+✓ Enhanced UI with receipt processing workflow and item selection
+✓ Maintained backward compatibility with manual entry mode

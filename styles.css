@@ -322,6 +322,231 @@ table tr:hover {
     background: #cbd5e0;
 }
 
+/* Receipt Upload Styles */
+.receipt-upload-section {
+    margin-bottom: 25px;
+}
+
+.upload-tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.tab-button {
+    background: none;
+    border: none;
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #4a5568;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-button.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+}
+
+.tab-button:hover {
+    color: #667eea;
+}
+
+.receipt-upload {
+    padding: 20px 0;
+}
+
+.upload-area {
+    border: 2px dashed #cbd5e0;
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    background: #f7fafc;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.upload-area:hover {
+    border-color: #667eea;
+    background: #edf2f7;
+}
+
+.upload-area.dragover {
+    border-color: #667eea;
+    background: #e6fffa;
+}
+
+.upload-icon {
+    width: 48px;
+    height: 48px;
+    color: #a0aec0;
+    margin: 0 auto 15px;
+}
+
+.upload-text {
+    font-size: 1.1rem;
+    color: #4a5568;
+    margin-bottom: 5px;
+}
+
+.upload-link {
+    color: #667eea;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.upload-hint {
+    font-size: 0.9rem;
+    color: #a0aec0;
+}
+
+.receipt-preview {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.receipt-preview img {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.preview-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.processing-status {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 15px;
+    border: 4px solid #e2e8f0;
+    border-top: 4px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.receipt-results {
+    margin-top: 25px;
+    padding: 25px;
+    background: #f7fafc;
+    border-radius: 12px;
+}
+
+.receipt-results h3 {
+    color: #2d3748;
+    margin-bottom: 20px;
+}
+
+.results-header {
+    margin-bottom: 20px;
+}
+
+.who-paid-selector label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #4a5568;
+}
+
+.who-paid-selector select {
+    width: 200px;
+    padding: 8px 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.receipt-items {
+    margin-bottom: 20px;
+}
+
+.receipt-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border: 2px solid #e2e8f0;
+}
+
+.receipt-item.selected {
+    border-color: #667eea;
+    background: #edf2f7;
+}
+
+.item-checkbox {
+    margin-right: 12px;
+}
+
+.item-details {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.item-name {
+    font-weight: 500;
+    color: #2d3748;
+}
+
+.item-price {
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.receipt-summary {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.summary-row.total {
+    border-bottom: none;
+    border-top: 2px solid #2d3748;
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-top: 10px;
+    padding-top: 15px;
+}
+
+.receipt-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.hidden {
+    display: none !important;
+}
+
 /* Mobile responsive styles */
 @media (max-width: 768px) {
     .container {
@@ -365,6 +590,39 @@ table tr:hover {
     .modal-buttons {
         flex-direction: column;
         gap: 10px;
+    }
+    
+    .upload-tabs {
+        margin-bottom: 15px;
+    }
+    
+    .tab-button {
+        padding: 10px 16px;
+        font-size: 0.9rem;
+    }
+    
+    .upload-area {
+        padding: 30px 15px;
+    }
+    
+    .preview-actions,
+    .receipt-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .who-paid-selector select {
+        width: 100%;
+    }
+    
+    .receipt-item {
+        padding: 12px;
+    }
+    
+    .item-details {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
     }
 }
 

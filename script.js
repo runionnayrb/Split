@@ -23,6 +23,27 @@ class SplitMate {
         this.confirmSettleBtn = document.getElementById('confirmSettle');
         this.cancelSettleBtn = document.getElementById('cancelSettle');
         
+        // Receipt upload elements
+        this.manualTab = document.getElementById('manualTab');
+        this.receiptTab = document.getElementById('receiptTab');
+        this.manualForm = document.getElementById('manualForm');
+        this.receiptUpload = document.getElementById('receiptUpload');
+        this.uploadArea = document.getElementById('uploadArea');
+        this.receiptFile = document.getElementById('receiptFile');
+        this.receiptPreview = document.getElementById('receiptPreview');
+        this.previewImage = document.getElementById('previewImage');
+        this.processReceiptBtn = document.getElementById('processReceipt');
+        this.cancelUploadBtn = document.getElementById('cancelUpload');
+        this.processingStatus = document.getElementById('processingStatus');
+        this.receiptResults = document.getElementById('receiptResults');
+        this.addReceiptItemsBtn = document.getElementById('addReceiptItems');
+        this.clearReceiptBtn = document.getElementById('clearReceipt');
+        
+        // Receipt processing
+        this.receiptProcessor = null;
+        this.currentReceiptData = null;
+        this.selectedReceiptItems = new Set();
+        
         // Initialize the app
         this.init();
     }
@@ -34,6 +55,51 @@ class SplitMate {
         this.loadFromStorage();
         this.setupEventListeners();
         this.updateDisplay();
+        this.initializeReceiptProcessor();
+    }
+    
+    /**
+     * Initialize receipt processor with API key
+     */
+    async initializeReceiptProcessor() {
+        try {
+            // Get API key from environment or prompt user
+            const apiKey = await this.getOpenAIKey();
+            if (apiKey) {
+                this.receiptProcessor = new ReceiptProcessor(apiKey);
+            } else {
+                console.warn('OpenAI API key not available - receipt scanning disabled');
+                this.disableReceiptTab();
+            }
+        } catch (error) {
+            console.error('Failed to initialize receipt processor:', error);
+            this.disableReceiptTab();
+        }
+    }
+    
+    /**
+     * Check if OpenAI API is available on server
+     */
+    async getOpenAIKey() {
+        try {
+            const response = await fetch('/api/openai-available');
+            if (response.ok) {
+                const data = await response.json();
+                return data.available ? 'server-side-available' : null;
+            }
+        } catch (error) {
+            console.log('Server API not available');
+        }
+        return null;
+    }
+    
+    /**
+     * Disable receipt tab if API key not available
+     */
+    disableReceiptTab() {
+        this.receiptTab.disabled = true;
+        this.receiptTab.style.opacity = '0.5';
+        this.receiptTab.title = 'Receipt scanning requires OpenAI API key';
     }
     
     /**
@@ -74,6 +140,324 @@ class SplitMate {
                 this.hideConfirmModal();
             }
         });
+        
+        // Tab switching
+        this.manualTab.addEventListener('click', () => {
+            this.switchTab('manual');
+        });
+        
+        this.receiptTab.addEventListener('click', () => {
+            if (!this.receiptTab.disabled) {
+                this.switchTab('receipt');
+            }
+        });
+        
+        // Receipt upload events
+        this.setupReceiptUploadListeners();
+    }
+    
+    /**
+     * Set up receipt upload event listeners
+     */
+    setupReceiptUploadListeners() {
+        // File input change
+        this.receiptFile.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                this.handleFileSelect(file);
+            }
+        });
+        
+        // Upload area click
+        this.uploadArea.addEventListener('click', () => {
+            this.receiptFile.click();
+        });
+        
+        // Drag and drop
+        this.uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            this.uploadArea.classList.add('dragover');
+        });
+        
+        this.uploadArea.addEventListener('dragleave', () => {
+            this.uploadArea.classList.remove('dragover');
+        });
+        
+        this.uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            this.uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                this.handleFileSelect(files[0]);
+            }
+        });
+        
+        // Preview buttons
+        this.processReceiptBtn.addEventListener('click', () => {
+            this.processCurrentReceipt();
+        });
+        
+        this.cancelUploadBtn.addEventListener('click', () => {
+            this.clearReceiptUpload();
+        });
+        
+        // Receipt results buttons
+        this.addReceiptItemsBtn.addEventListener('click', () => {
+            this.addSelectedReceiptItems();
+        });
+        
+        this.clearReceiptBtn.addEventListener('click', () => {
+            this.clearReceiptResults();
+        });
+    }
+    
+    /**
+     * Switch between manual and receipt tabs
+     */
+    switchTab(tabName) {
+        if (tabName === 'manual') {
+            this.manualTab.classList.add('active');
+            this.receiptTab.classList.remove('active');
+            this.manualForm.style.display = 'block';
+            this.receiptUpload.classList.add('hidden');
+            this.receiptResults.classList.add('hidden');
+        } else if (tabName === 'receipt') {
+            this.receiptTab.classList.add('active');
+            this.manualTab.classList.remove('active');
+            this.manualForm.style.display = 'none';
+            this.receiptUpload.classList.remove('hidden');
+        }
+    }
+    
+    /**
+     * Handle file selection for receipt upload
+     */
+    async handleFileSelect(file) {
+        try {
+            if (!this.receiptProcessor) {
+                throw new Error('Receipt processor not initialized');
+            }
+            
+            // Validate file
+            this.receiptProcessor.validateImageFile(file);
+            
+            // Show preview
+            const imageUrl = URL.createObjectURL(file);
+            this.previewImage.src = imageUrl;
+            this.receiptPreview.classList.remove('hidden');
+            this.uploadArea.style.display = 'none';
+            
+            // Store file for processing
+            this.currentReceiptFile = file;
+            
+        } catch (error) {
+            alert(error.message);
+            this.clearReceiptUpload();
+        }
+    }
+    
+    /**
+     * Process the current receipt image
+     */
+    async processCurrentReceipt() {
+        if (!this.currentReceiptFile || !this.receiptProcessor) {
+            return;
+        }
+        
+        try {
+            // Show processing status
+            this.receiptPreview.classList.add('hidden');
+            this.processingStatus.classList.remove('hidden');
+            
+            // Convert image to base64 and process
+            const base64Image = await this.receiptProcessor.imageToBase64(this.currentReceiptFile);
+            const receiptData = await this.receiptProcessor.processReceipt(base64Image);
+            
+            // Store receipt data
+            this.currentReceiptData = receiptData;
+            
+            // Hide processing status
+            this.processingStatus.classList.add('hidden');
+            
+            // Show results
+            this.displayReceiptResults(receiptData);
+            
+        } catch (error) {
+            console.error('Receipt processing error:', error);
+            this.processingStatus.classList.add('hidden');
+            this.receiptPreview.classList.remove('hidden');
+            
+            let errorMessage = 'Failed to process receipt. ';
+            if (error.message.includes('API')) {
+                errorMessage += 'Please check your internet connection and try again.';
+            } else {
+                errorMessage += 'Please try with a clearer image.';
+            }
+            
+            alert(errorMessage);
+        }
+    }
+    
+    /**
+     * Display receipt processing results
+     */
+    displayReceiptResults(receiptData) {
+        // Clear existing results
+        const itemsList = document.getElementById('receiptItemsList');
+        itemsList.innerHTML = '';
+        this.selectedReceiptItems.clear();
+        
+        // Create item checkboxes
+        receiptData.items.forEach((item, index) => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'receipt-item';
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `item-${index}`;
+            checkbox.className = 'item-checkbox';
+            checkbox.checked = true;
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                    this.selectedReceiptItems.add(index);
+                    itemDiv.classList.add('selected');
+                } else {
+                    this.selectedReceiptItems.delete(index);
+                    itemDiv.classList.remove('selected');
+                }
+                this.updateReceiptSummary();
+            });
+            
+            const itemDetails = document.createElement('div');
+            itemDetails.className = 'item-details';
+            itemDetails.innerHTML = `
+                <span class="item-name">${item.name}</span>
+                <span class="item-price">${this.formatCurrency(item.price)}</span>
+            `;
+            
+            itemDiv.appendChild(checkbox);
+            itemDiv.appendChild(itemDetails);
+            itemsList.appendChild(itemDiv);
+            
+            // Start with all items selected
+            this.selectedReceiptItems.add(index);
+            itemDiv.classList.add('selected');
+        });
+        
+        // Update summary
+        this.updateReceiptSummary();
+        
+        // Show results section
+        this.receiptResults.classList.remove('hidden');
+    }
+    
+    /**
+     * Update receipt summary based on selected items
+     */
+    updateReceiptSummary() {
+        if (!this.currentReceiptData) return;
+        
+        let selectedSubtotal = 0;
+        this.selectedReceiptItems.forEach(index => {
+            selectedSubtotal += this.currentReceiptData.items[index].price;
+        });
+        
+        // Calculate proportional fees (tax, tip, delivery fees split 50/50)
+        const totalFees = this.currentReceiptData.tax + this.currentReceiptData.tip + this.currentReceiptData.fees;
+        const selectedTotal = selectedSubtotal + (totalFees / 2); // Split fees 50/50
+        
+        // Update display
+        document.getElementById('receiptSubtotal').textContent = this.formatCurrency(selectedSubtotal);
+        document.getElementById('receiptFees').textContent = this.formatCurrency(totalFees / 2);
+        document.getElementById('receiptTotal').textContent = this.formatCurrency(selectedTotal);
+    }
+    
+    /**
+     * Add selected receipt items to transactions
+     */
+    addSelectedReceiptItems() {
+        if (!this.currentReceiptData || this.selectedReceiptItems.size === 0) {
+            alert('Please select at least one item to add.');
+            return;
+        }
+        
+        const whoPaid = document.getElementById('receiptWhoPaid').value;
+        const timestamp = Date.now();
+        
+        // Add individual items
+        this.selectedReceiptItems.forEach(index => {
+            const item = this.currentReceiptData.items[index];
+            
+            const transaction = {
+                id: timestamp + index,
+                date: new Date().toISOString(),
+                whoPaid: whoPaid,
+                amount: item.price,
+                category: item.category,
+                notes: `${item.name} (from receipt)`,
+                youOwe: whoPaid === 'spouse' ? item.price / 2 : -(item.price / 2)
+            };
+            
+            this.transactions.unshift(transaction);
+            this.totals[whoPaid] += item.price;
+        });
+        
+        // Add shared fees as a separate transaction if there are any
+        const totalFees = this.currentReceiptData.tax + this.currentReceiptData.tip + this.currentReceiptData.fees;
+        if (totalFees > 0) {
+            const feesTransaction = {
+                id: timestamp + 1000,
+                date: new Date().toISOString(),
+                whoPaid: whoPaid,
+                amount: totalFees,
+                category: 'other',
+                notes: 'Tax, tips & fees (split 50/50)',
+                youOwe: whoPaid === 'spouse' ? totalFees / 2 : -(totalFees / 2)
+            };
+            
+            this.transactions.unshift(feesTransaction);
+            this.totals[whoPaid] += totalFees;
+        }
+        
+        // Save and update display
+        this.saveToStorage();
+        this.updateDisplay();
+        
+        // Clear receipt and return to manual tab
+        this.clearReceiptResults();
+        this.switchTab('manual');
+        
+        // Show success message
+        const itemCount = this.selectedReceiptItems.size;
+        const feeText = totalFees > 0 ? ' and shared fees' : '';
+        alert(`Successfully added ${itemCount} item${itemCount > 1 ? 's' : ''}${feeText} from receipt!`);
+    }
+    
+    /**
+     * Clear receipt upload
+     */
+    clearReceiptUpload() {
+        this.receiptFile.value = '';
+        this.currentReceiptFile = null;
+        this.receiptPreview.classList.add('hidden');
+        this.processingStatus.classList.add('hidden');
+        this.uploadArea.style.display = 'block';
+        
+        if (this.previewImage.src) {
+            URL.revokeObjectURL(this.previewImage.src);
+            this.previewImage.src = '';
+        }
+    }
+    
+    /**
+     * Clear receipt results
+     */
+    clearReceiptResults() {
+        this.receiptResults.classList.add('hidden');
+        this.currentReceiptData = null;
+        this.selectedReceiptItems.clear();
+        this.clearReceiptUpload();
     }
     
     /**

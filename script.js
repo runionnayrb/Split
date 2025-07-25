@@ -424,14 +424,14 @@ class SplitMate {
         this.saveToStorage();
         this.updateDisplay();
         
-        // Clear receipt and return to manual tab
-        this.clearReceiptResults();
-        this.switchTab('manual');
-        
-        // Show success message
+        // Show success message (before clearing data)
         const itemCount = this.selectedReceiptItems.size;
         const feeText = totalFees > 0 ? ' and shared fees' : '';
         alert(`Successfully added ${itemCount} item${itemCount > 1 ? 's' : ''}${feeText} from receipt!`);
+        
+        // Clear receipt and return to manual tab
+        this.clearReceiptResults();
+        this.switchTab('manual');
     }
     
     /**

@@ -102,7 +102,7 @@ async function extractPdfText(base64Pdf) {
             }
         });
         
-        console.log('PDF text extraction result:', data.text ? data.text.substring(0, 200) + '...' : 'No text found');
+        console.log('PDF text extraction result:', data.text ? `Found ${data.text.length} characters: ${data.text.substring(0, 500)}...` : 'No text found');
         
         if (!data.text || data.text.trim().length < 10) {
             throw new Error('No readable text found in PDF - it may be a scanned image');
@@ -163,15 +163,22 @@ async function handleReceiptProcessing(req, res) {
                                 messages: [
                                     {
                                         role: "user",
-                                        content: `Analyze this receipt text from a Publix PDF and extract all itemized expenses. I need to split expenses with my partner, where:
+                                        content: `Analyze this Publix receipt text and extract all itemized expenses. Parse carefully as Publix receipts have specific formatting:
 
 Receipt Text:
 ${pdfText}
 
-1. Extract each individual item with its price
-2. Identify subtotal, taxes, tips, delivery fees, and other charges
-3. Calculate the total amount
-4. Return in JSON format with this structure:
+IMPORTANT PARSING INSTRUCTIONS FOR PUBLIX RECEIPTS:
+- Look for item names followed by prices (usually right-aligned)
+- Prices are typically in format like "3.99" or "$3.99" 
+- Items may have product codes, weights, or unit prices - focus on the final price per item
+- Look for patterns like "ITEM NAME    $X.XX" or similar
+- Subtotal is usually labeled "SUBTOTAL" 
+- Tax is labeled "TAX" or "FL TAX"
+- Total is labeled "TOTAL"
+- Store discounts/coupons should be ignored (negative amounts)
+
+Extract and return in this JSON format:
 
 {
   "items": [
@@ -179,19 +186,20 @@ ${pdfText}
   ],
   "subtotal": 45.67,
   "tax": 3.65,
-  "tip": 8.00,
-  "fees": 2.50,
+  "tip": 0.00,
+  "fees": 0.00,
   "total": 59.82,
-  "merchant": "Store Name",
+  "merchant": "Publix",
   "date": "2024-01-15"
 }
 
-Rules:
-- Only include actual purchased items in "items" array
-- Put taxes, tips, delivery fees, service charges in separate fields
-- For groceries from Publix, categorize appropriately
-- Ensure all prices are numbers (not strings)
-- Make sure subtotal + tax + tip + fees = total`
+RULES:
+- Only include purchased items with positive prices in "items" array
+- Skip coupons, discounts, and promotional items (negative amounts)
+- Categorize all items as "groceries" unless clearly something else
+- Parse prices as numbers without $ symbol
+- Ensure subtotal + tax = total (fees and tips are usually 0 for Publix)
+- If you see multiple prices for an item, use the final price charged`
                                     }
                                 ],
                                 response_format: { type: "json_object" },

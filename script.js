@@ -84,6 +84,8 @@ class SplitMate {
         this.setupEventListeners();
         this.updateDisplay();
         this.initializeReceiptProcessor();
+        // Set receipt tab as default
+        this.switchTab('receipt');
     }
     
     /**

@@ -40,11 +40,11 @@
             <!-- Receipt Upload Section -->
             <div class="receipt-upload-section">
                 <div class="upload-tabs">
-                    <button type="button" id="manualTab" class="tab-button active">Manual Entry</button>
-                    <button type="button" id="receiptTab" class="tab-button">Scan Receipt</button>
+                    <button type="button" id="manualTab" class="tab-button">Manual Entry</button>
+                    <button type="button" id="receiptTab" class="tab-button active">Scan Receipt</button>
                 </div>
                 
-                <div id="receiptUpload" class="receipt-upload hidden">
+                <div id="receiptUpload" class="receipt-upload">
                     <div class="upload-area" id="uploadArea">
                         <div class="upload-content">
                             <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -89,7 +89,7 @@
             </div>
 
             <form id="expenseForm">
-                <div id="manualForm" class="manual-form">
+                <div id="manualForm" class="manual-form hidden">
                     <div class="form-group">
                         <label for="whoPaid">Who paid?</label>
                         <select id="whoPaid" required>

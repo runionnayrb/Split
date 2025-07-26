@@ -521,9 +521,13 @@ class SplitMate {
             }
         });
         
+        // Calculate split portions for each person
+        const bryanSplitPortion = splitTotal / 2;
+        const ayakoSplitPortion = splitTotal / 2;
+        
         // Calculate each person's total responsibility
-        const bryanTotal = uncheckedTotal + individualTotal + (splitTotal / 2);
-        const ayakoTotal = individualTotal + (splitTotal / 2);
+        const bryanTotal = uncheckedTotal + individualTotal + bryanSplitPortion;
+        const ayakoTotal = individualTotal + ayakoSplitPortion;
         
         // Calculate fees (always split 50/50)
         const totalFees = this.currentReceiptData.tax + this.currentReceiptData.tip + this.currentReceiptData.fees;
@@ -535,7 +539,9 @@ class SplitMate {
         // Update display
         document.getElementById('receiptGrandTotal').textContent = this.formatCurrency(grandTotal + totalFees);
         document.getElementById('bryanUnchecked').textContent = this.formatCurrency(uncheckedTotal);
+        document.getElementById('bryanSplit').textContent = this.formatCurrency(bryanSplitPortion);
         document.getElementById('ayakoIndividual').textContent = this.formatCurrency(individualTotal);
+        document.getElementById('ayakoSplit').textContent = this.formatCurrency(ayakoSplitPortion);
         document.getElementById('splitTotal').textContent = this.formatCurrency(splitTotal);
         document.getElementById('bryanTotal').textContent = this.formatCurrency(bryanTotal);
         document.getElementById('ayakoTotal').textContent = this.formatCurrency(ayakoTotal);

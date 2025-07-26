@@ -386,6 +386,11 @@ class SplitMate {
         this.clearReceiptBtn.addEventListener('click', () => {
             this.clearReceiptResults();
         });
+        
+        // Who paid dropdown change - update receipt summary
+        document.getElementById('receiptWhoPaid').addEventListener('change', () => {
+            this.updateReceiptSummary();
+        });
     }
     
     /**
@@ -580,20 +585,22 @@ class SplitMate {
     updateReceiptSummary() {
         if (!this.currentReceiptData) return;
         
+        const whoPaid = document.getElementById('receiptWhoPaid').value;
+        
         let grandTotal = 0;           // Total of ALL items on receipt
-        let uncheckedTotal = 0;       // Items Bryan pays (unchecked)
-        let individualTotal = 0;      // Items Ayako owes (individual)
-        let splitTotal = 0;           // Items to split 50/50
+        let payerUncheckedTotal = 0;  // Items the payer covers (unchecked)
+        let oweeIndividualTotal = 0;  // Items the non-payer owes (checked + individual)
+        let splitTotal = 0;           // Items to split 50/50 (checked + split)
         
         // Calculate grand total of ALL items on receipt
         this.currentReceiptData.items.forEach(item => {
             grandTotal += item.price;
         });
         
-        // Calculate unchecked items (Bryan pays these)
+        // Calculate unchecked items (payer covers these entirely)
         this.currentReceiptData.items.forEach((item, index) => {
             if (!this.selectedReceiptItems.has(index)) {
-                uncheckedTotal += item.price;
+                payerUncheckedTotal += item.price;
             }
         });
         
@@ -604,7 +611,7 @@ class SplitMate {
             if (this.splitReceiptItems.has(index)) {
                 splitTotal += itemPrice;
             } else {
-                individualTotal += itemPrice;
+                oweeIndividualTotal += itemPrice;
             }
         });
         
@@ -617,26 +624,46 @@ class SplitMate {
         const bryanFees = totalFees / 2;
         const ayakoFees = totalFees / 2;
         
-        // Calculate each person's total responsibility including fees
-        const bryanTotal = uncheckedTotal + bryanSplitPortion + bryanFees;
-        const ayakoTotal = individualTotal + ayakoSplitPortion + ayakoFees;
+        // Calculate totals based on who paid
+        let bryanTotal, ayakoTotal, netAmount;
         
-        // Final calculation: What Ayako owes Bryan is simply her total responsibility
-        const ayakoOwes = ayakoTotal;
+        if (whoPaid === 'me') {
+            // Bryan paid - he covers unchecked items + his split portion + his fees
+            bryanTotal = payerUncheckedTotal + bryanSplitPortion + bryanFees;
+            // Ayako owes individual items + her split portion + her fees
+            ayakoTotal = oweeIndividualTotal + ayakoSplitPortion + ayakoFees;
+            netAmount = ayakoTotal; // What Ayako owes Bryan
+        } else {
+            // Ayako paid - she covers unchecked items + her split portion + her fees
+            ayakoTotal = payerUncheckedTotal + ayakoSplitPortion + ayakoFees;
+            // Bryan owes individual items + his split portion + his fees
+            bryanTotal = oweeIndividualTotal + bryanSplitPortion + bryanFees;
+            netAmount = bryanTotal; // What Bryan owes Ayako
+        }
         
         // Update display
         document.getElementById('receiptGrandTotal').textContent = this.formatCurrency(grandTotal + totalFees);
-        document.getElementById('bryanUnchecked').textContent = this.formatCurrency(uncheckedTotal);
+        
+        // Update display based on who paid
+        if (whoPaid === 'me') {
+            // Bryan paid
+            document.getElementById('bryanUnchecked').textContent = this.formatCurrency(payerUncheckedTotal);
+            document.getElementById('ayakoIndividual').textContent = this.formatCurrency(oweeIndividualTotal);
+        } else {
+            // Ayako paid
+            document.getElementById('bryanUnchecked').textContent = this.formatCurrency(oweeIndividualTotal);
+            document.getElementById('ayakoIndividual').textContent = this.formatCurrency(payerUncheckedTotal);
+        }
+        
         document.getElementById('bryanSplit').textContent = this.formatCurrency(bryanSplitPortion);
         document.getElementById('bryanFees').textContent = this.formatCurrency(bryanFees);
-        document.getElementById('ayakoIndividual').textContent = this.formatCurrency(individualTotal);
         document.getElementById('ayakoSplit').textContent = this.formatCurrency(ayakoSplitPortion);
         document.getElementById('ayakoFees').textContent = this.formatCurrency(ayakoFees);
         document.getElementById('splitTotal').textContent = this.formatCurrency(splitTotal);
         document.getElementById('bryanTotal').textContent = this.formatCurrency(bryanTotal);
         document.getElementById('ayakoTotal').textContent = this.formatCurrency(ayakoTotal);
         document.getElementById('receiptFees').textContent = this.formatCurrency(totalFees);
-        document.getElementById('receiptNetAmount').textContent = this.formatCurrency(ayakoOwes);
+        document.getElementById('receiptNetAmount').textContent = this.formatCurrency(netAmount);
     }
     
     /**
@@ -653,9 +680,9 @@ class SplitMate {
         
         // Use same calculation logic as receipt summary
         let grandTotal = 0;
-        let uncheckedTotal = 0;
-        let individualTotal = 0;
-        let splitTotal = 0;
+        let payerUncheckedTotal = 0;  // Items the payer covers (unchecked)
+        let oweeIndividualTotal = 0;  // Items the non-payer owes (checked + individual)
+        let splitTotal = 0;           // Items to split 50/50 (checked + split)
         const selectedItemNames = [];
         const splitDetails = [];
         
@@ -664,10 +691,10 @@ class SplitMate {
             grandTotal += item.price;
         });
         
-        // Calculate unchecked items (Bryan pays these)
+        // Calculate unchecked items (payer covers these entirely)
         this.currentReceiptData.items.forEach((item, index) => {
             if (!this.selectedReceiptItems.has(index)) {
-                uncheckedTotal += item.price;
+                payerUncheckedTotal += item.price;
             }
         });
         
@@ -680,7 +707,7 @@ class SplitMate {
                 splitTotal += item.price;
                 splitDetails.push(`${item.name} (split 50/50)`);
             } else {
-                individualTotal += item.price;
+                oweeIndividualTotal += item.price;
                 splitDetails.push(`${item.name} (individual)`);
             }
         });
@@ -690,34 +717,40 @@ class SplitMate {
         const bryanFees = totalFees / 2;
         const ayakoFees = totalFees / 2;
         
-        // Calculate each person's total responsibility
-        const bryanTotal = uncheckedTotal + (splitTotal / 2) + bryanFees;
-        const ayakoTotal = individualTotal + (splitTotal / 2) + ayakoFees;
+        // Calculate totals based on who paid
+        let bryanTotal, ayakoTotal, netAmount;
         
-        // Final calculation: what Ayako owes Bryan is simply her total responsibility
-        const ayakoOwes = ayakoTotal;
+        if (whoPaid === 'me') {
+            // Bryan paid - he covers unchecked items + his split portion + his fees
+            bryanTotal = payerUncheckedTotal + (splitTotal / 2) + bryanFees;
+            // Ayako owes individual items + her split portion + her fees
+            ayakoTotal = oweeIndividualTotal + (splitTotal / 2) + ayakoFees;
+            netAmount = ayakoTotal; // What Ayako owes Bryan
+        } else {
+            // Ayako paid - she covers unchecked items + her split portion + her fees
+            ayakoTotal = payerUncheckedTotal + (splitTotal / 2) + ayakoFees;
+            // Bryan owes individual items + his split portion + his fees
+            bryanTotal = oweeIndividualTotal + (splitTotal / 2) + bryanFees;
+            netAmount = bryanTotal; // What Bryan owes Ayako
+        }
         
         const totalReceiptAmount = grandTotal + totalFees;
         
         // Debug the calculations
         console.log('=== Transaction Creation Debug ===');
+        console.log('Who Paid:', whoPaid);
         console.log('Grand Total:', grandTotal);
         console.log('Total Fees:', totalFees);
-        console.log('Unchecked Total (Bryan pays):', uncheckedTotal);
-        console.log('Individual Total (Ayako):', individualTotal);
+        console.log('Payer Unchecked Total:', payerUncheckedTotal);
+        console.log('Owee Individual Total:', oweeIndividualTotal);
         console.log('Split Total:', splitTotal);
         console.log('Bryan Total:', bryanTotal);
         console.log('Ayako Total:', ayakoTotal);
-        console.log('Calculated Ayako Owes:', ayakoOwes);
+        console.log('Net Amount (what non-payer owes):', netAmount);
         
-        // Get the exact amount from the receipt summary display
-        const receiptNetAmountElement = document.getElementById('receiptNetAmount');
-        const displayedNetAmount = parseFloat(receiptNetAmountElement.textContent.replace(/[$,]/g, ''));
-        console.log('Displayed Net Amount:', displayedNetAmount);
         console.log('=== End Debug ===');
         
         // Create a single combined transaction for the entire receipt
-        // Bryan paid the full amount, Ayako owes him the calculated amount
         const receiptTransaction = {
             id: timestamp,
             date: new Date().toISOString(),
@@ -725,21 +758,21 @@ class SplitMate {
             amount: totalReceiptAmount,
             category: this.getMostCommonCategory() || 'groceries',
             notes: this.createReceiptNotesWithSplits(selectedItemNames, splitDetails, totalFees),
-            youOwe: displayedNetAmount, // Use exact amount from receipt summary (positive = what Ayako owes Bryan)
+            youOwe: whoPaid === 'me' ? netAmount : -netAmount, // Positive when non-payer owes payer
             receiptImage: this.getReceiptImageData(),
             isFromReceipt: true,
             // Store receipt breakdown data for modal display
             receiptBreakdown: {
                 grandTotal: grandTotal,
                 totalFees: totalFees,
-                uncheckedTotal: uncheckedTotal,
-                individualTotal: individualTotal,
+                uncheckedTotal: payerUncheckedTotal,
+                individualTotal: oweeIndividualTotal,
                 splitTotal: splitTotal,
                 bryanFees: bryanFees,
                 ayakoFees: ayakoFees,
                 bryanTotal: bryanTotal,
                 ayakoTotal: ayakoTotal,
-                ayakoOwes: displayedNetAmount
+                ayakoOwes: whoPaid === 'me' ? netAmount : -netAmount
             }
         };
         

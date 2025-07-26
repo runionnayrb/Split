@@ -451,17 +451,17 @@ class SplitMate {
             splitButton.type = 'button';
             splitButton.className = 'split-toggle-btn active';
             splitButton.textContent = 'Split';
-            splitButton.title = 'Split: Both pay 50%. Individual: Whoever paid keeps 100%';
+            splitButton.title = 'Split: Both pay 50%. Individual: Other person owes the payer';
             splitButton.addEventListener('click', (e) => {
                 e.preventDefault();
                 const isSplit = splitButton.classList.contains('active');
                 if (isSplit) {
-                    // Currently split, change to individual (100%)
+                    // Currently split, change to individual 
                     splitButton.classList.remove('active');
                     splitButton.textContent = 'Individual';
                     this.splitReceiptItems.delete(index);
                 } else {
-                    // Currently individual, change to split (50%)
+                    // Currently individual, change to split
                     splitButton.classList.add('active');
                     splitButton.textContent = 'Split';
                     this.splitReceiptItems.set(index, true);
@@ -500,11 +500,19 @@ class SplitMate {
             const itemPrice = this.currentReceiptData.items[index].price;
             selectedSubtotal += itemPrice;
             
-            // Calculate your share based on split setting
+            // Calculate your net amount based on split setting and who paid
             if (this.splitReceiptItems.has(index)) {
                 yourShareSubtotal += itemPrice / 2; // Split 50/50
             } else {
-                yourShareSubtotal += 0; // Individual items don't count toward your share
+                // Individual items - depends on who paid
+                const whoPaid = document.getElementById('receiptWhoPaid').value;
+                if (whoPaid === 'me') {
+                    // Bryan paid, Ayako owes him - show as negative (credit)
+                    yourShareSubtotal -= itemPrice;
+                } else {
+                    // Ayako paid, Bryan owes her - show as positive (debt)
+                    yourShareSubtotal += itemPrice;
+                }
             }
         });
         
@@ -513,7 +521,7 @@ class SplitMate {
         const yourShareFees = totalFees / 2;
         const yourShareTotal = yourShareSubtotal + yourShareFees;
         
-        // Update display to show actual totals vs your share
+        // Update display to show actual totals vs your net amount
         document.getElementById('receiptSubtotal').textContent = this.formatCurrency(selectedSubtotal);
         document.getElementById('receiptFees').textContent = this.formatCurrency(yourShareFees);
         document.getElementById('receiptTotal').textContent = this.formatCurrency(yourShareTotal);
@@ -547,10 +555,16 @@ class SplitMate {
                 yourOweAmount += item.price / 2;
                 splitDetails.push(`${item.name} (split 50/50)`);
             } else {
-                // Individual item - whoever paid keeps it (no cross-owing)
-                yourOweAmount += 0; // Individual items don't create debt between partners
-                const owner = whoPaid === 'me' ? 'Bryan' : 'Ayako';
-                splitDetails.push(`${item.name} (${owner}'s individual)`);
+                // Individual item - the other person owes the payer for this
+                if (whoPaid === 'me') {
+                    // Bryan paid, Ayako owes Bryan for this individual item
+                    yourOweAmount -= item.price; // Bryan is owed money (negative means credit)
+                    splitDetails.push(`${item.name} (Ayako owes Bryan)`);
+                } else {
+                    // Ayako paid, Bryan owes Ayako for this individual item  
+                    yourOweAmount += item.price; // Bryan owes money
+                    splitDetails.push(`${item.name} (Bryan owes Ayako)`);
+                }
             }
         });
         

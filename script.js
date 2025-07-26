@@ -743,7 +743,13 @@ class SplitMate {
                 ayakoFees: ayakoFees,
                 bryanTotal: bryanTotal,
                 ayakoTotal: ayakoTotal,
-                ayakoOwes: displayedNetAmount
+                ayakoOwes: displayedNetAmount,
+                selectedItems: Array.from(this.selectedReceiptItems).map(index => ({
+                    name: this.currentReceiptData.items[index].name,
+                    amount: this.currentReceiptData.items[index].price,
+                    category: this.currentReceiptData.items[index].category,
+                    isShared: this.splitReceiptItems.has(index)
+                }))
             }
         };
         

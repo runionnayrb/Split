@@ -1039,22 +1039,60 @@ class SplitMate {
         const notes = transaction.notes || '-';
         
         if (isUnpaid) {
-            // Calculate what each person owes
-            const youOweAmount = transaction.youOwe;
+            // Calculate what each person owes based on transaction type
             let bryanOwesDisplay = '-';
             let ayakoOwesDisplay = '-';
             let bryanOwesClass = 'you-owe-cell';
             let ayakoOwesClass = 'you-owe-cell';
             
-            if (Math.abs(youOweAmount) >= 0.01) {
-                if (youOweAmount > 0) {
-                    // Ayako owes Bryan
-                    ayakoOwesDisplay = this.formatCurrency(youOweAmount);
-                    ayakoOwesClass += ' you-owe-positive';
+            if (transaction.isFromReceipt && transaction.receiptBreakdown) {
+                // Receipt transaction - calculate based on receipt breakdown
+                let bryanOwes = 0;
+                let ayakoOwes = 0;
+                
+                // Calculate Bryan's share from selected items
+                transaction.receiptBreakdown.selectedItems.forEach(item => {
+                    bryanOwes += item.amount / 2; // Split each item 50/50
+                });
+                
+                // Add Bryan's share of fees (taxes, tips, delivery)
+                if (transaction.receiptBreakdown.fees) {
+                    bryanOwes += transaction.receiptBreakdown.fees / 2;
+                }
+                
+                // Ayako owes the same amount (50/50 split)
+                ayakoOwes = bryanOwes;
+                
+                // Determine who actually owes money based on who paid
+                if (transaction.whoPaid === 'me') {
+                    // Bryan paid, so Ayako owes her share
+                    if (ayakoOwes >= 0.01) {
+                        ayakoOwesDisplay = this.formatCurrency(ayakoOwes);
+                        ayakoOwesClass += ' you-owe-positive';
+                    }
                 } else {
-                    // Bryan owes Ayako
-                    bryanOwesDisplay = this.formatCurrency(Math.abs(youOweAmount));
-                    bryanOwesClass += ' you-owe-positive';
+                    // Ayako paid, so Bryan owes his share
+                    if (bryanOwes >= 0.01) {
+                        bryanOwesDisplay = this.formatCurrency(bryanOwes);
+                        bryanOwesClass += ' you-owe-positive';
+                    }
+                }
+            } else {
+                // Manual transaction - 50/50 split
+                const halfAmount = transaction.amount / 2;
+                
+                if (transaction.whoPaid === 'me') {
+                    // Bryan paid, so Ayako owes half
+                    if (halfAmount >= 0.01) {
+                        ayakoOwesDisplay = this.formatCurrency(halfAmount);
+                        ayakoOwesClass += ' you-owe-positive';
+                    }
+                } else {
+                    // Ayako paid, so Bryan owes half
+                    if (halfAmount >= 0.01) {
+                        bryanOwesDisplay = this.formatCurrency(halfAmount);
+                        bryanOwesClass += ' you-owe-positive';
+                    }
                 }
             }
             
@@ -1068,7 +1106,8 @@ class SplitMate {
             `;
             
             // Add click handler for individual transaction payment
-            if (Math.abs(youOweAmount) >= 0.01) {
+            const hasDebt = bryanOwesDisplay !== '-' || ayakoOwesDisplay !== '-';
+            if (hasDebt) {
                 row.style.cursor = 'pointer';
                 row.addEventListener('click', (e) => {
                     e.preventDefault();

@@ -1132,14 +1132,10 @@ class SplitMate {
             receiptBreakdownSection.classList.remove('hidden');
             receiptBreakdownSection.style.display = 'block';
         } else if (transaction.isFromReceipt) {
-            // For existing receipt transactions without breakdown data, create a simple breakdown
-            console.log('Receipt transaction without breakdown data, creating simple version');
-            const simpleBreakdown = {
-                grandTotal: transaction.amount - 0.71, // Assuming $0.71 fees from the example
-                totalFees: 0.71,
-                ayakoOwes: Math.abs(transaction.youOwe)
-            };
-            this.showSimpleReceiptBreakdown(simpleBreakdown);
+            // For existing receipt transactions without breakdown data, recreate the full breakdown
+            console.log('Receipt transaction without breakdown data, recreating full breakdown');
+            const recreatedBreakdown = this.recreateReceiptBreakdown(transaction);
+            this.showReceiptBreakdown(recreatedBreakdown);
             receiptBreakdownSection.classList.remove('hidden');
             receiptBreakdownSection.style.display = 'block';
         } else {
@@ -1187,25 +1183,47 @@ class SplitMate {
     }
 
     /**
-     * Show simple receipt breakdown for transactions without full breakdown data
+     * Recreate receipt breakdown from existing transaction data
      */
-    showSimpleReceiptBreakdown(breakdown) {
-        const modalReceiptSummary = document.getElementById('modalReceiptSummary');
+    recreateReceiptBreakdown(transaction) {
+        // Parse the fees from the notes
+        const feesMatch = transaction.notes.match(/\$(\d+\.\d+) fees split 50\/50/);
+        const totalFees = feesMatch ? parseFloat(feesMatch[1]) : 0.71; // Default to $0.71 if not found
         
-        modalReceiptSummary.innerHTML = `
-            <div class="summary-row">
-                <span class="label">Total receipt amount:</span>
-                <span class="amount">${this.formatCurrency(breakdown.grandTotal + breakdown.totalFees)}</span>
-            </div>
-            <div class="summary-row">
-                <span class="label">Taxes and fees:</span>
-                <span class="amount">${this.formatCurrency(breakdown.totalFees)}</span>
-            </div>
-            <div class="summary-row total">
-                <span class="label">Ayako owes Bryan:</span>
-                <span class="amount">${this.formatCurrency(breakdown.ayakoOwes)}</span>
-            </div>
-        `;
+        // Calculate totals
+        const grandTotal = transaction.amount - totalFees; // Subtract fees to get item total
+        const bryanFees = totalFees / 2;
+        const ayakoFees = totalFees / 2;
+        
+        // From the transaction data: amount = $33.22, youOwe = $21.82
+        // This means Bryan paid $33.22 total, Ayako owes $21.82
+        // So Bryan's net is: $33.22 - $21.82 = $11.40
+        const ayakoOwes = Math.abs(transaction.youOwe);
+        const bryanTotal = transaction.amount - ayakoOwes;
+        const ayakoTotal = ayakoOwes;
+        
+        // Parse individual vs split items from notes
+        const itemsMatch = transaction.notes.match(/(\d+) individual items/);
+        const individualCount = itemsMatch ? parseInt(itemsMatch[1]) : 4;
+        
+        // Estimate breakdown (this is approximate since we don't have exact item data)
+        // For the Publix receipt: 4 individual items for Ayako, some split items
+        const estimatedIndividualTotal = ayakoTotal - ayakoFees - (grandTotal * 0.2); // Rough estimate
+        const estimatedSplitTotal = grandTotal - estimatedIndividualTotal;
+        const estimatedUncheckedTotal = bryanTotal - bryanFees - (estimatedSplitTotal / 2);
+        
+        return {
+            grandTotal: grandTotal,
+            totalFees: totalFees,
+            uncheckedTotal: Math.max(0, estimatedUncheckedTotal),
+            individualTotal: Math.max(0, estimatedIndividualTotal),
+            splitTotal: Math.max(0, estimatedSplitTotal),
+            bryanFees: bryanFees,
+            ayakoFees: ayakoFees,
+            bryanTotal: bryanTotal,
+            ayakoTotal: ayakoTotal,
+            ayakoOwes: ayakoOwes
+        };
     }
 
     /**

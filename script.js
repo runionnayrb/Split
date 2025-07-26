@@ -64,6 +64,7 @@ class SplitMate {
         this.receiptResults = document.getElementById('receiptResults');
         this.addReceiptItemsBtn = document.getElementById('addReceiptItems');
         this.clearReceiptBtn = document.getElementById('clearReceipt');
+        this.receiptDescription = document.getElementById('receiptDescription');
         
         // Receipt processing
         this.receiptProcessor = null;
@@ -733,7 +734,15 @@ class SplitMate {
      * Create descriptive notes for receipt transaction with split details
      */
     createReceiptNotesWithSplits(itemNames, splitDetails, fees) {
-        let notes = itemNames.slice(0, 2).join(', ');
+        // Start with store/location if provided
+        const storeLocation = this.receiptDescription.value.trim();
+        let notes = '';
+        
+        if (storeLocation) {
+            notes = `${storeLocation} - `;
+        }
+        
+        notes += itemNames.slice(0, 2).join(', ');
         if (itemNames.length > 2) {
             notes += ` + ${itemNames.length - 2} more items`;
         }
@@ -838,6 +847,7 @@ class SplitMate {
         this.receiptResults.classList.add('hidden');
         this.currentReceiptData = null;
         this.selectedReceiptItems.clear();
+        this.receiptDescription.value = ''; // Clear description field
         this.clearReceiptUpload();
     }
     

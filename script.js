@@ -707,10 +707,7 @@ class SplitMate {
         // Switch back to manual tab
         this.switchTab('manual');
         
-        // Show success message with split info
-        const splitCount = Array.from(this.splitReceiptItems.values()).length;
-        const individualCount = selectedItemNames.length - splitCount;
-        alert(`✅ Receipt added! ${selectedItemNames.length} item(s) combined into one transaction (${splitCount} split, ${individualCount} individual) totaling ${this.formatCurrency(totalReceiptAmount)}.`);
+        // Receipt processed successfully - no alert needed
     }
     
     /**
@@ -1520,10 +1517,6 @@ class SplitMate {
         
         // Close modal
         this.hidePayTransactionModal();
-        
-        // Show success message
-        const itemName = transaction.notes || this.getCategoryDisplay(transaction.category);
-        alert(`✅ Payment completed! Bryan has settled "${itemName}" for ${this.formatCurrency(originalAmount)}.`);
     }
     
     /**
@@ -1567,13 +1560,6 @@ class SplitMate {
         // Save and update display
         this.saveToStorage();
         this.updateDisplay();
-        
-        // Show success message
-        if (transactionsSettled > 0) {
-            alert(`✅ Bryan has successfully paid ${transactionsSettled} transaction(s) totaling ${this.formatCurrency(totalSettled)}!`);
-        } else {
-            alert('ℹ️ No outstanding transactions for Bryan to pay.');
-        }
     }
     
     /**

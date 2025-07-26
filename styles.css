@@ -566,6 +566,14 @@ table tr:hover {
     font-weight: 600;
 }
 
+.clickable-receipt {
+    transition: background-color 0.2s ease;
+}
+
+.clickable-receipt:hover {
+    background-color: #f8f9fa !important;
+}
+
 .btn-secondary {
     background: #e2e8f0;
     color: #4a5568;

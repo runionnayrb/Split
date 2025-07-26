@@ -1014,6 +1014,18 @@ class SplitMate {
                 <td>${notes}</td>
                 <td>${settledDate}</td>
             `;
+            
+            // Add click handler for receipt transactions in paid table
+            if (transaction.isFromReceipt) {
+                row.style.cursor = 'pointer';
+                row.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.showPayTransactionModal(transaction);
+                });
+                row.title = 'Tap to view receipt breakdown';
+                row.classList.add('clickable-receipt');
+            }
         }
         
         return row;
@@ -1141,6 +1153,15 @@ class SplitMate {
             receiptBreakdownSection.classList.remove('hidden');
             receiptBreakdownSection.style.display = 'block';
             payTransactionDetails.classList.add('hidden');
+            
+            // Update button text for paid vs unpaid transactions
+            if (transaction.settled) {
+                this.confirmPayTransactionBtn.textContent = 'Close';
+                this.confirmPayTransactionBtn.className = 'btn-secondary';
+            } else {
+                this.confirmPayTransactionBtn.textContent = 'Mark as Settled';
+                this.confirmPayTransactionBtn.className = 'btn-primary';
+            }
         } else {
             console.log('Hiding receipt breakdown - showing standard transaction details');
             receiptBreakdownSection.classList.add('hidden');
@@ -1313,6 +1334,13 @@ class SplitMate {
         if (!this.currentPaymentTransaction) return;
         
         const transaction = this.currentPaymentTransaction;
+        
+        // If transaction is already settled, just close the modal
+        if (transaction.settled) {
+            this.hidePayTransactionModal();
+            return;
+        }
+        
         const originalYouOwe = transaction.youOwe; // Save original before modifying
         const originalAmount = Math.abs(originalYouOwe);
         
@@ -1342,6 +1370,9 @@ class SplitMate {
         // Save and update display
         this.saveToStorage();
         this.updateDisplay();
+        
+        // Close modal
+        this.hidePayTransactionModal();
         
         // Show success message
         const itemName = transaction.notes || this.getCategoryDisplay(transaction.category);

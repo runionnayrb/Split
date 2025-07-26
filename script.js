@@ -451,7 +451,7 @@ class SplitMate {
             splitButton.type = 'button';
             splitButton.className = 'split-toggle-btn active';
             splitButton.textContent = 'Split';
-            splitButton.title = 'Click to toggle between 50% (split) and 100% (individual) payment';
+            splitButton.title = 'Split: Both pay 50%. Individual: Whoever paid keeps 100%';
             splitButton.addEventListener('click', (e) => {
                 e.preventDefault();
                 const isSplit = splitButton.classList.contains('active');
@@ -504,7 +504,7 @@ class SplitMate {
             if (this.splitReceiptItems.has(index)) {
                 yourShareSubtotal += itemPrice / 2; // Split 50/50
             } else {
-                yourShareSubtotal += itemPrice; // Pay full amount
+                yourShareSubtotal += 0; // Individual items don't count toward your share
             }
         });
         
@@ -543,17 +543,14 @@ class SplitMate {
             selectedItemNames.push(item.name);
             
             if (this.splitReceiptItems.has(index)) {
-                // Split item - you owe half
+                // Split item - both people owe half regardless of who paid
                 yourOweAmount += item.price / 2;
-                splitDetails.push(`${item.name} (split)`);
+                splitDetails.push(`${item.name} (split 50/50)`);
             } else {
-                // Individual item - you owe nothing if they paid, full amount if you paid
-                if (whoPaid === 'spouse') {
-                    yourOweAmount += item.price; // Spouse paid, you owe full amount
-                } else {
-                    yourOweAmount += 0; // You paid, you owe nothing
-                }
-                splitDetails.push(`${item.name} (individual)`);
+                // Individual item - whoever paid keeps it (no cross-owing)
+                yourOweAmount += 0; // Individual items don't create debt between partners
+                const owner = whoPaid === 'me' ? 'Bryan' : 'Ayako';
+                splitDetails.push(`${item.name} (${owner}'s individual)`);
             }
         });
         

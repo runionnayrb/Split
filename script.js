@@ -1054,12 +1054,32 @@ class SplitMate {
                 youOweClass += ' you-owe-negative';
             }
             
+            // Calculate what each person owes
+            const youOweAmount = transaction.youOwe;
+            let bryanOwesDisplay = '-';
+            let ayakoOwesDisplay = '-';
+            let bryanOwesClass = 'you-owe-cell';
+            let ayakoOwesClass = 'you-owe-cell';
+            
+            if (Math.abs(youOweAmount) >= 0.01) {
+                if (youOweAmount > 0) {
+                    // Ayako owes Bryan
+                    ayakoOwesDisplay = this.formatCurrency(youOweAmount);
+                    ayakoOwesClass += ' you-owe-positive';
+                } else {
+                    // Bryan owes Ayako
+                    bryanOwesDisplay = this.formatCurrency(Math.abs(youOweAmount));
+                    bryanOwesClass += ' you-owe-positive';
+                }
+            }
+            
             row.innerHTML = `
                 <td>${date}</td>
                 <td><strong>${whoPaidDisplay}</strong></td>
                 <td class="amount-cell">${this.formatCurrency(transaction.amount)}</td>
                 <td>${notes}</td>
-                <td class="${youOweClass}">${youOweDisplay}</td>
+                <td class="${bryanOwesClass}">${bryanOwesDisplay}</td>
+                <td class="${ayakoOwesClass}">${ayakoOwesDisplay}</td>
             `;
             
             // Add click handler for individual transaction payment

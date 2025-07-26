@@ -634,7 +634,7 @@ class SplitMate {
             amount: totalReceiptAmount,
             category: this.getMostCommonCategory() || 'groceries',
             notes: this.createReceiptNotesWithSplits(selectedItemNames, splitDetails, totalFees),
-            youOwe: -displayedNetAmount, // Use exact amount from receipt summary (negative = Bryan is owed)
+            youOwe: displayedNetAmount, // Use exact amount from receipt summary (positive = what Ayako owes Bryan)
             receiptImage: this.getReceiptImageData(),
             isFromReceipt: true
         };
@@ -966,14 +966,8 @@ class SplitMate {
                 youOweDisplay = this.formatCurrency(youOweAmount);
                 youOweClass += ' you-owe-positive';
             } else {
-                // For receipt transactions, show what Ayako owes Bryan as positive
-                if (transaction.isFromReceipt) {
-                    youOweDisplay = this.formatCurrency(Math.abs(youOweAmount));
-                    youOweClass += ' you-owe-negative';
-                } else {
-                    youOweDisplay = `(${this.formatCurrency(Math.abs(youOweAmount))})`;
-                    youOweClass += ' you-owe-negative';
-                }
+                youOweDisplay = `(${this.formatCurrency(Math.abs(youOweAmount))})`;
+                youOweClass += ' you-owe-negative';
             }
             
             row.innerHTML = `
@@ -1120,14 +1114,8 @@ class SplitMate {
             this.payTransactionMessage.textContent = `Pay your share: ${this.formatCurrency(youOweAmount)}`;
             this.confirmPayTransactionBtn.textContent = `Pay ${this.formatCurrency(youOweAmount)}`;
         } else {
-            // For receipt transactions, show what Ayako owes Bryan
-            if (transaction.isFromReceipt) {
-                this.payTransactionMessage.textContent = `Ayako owes Bryan: ${this.formatCurrency(youOweAmount)}`;
-                this.confirmPayTransactionBtn.textContent = `Mark as Settled`;
-            } else {
-                this.payTransactionMessage.textContent = `Settle this item: ${this.formatCurrency(youOweAmount)} owed to you`;
-                this.confirmPayTransactionBtn.textContent = `Mark as Settled`;
-            }
+            this.payTransactionMessage.textContent = `Settle this item: ${this.formatCurrency(youOweAmount)} owed to you`;
+            this.confirmPayTransactionBtn.textContent = `Mark as Settled`;
         }
         
         // Show modal with iOS-style animation

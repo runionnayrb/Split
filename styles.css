@@ -366,6 +366,11 @@ table tr:hover {
     backdrop-filter: blur(5px);
 }
 
+/* Delete confirmation modal needs higher z-index than bottom sheet */
+#deleteConfirmModal {
+    z-index: 3000;
+}
+
 .modal-content {
     background: white;
     margin: 15% auto;

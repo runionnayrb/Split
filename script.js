@@ -904,19 +904,34 @@ class SplitMate {
      * Update the balance summary at the top
      */
     updateBalanceDisplay() {
-        // Calculate totals from only unpaid transactions
+        // Calculate totals and net balance from only unpaid transactions
         const unpaidTotals = { me: 0, spouse: 0 };
+        let netBalance = 0;
         
         this.transactions.filter(t => !t.settled).forEach(transaction => {
             unpaidTotals[transaction.whoPaid] += transaction.amount;
+            
+            // For receipt transactions, use the exact youOwe amount
+            if (transaction.isFromReceipt && transaction.youOwe !== undefined) {
+                // youOwe is positive when Ayako owes Bryan, negative when Bryan owes Ayako
+                if (transaction.whoPaid === 'me') {
+                    netBalance -= transaction.youOwe; // Bryan paid, Ayako owes him (negative means Ayako owes Bryan)
+                } else {
+                    netBalance += transaction.youOwe; // Ayako paid, Bryan owes her
+                }
+            } else {
+                // For manual transactions, use 50/50 split calculation
+                if (transaction.whoPaid === 'me') {
+                    netBalance -= transaction.amount / 2; // Bryan paid, Ayako owes half
+                } else {
+                    netBalance += transaction.amount / 2; // Ayako paid, Bryan owes half
+                }
+            }
         });
         
         // Update individual totals (showing only unpaid amounts)
         this.myTotalElement.textContent = this.formatCurrency(unpaidTotals.me);
         this.spouseTotalElement.textContent = this.formatCurrency(unpaidTotals.spouse);
-        
-        // Calculate net balance from unpaid transactions only
-        const netBalance = (unpaidTotals.spouse - unpaidTotals.me) / 2;
         
         // Update net balance display
         this.netBalanceElement.className = 'net-balance';
@@ -925,11 +940,11 @@ class SplitMate {
             // Essentially settled up
             this.netBalanceElement.textContent = 'All settled up! 🎉';
         } else if (netBalance > 0) {
-            // You owe spouse
+            // Bryan owes Ayako
             this.netBalanceElement.textContent = `Bryan owes Ayako ${this.formatCurrency(netBalance)}`;
             this.netBalanceElement.classList.add('you-owe');
         } else {
-            // Spouse owes you
+            // Ayako owes Bryan
             this.netBalanceElement.textContent = `Ayako owes Bryan ${this.formatCurrency(Math.abs(netBalance))}`;
             this.netBalanceElement.classList.add('spouse-owes');
         }

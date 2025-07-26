@@ -515,7 +515,7 @@ class SplitMate {
             category: this.getMostCommonCategory() || 'groceries',
             notes: this.createReceiptNotes(selectedItemNames, selectedSubtotal, totalFees),
             youOwe: whoPaid === 'spouse' ? totalAmount / 2 : -(totalAmount / 2),
-            receiptImage: this.currentReceiptFile ? this.getReceiptImageData() : null,
+            receiptImage: this.getReceiptImageData(),
             isFromReceipt: true
         };
         
@@ -574,20 +574,38 @@ class SplitMate {
      * Get receipt image data for storage
      */
     getReceiptImageData() {
-        if (!this.currentReceiptFile) return null;
+        if (!this.currentReceiptFile) {
+            console.log('No current receipt file');
+            return null;
+        }
+        
+        console.log('Getting receipt image data for file type:', this.currentReceiptFile.type);
         
         // For images, return the data URL
         if (this.currentReceiptFile.type.startsWith('image/')) {
             const img = document.getElementById('previewImage');
+            console.log('Image preview element:', img);
+            console.log('Image src:', img?.src);
+            return img?.src || null;
+        }
+        
+        // For PDFs, we need to get the converted image from canvas
+        const canvas = document.querySelector('#previewContainer canvas');
+        console.log('Canvas element found:', !!canvas);
+        if (canvas) {
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            console.log('Canvas data URL length:', dataUrl.length);
+            return dataUrl;
+        }
+        
+        // Fallback: try to get from the preview image that might have been set by PDF conversion
+        const img = document.getElementById('previewImage');
+        if (img && img.src && !img.classList.contains('hidden')) {
+            console.log('Using preview image as fallback for PDF');
             return img.src;
         }
         
-        // For PDFs, we need to get the converted image
-        const canvas = document.querySelector('#previewContainer canvas');
-        if (canvas) {
-            return canvas.toDataURL('image/jpeg', 0.8);
-        }
-        
+        console.log('No image data found');
         return null;
     }
     
@@ -894,10 +912,13 @@ class SplitMate {
         this.currentPaymentTransaction = transaction;
         
         // Show receipt image if available
+        console.log('Transaction has receipt image:', !!transaction.receiptImage);
         if (transaction.receiptImage) {
+            console.log('Showing receipt image');
             this.receiptImageContainer.classList.remove('hidden');
             this.receiptImage.src = transaction.receiptImage;
         } else {
+            console.log('No receipt image to show');
             this.receiptImageContainer.classList.add('hidden');
         }
         

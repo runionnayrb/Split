@@ -1088,20 +1088,39 @@ class SplitMate {
             let bryanOwesClass = 'you-owe-cell';
             let ayakoOwesClass = 'you-owe-cell';
             
-            // Simple 50/50 split for all transactions
-            const halfAmount = transaction.amount / 2;
-            
-            if (transaction.whoPaid === 'me') {
-                // Bryan paid, so Ayako owes half
-                if (halfAmount >= 0.01) {
-                    ayakoOwesDisplay = this.formatCurrency(halfAmount);
-                    ayakoOwesClass += ' you-owe-positive';
+            if (transaction.isFromReceipt && transaction.receiptBreakdown) {
+                // Receipt transaction - use breakdown calculations
+                const breakdown = transaction.receiptBreakdown;
+                
+                if (transaction.whoPaid === 'me') {
+                    // Bryan paid, Ayako owes the calculated amount
+                    if (breakdown.ayakoOwes >= 0.01) {
+                        ayakoOwesDisplay = this.formatCurrency(breakdown.ayakoOwes);
+                        ayakoOwesClass += ' you-owe-positive';
+                    }
+                } else {
+                    // Ayako paid, Bryan owes the calculated amount
+                    if (breakdown.bryanTotal >= 0.01) {
+                        bryanOwesDisplay = this.formatCurrency(breakdown.bryanTotal);
+                        bryanOwesClass += ' you-owe-positive';
+                    }
                 }
             } else {
-                // Ayako paid, so Bryan owes half
-                if (halfAmount >= 0.01) {
-                    bryanOwesDisplay = this.formatCurrency(halfAmount);
-                    bryanOwesClass += ' you-owe-positive';
+                // Manual transaction - simple 50/50 split
+                const halfAmount = transaction.amount / 2;
+                
+                if (transaction.whoPaid === 'me') {
+                    // Bryan paid, so Ayako owes half
+                    if (halfAmount >= 0.01) {
+                        ayakoOwesDisplay = this.formatCurrency(halfAmount);
+                        ayakoOwesClass += ' you-owe-positive';
+                    }
+                } else {
+                    // Ayako paid, so Bryan owes half
+                    if (halfAmount >= 0.01) {
+                        bryanOwesDisplay = this.formatCurrency(halfAmount);
+                        bryanOwesClass += ' you-owe-positive';
+                    }
                 }
             }
             

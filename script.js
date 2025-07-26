@@ -670,11 +670,11 @@ class SplitMate {
             this.netBalanceElement.textContent = 'All settled up! 🎉';
         } else if (netBalance > 0) {
             // You owe spouse
-            this.netBalanceElement.textContent = `You owe your spouse ${this.formatCurrency(netBalance)}`;
+            this.netBalanceElement.textContent = `Bryan owes Ayako ${this.formatCurrency(netBalance)}`;
             this.netBalanceElement.classList.add('you-owe');
         } else {
             // Spouse owes you
-            this.netBalanceElement.textContent = `Your spouse owes you ${this.formatCurrency(Math.abs(netBalance))}`;
+            this.netBalanceElement.textContent = `Ayako owes Bryan ${this.formatCurrency(Math.abs(netBalance))}`;
             this.netBalanceElement.classList.add('spouse-owes');
         }
     }
@@ -755,7 +755,7 @@ class SplitMate {
         row.className = 'transaction-row';
         
         const date = new Date(transaction.date).toLocaleDateString();
-        const whoPaidDisplay = transaction.whoPaid === 'me' ? 'You' : 'Spouse';
+        const whoPaidDisplay = transaction.whoPaid === 'me' ? 'Bryan' : 'Ayako';
         const category = this.getCategoryDisplay(transaction.category);
         const notes = transaction.notes || '-';
         
@@ -961,7 +961,7 @@ class SplitMate {
         
         // Show success message
         const itemName = transaction.notes || this.getCategoryDisplay(transaction.category);
-        alert(`✅ Payment completed! You've settled "${itemName}" for ${this.formatCurrency(originalAmount)}.`);
+        alert(`✅ Payment completed! Bryan has settled "${itemName}" for ${this.formatCurrency(originalAmount)}.`);
     }
     
     /**
@@ -1008,9 +1008,9 @@ class SplitMate {
         
         // Show success message
         if (transactionsSettled > 0) {
-            alert(`✅ Successfully paid ${transactionsSettled} transaction(s) totaling ${this.formatCurrency(totalSettled)}!`);
+            alert(`✅ Bryan has successfully paid ${transactionsSettled} transaction(s) totaling ${this.formatCurrency(totalSettled)}!`);
         } else {
-            alert('ℹ️ No outstanding transactions to pay.');
+            alert('ℹ️ No outstanding transactions for Bryan to pay.');
         }
     }
     

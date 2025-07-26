@@ -20,11 +20,11 @@
             
             <div class="balance-summary">
                 <div class="balance-item">
-                    <span class="label">You've paid:</span>
+                    <span class="label">Bryan has paid:</span>
                     <span class="amount" id="myTotal">$0.00</span>
                 </div>
                 <div class="balance-item">
-                    <span class="label">Spouse has paid:</span>
+                    <span class="label">Ayako has paid:</span>
                     <span class="amount" id="spouseTotal">$0.00</span>
                 </div>
                 <div class="net-balance" id="netBalance">
@@ -93,8 +93,8 @@
                     <div class="form-group">
                         <label for="whoPaid">Who paid?</label>
                         <select id="whoPaid" required>
-                            <option value="me">Me</option>
-                            <option value="spouse">Spouse</option>
+                            <option value="me">Bryan</option>
+                            <option value="spouse">Ayako</option>
                         </select>
                     </div>
 
@@ -129,8 +129,8 @@
                         <div class="who-paid-selector">
                             <label for="receiptWhoPaid">Who paid for this receipt?</label>
                             <select id="receiptWhoPaid">
-                                <option value="me">Me</option>
-                                <option value="spouse">Spouse</option>
+                                <option value="me">Bryan</option>
+                                <option value="spouse">Ayako</option>
                             </select>
                         </div>
                     </div>
@@ -181,7 +181,7 @@
                                 <th>Amount</th>
                                 <th>Category</th>
                                 <th>Notes</th>
-                                <th>You Owe</th>
+                                <th>Bryan Owes</th>
                             </tr>
                         </thead>
                         <tbody id="unpaidTransactionsBody">
@@ -257,7 +257,7 @@
                 <p id="payTransactionMessage"></p>
             </div>
             <div class="bottom-sheet-actions">
-                <button id="confirmPayTransaction" class="btn-primary">Pay Your Share</button>
+                <button id="confirmPayTransaction" class="btn-primary">Pay Bryan's Share</button>
                 <button id="cancelPayTransaction" class="btn-secondary">Cancel</button>
             </div>
         </div>

@@ -481,7 +481,7 @@ class SplitMate {
     }
     
     /**
-     * Add selected receipt items to transactions
+     * Add selected receipt items to transactions as a single combined transaction
      */
     addSelectedReceiptItems() {
         if (!this.currentReceiptData || this.selectedReceiptItems.size === 0) {
@@ -492,55 +492,103 @@ class SplitMate {
         const whoPaid = document.getElementById('receiptWhoPaid').value;
         const timestamp = Date.now();
         
-        // Add individual items
+        // Calculate total for selected items
+        let selectedSubtotal = 0;
+        const selectedItemNames = [];
+        
         this.selectedReceiptItems.forEach(index => {
             const item = this.currentReceiptData.items[index];
-            
-            const transaction = {
-                id: timestamp + index,
-                date: new Date().toISOString(),
-                whoPaid: whoPaid,
-                amount: item.price,
-                category: item.category,
-                notes: `${item.name} (from receipt)`,
-                youOwe: whoPaid === 'spouse' ? item.price / 2 : -(item.price / 2),
-                receiptImage: this.currentReceiptFile ? this.getReceiptImageData() : null
-            };
-            
-            this.transactions.unshift(transaction);
-            this.totals[whoPaid] += item.price;
+            selectedSubtotal += item.price;
+            selectedItemNames.push(item.name);
         });
         
-        // Add shared fees as a separate transaction if there are any
+        // Add shared fees (tax, tip, delivery fees split 50/50)
         const totalFees = this.currentReceiptData.tax + this.currentReceiptData.tip + this.currentReceiptData.fees;
-        if (totalFees > 0) {
-            const feesTransaction = {
-                id: timestamp + 1000,
-                date: new Date().toISOString(),
-                whoPaid: whoPaid,
-                amount: totalFees,
-                category: 'other',
-                notes: 'Tax, tips & fees (split 50/50)',
-                youOwe: whoPaid === 'spouse' ? totalFees / 2 : -(totalFees / 2),
-                receiptImage: this.currentReceiptFile ? this.getReceiptImageData() : null
-            };
-            
-            this.transactions.unshift(feesTransaction);
-            this.totals[whoPaid] += totalFees;
-        }
+        const totalAmount = selectedSubtotal + totalFees;
+        
+        // Create a single combined transaction for the entire receipt
+        const receiptTransaction = {
+            id: timestamp,
+            date: new Date().toISOString(),
+            whoPaid: whoPaid,
+            amount: totalAmount,
+            category: this.getMostCommonCategory() || 'groceries',
+            notes: this.createReceiptNotes(selectedItemNames, selectedSubtotal, totalFees),
+            youOwe: whoPaid === 'spouse' ? totalAmount / 2 : -(totalAmount / 2),
+            receiptImage: this.currentReceiptFile ? this.getReceiptImageData() : null,
+            isFromReceipt: true
+        };
+        
+        // Add the single transaction
+        this.transactions.unshift(receiptTransaction);
+        this.totals[whoPaid] += totalAmount;
         
         // Save and update display
         this.saveToStorage();
         this.updateDisplay();
         
-        // Show success message (before clearing data)
-        const itemCount = this.selectedReceiptItems.size;
-        const feeText = totalFees > 0 ? ' and shared fees' : '';
-        alert(`Successfully added ${itemCount} item${itemCount > 1 ? 's' : ''}${feeText} from receipt!`);
-        
-        // Clear receipt and return to manual tab
+        // Clear receipt data
         this.clearReceiptResults();
+        
+        // Switch back to manual tab
         this.switchTab('manual');
+        
+        // Show success message
+        alert(`✅ Receipt added! ${selectedItemNames.length} item(s) combined into one transaction totaling ${this.formatCurrency(totalAmount)}.`);
+    }
+    
+    /**
+     * Get the most common category from selected items
+     */
+    getMostCommonCategory() {
+        if (!this.currentReceiptData || this.selectedReceiptItems.size === 0) {
+            return 'groceries';
+        }
+        
+        const categoryCount = {};
+        this.selectedReceiptItems.forEach(index => {
+            const category = this.currentReceiptData.items[index].category;
+            categoryCount[category] = (categoryCount[category] || 0) + 1;
+        });
+        
+        return Object.keys(categoryCount).reduce((a, b) => 
+            categoryCount[a] > categoryCount[b] ? a : b
+        );
+    }
+    
+    /**
+     * Create descriptive notes for receipt transaction
+     */
+    createReceiptNotes(itemNames, subtotal, fees) {
+        let notes = itemNames.slice(0, 3).join(', ');
+        if (itemNames.length > 3) {
+            notes += ` + ${itemNames.length - 3} more`;
+        }
+        if (fees > 0) {
+            notes += ` (+ ${this.formatCurrency(fees)} fees split 50/50)`;
+        }
+        return notes;
+    }
+    
+    /**
+     * Get receipt image data for storage
+     */
+    getReceiptImageData() {
+        if (!this.currentReceiptFile) return null;
+        
+        // For images, return the data URL
+        if (this.currentReceiptFile.type.startsWith('image/')) {
+            const img = document.getElementById('previewImage');
+            return img.src;
+        }
+        
+        // For PDFs, we need to get the converted image
+        const canvas = document.querySelector('#previewContainer canvas');
+        if (canvas) {
+            return canvas.toDataURL('image/jpeg', 0.8);
+        }
+        
+        return null;
     }
     
     /**
@@ -563,26 +611,6 @@ class SplitMate {
         // Clear PDF preview
         document.getElementById('pdfPreview').classList.add('hidden');
         document.getElementById('pdfFileName').textContent = '';
-    }
-    
-    /**
-     * Get receipt image data as data URL
-     */
-    getReceiptImageData() {
-        if (!this.currentReceiptFile) return null;
-        
-        // If it's an image file, return the preview image source
-        if (this.previewImage && this.previewImage.src && !this.previewImage.classList.contains('hidden')) {
-            return this.previewImage.src;
-        }
-        
-        // For PDF files, we'll need to create a data URL
-        if (this.receiptProcessor && this.receiptProcessor.isPdfFile(this.currentReceiptFile)) {
-            // PDF files will use a placeholder or the converted image
-            return null; // Could implement PDF thumbnail generation here
-        }
-        
-        return null;
     }
 
     /**
@@ -864,6 +892,14 @@ class SplitMate {
      */
     showPayTransactionModal(transaction) {
         this.currentPaymentTransaction = transaction;
+        
+        // Show receipt image if available
+        if (transaction.receiptImage) {
+            this.receiptImageContainer.classList.remove('hidden');
+            this.receiptImage.src = transaction.receiptImage;
+        } else {
+            this.receiptImageContainer.classList.add('hidden');
+        }
         
         // Format transaction details
         const youOweAmount = Math.abs(transaction.youOwe);

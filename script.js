@@ -496,6 +496,10 @@ class SplitMate {
         let selectedSubtotal = 0;
         let yourShareSubtotal = 0;
         
+        console.log('=== Receipt Summary Debug ===');
+        console.log('Selected items:', this.selectedReceiptItems);
+        console.log('Split items:', this.splitReceiptItems);
+        
         this.selectedReceiptItems.forEach(index => {
             const itemPrice = this.currentReceiptData.items[index].price;
             selectedSubtotal += itemPrice;
@@ -503,15 +507,18 @@ class SplitMate {
             // Calculate your net amount based on split setting
             if (this.splitReceiptItems.has(index)) {
                 yourShareSubtotal += itemPrice / 2; // Split 50/50 - always half regardless of who paid
+                console.log(`Item ${index}: $${itemPrice} - Split (your share: $${itemPrice/2})`);
             } else {
                 // Individual items - depends on who paid
                 const whoPaid = document.getElementById('receiptWhoPaid').value;
                 if (whoPaid === 'me') {
                     // Bryan paid, Ayako owes him - show as negative (credit)
                     yourShareSubtotal -= itemPrice;
+                    console.log(`Item ${index}: $${itemPrice} - Individual, Bryan paid (Ayako owes: -$${itemPrice})`);
                 } else {
                     // Ayako paid, Bryan owes her - show as positive (debt)
                     yourShareSubtotal += itemPrice;
+                    console.log(`Item ${index}: $${itemPrice} - Individual, Ayako paid (Bryan owes: +$${itemPrice})`);
                 }
             }
         });
@@ -520,6 +527,12 @@ class SplitMate {
         const totalFees = this.currentReceiptData.tax + this.currentReceiptData.tip + this.currentReceiptData.fees;
         const yourShareFees = totalFees / 2;
         const yourShareTotal = yourShareSubtotal + yourShareFees;
+        
+        console.log(`Selected subtotal: $${selectedSubtotal}`);
+        console.log(`Your share subtotal: $${yourShareSubtotal}`);
+        console.log(`Your share fees: $${yourShareFees}`);
+        console.log(`Your total: $${yourShareTotal}`);
+        console.log('=== End Debug ===');
         
         // Update display to show actual totals vs your net amount
         document.getElementById('receiptSubtotal').textContent = this.formatCurrency(selectedSubtotal);

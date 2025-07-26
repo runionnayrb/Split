@@ -1450,10 +1450,6 @@ class SplitMate {
         // Close modals
         this.hideDeleteConfirmation();
         this.hidePayTransactionModal();
-        
-        // Show success message
-        const itemName = transaction.notes || this.getCategoryDisplay(transaction.category);
-        alert(`✅ "${itemName}" has been deleted successfully.`);
     }
 
     /**

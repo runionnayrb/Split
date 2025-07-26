@@ -134,3 +134,7 @@ The application now requires server-side configuration for receipt scanning, but
 ✓ Implemented persistent language preferences using localStorage (unique per browser/device)
 ✓ Enhanced date formatting for both English and Japanese languages
 ✓ Added mobile-responsive language switcher with proper header layout
+✓ Fixed critical receipt scanning subtotal calculation bug (July 26, 2025)
+✓ Corrected ayakoOwes calculation from incorrect (grandTotal + totalFees - bryanTotal) to correct (ayakoTotal)
+✓ Updated both updateReceiptSummary() and addSelectedReceiptItems() functions with proper calculation logic
+✓ Enhanced debug logging for receipt processing troubleshooting

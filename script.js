@@ -1150,8 +1150,8 @@ class SplitMate {
         
         // Set payment message
         if (transaction.isFromReceipt) {
-            // For receipt transactions, always show what Ayako owes Bryan
-            this.payTransactionMessage.textContent = `Ayako owes Bryan: ${this.formatCurrency(youOweAmount)}`;
+            // For receipt transactions, hide the payment message since breakdown shows the details
+            this.payTransactionMessage.textContent = '';
             this.confirmPayTransactionBtn.textContent = `Mark as Settled`;
         } else if (transaction.youOwe > 0) {
             this.payTransactionMessage.textContent = `Pay your share: ${this.formatCurrency(youOweAmount)}`;

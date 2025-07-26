@@ -1125,10 +1125,14 @@ class SplitMate {
         // Show receipt breakdown if available
         const receiptBreakdownSection = document.getElementById('receiptBreakdownSection');
         if (transaction.isFromReceipt && transaction.receiptBreakdown) {
+            console.log('Showing receipt breakdown for transaction:', transaction.receiptBreakdown);
             this.showReceiptBreakdown(transaction.receiptBreakdown);
             receiptBreakdownSection.classList.remove('hidden');
+            receiptBreakdownSection.style.display = 'block';
         } else {
+            console.log('Hiding receipt breakdown - isFromReceipt:', transaction.isFromReceipt, 'hasBreakdown:', !!transaction.receiptBreakdown);
             receiptBreakdownSection.classList.add('hidden');
+            receiptBreakdownSection.style.display = 'none';
         }
         
         // Set payment message

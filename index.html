@@ -10,21 +10,22 @@
     <title>SplitMate - Expense Splitter for Couples</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="i18n.js"></script>
 </head>
 <body>
     <div class="container">
         <!-- Top Section: Title + Balance Summary -->
         <header class="header">
-            <h1>SplitMate</h1>
-            <p class="subtitle">Expense Splitter for Couples</p>
+            <h1 data-i18n="appTitle">SplitMate</h1>
+            <p class="subtitle" data-i18n="appSubtitle">Expense Splitter for Couples</p>
             
             <div class="balance-summary">
                 <div class="balance-item">
-                    <span class="label">Bryan has paid:</span>
+                    <span class="label" data-i18n="bryanHasPaid">Bryan has paid:</span>
                     <span class="amount" id="myTotal">$0.00</span>
                 </div>
                 <div class="balance-item">
-                    <span class="label">Ayako has paid:</span>
+                    <span class="label" data-i18n="ayakoHasPaid">Ayako has paid:</span>
                     <span class="amount" id="spouseTotal">$0.00</span>
                 </div>
                 <div class="net-balance" id="netBalance">
@@ -35,13 +36,13 @@
 
         <!-- Middle Section: Transaction Form -->
         <section class="transaction-form">
-            <h2>Add New Expense</h2>
+            <h2 data-i18n="addNewExpense">Add New Expense</h2>
             
             <!-- Receipt Upload Section -->
             <div class="receipt-upload-section">
                 <div class="upload-tabs">
-                    <button type="button" id="manualTab" class="tab-button">Manual Entry</button>
-                    <button type="button" id="receiptTab" class="tab-button active">Scan Receipt</button>
+                    <button type="button" id="manualTab" class="tab-button" data-i18n="manualEntry">Manual Entry</button>
+                    <button type="button" id="receiptTab" class="tab-button active" data-i18n="scanReceipt">Scan Receipt</button>
                 </div>
                 
                 <div id="receiptUpload" class="receipt-upload">
@@ -52,15 +53,15 @@
                                 <polyline points="7,10 12,15 17,10"></polyline>
                                 <line x1="12" y1="15" x2="12" y2="3"></line>
                             </svg>
-                            <p class="upload-text">Drop receipt file here or <span class="upload-link">click to upload</span></p>
-                            <p class="upload-hint">Supports JPG, PNG, PDF files up to 10MB</p>
+                            <p class="upload-text"><span data-i18n="dropReceiptHere">Drop receipt file here or</span> <span class="upload-link" data-i18n="clickToUpload">click to upload</span></p>
+                            <p class="upload-hint" data-i18n="supportsFiles">Supports JPG, PNG, PDF files up to 10MB</p>
                         </div>
                         <input type="file" id="receiptFile" accept="image/*,.pdf" hidden>
                     </div>
                     
                     <div id="receiptPreview" class="receipt-preview hidden">
                         <div id="previewContainer">
-                            <img id="previewImage" alt="Receipt preview" class="hidden">
+                            <img id="previewImage" data-i18n-alt="receiptPreview" alt="Receipt preview" class="hidden">
                             <div id="pdfPreview" class="pdf-preview hidden">
                                 <div class="pdf-icon">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -72,18 +73,18 @@
                                     </svg>
                                 </div>
                                 <p id="pdfFileName" class="pdf-filename"></p>
-                                <p class="pdf-info">PDF receipt ready for processing</p>
+                                <p class="pdf-info" data-i18n="pdfReadyForProcessing">PDF receipt ready for processing</p>
                             </div>
                         </div>
                         <div class="preview-actions">
-                            <button type="button" id="processReceipt" class="btn-primary">Process Receipt</button>
-                            <button type="button" id="cancelUpload" class="btn-secondary">Cancel</button>
+                            <button type="button" id="processReceipt" class="btn-primary" data-i18n="processReceipt">Process Receipt</button>
+                            <button type="button" id="cancelUpload" class="btn-secondary" data-i18n="cancel">Cancel</button>
                         </div>
                     </div>
                     
                     <div id="processingStatus" class="processing-status hidden">
                         <div class="spinner"></div>
-                        <p>Scanning receipt...</p>
+                        <p data-i18n="scanningReceipt">Scanning receipt...</p>
                     </div>
                 </div>
             </div>
@@ -91,35 +92,35 @@
             <form id="expenseForm">
                 <div id="manualForm" class="manual-form hidden">
                     <div class="form-group">
-                        <label for="whoPaid">Who paid?</label>
+                        <label for="whoPaid" data-i18n="whoPaid">Who paid?</label>
                         <select id="whoPaid" required>
-                            <option value="me">Bryan</option>
-                            <option value="spouse">Ayako</option>
+                            <option value="me" data-i18n="bryan">Bryan</option>
+                            <option value="spouse" data-i18n="ayako">Ayako</option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label for="amount">Amount ($)</label>
+                        <label for="amount" data-i18n="amount">Amount ($)</label>
                         <input type="number" id="amount" step="0.01" min="0" required placeholder="0.00">
                     </div>
 
                     <div class="form-group">
-                        <label for="notes">Description (optional)</label>
-                        <input type="text" id="notes" placeholder="What was this for?">
+                        <label for="notes" data-i18n="description">Description (optional)</label>
+                        <input type="text" id="notes" data-i18n-placeholder="descriptionPlaceholder" placeholder="What was this for?">
                     </div>
 
-                    <button type="submit" class="btn-primary">Add Expense</button>
+                    <button type="submit" class="btn-primary" data-i18n="addExpense">Add Expense</button>
                 </div>
 
                 <!-- Receipt Processing Results -->
                 <div id="receiptResults" class="receipt-results hidden">
-                    <h3>Receipt Items</h3>
+                    <h3 data-i18n="receiptItems">Receipt Items</h3>
                     <div class="results-header">
                         <div class="who-paid-selector">
-                            <label for="receiptWhoPaid">Who paid for this receipt?</label>
+                            <label for="receiptWhoPaid" data-i18n="whoPaidReceipt">Who paid for this receipt?</label>
                             <select id="receiptWhoPaid">
-                                <option value="me">Bryan</option>
-                                <option value="spouse">Ayako</option>
+                                <option value="me" data-i18n="bryan">Bryan</option>
+                                <option value="spouse" data-i18n="ayako">Ayako</option>
                             </select>
                         </div>
                     </div>
@@ -128,66 +129,66 @@
                     
                     <div class="receipt-summary">
                         <div class="summary-row">
-                            <span class="label">Total (all items):</span>
+                            <span class="label" data-i18n="totalAllItems">Total (all items):</span>
                             <span id="receiptGrandTotal" class="amount">$0.00</span>
                         </div>
                         <div class="summary-divider"></div>
                         <div class="summary-row">
-                            <span class="label">Bryan pays (unchecked items):</span>
+                            <span class="label" data-i18n="bryanPaysUnchecked">Bryan pays (unchecked items):</span>
                             <span id="bryanUnchecked" class="amount">$0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="label">Bryan split portion:</span>
+                            <span class="label" data-i18n="bryanSplitPortion">Bryan split portion:</span>
                             <span id="bryanSplit" class="amount">$0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="label">Bryan's taxes and fees:</span>
+                            <span class="label" data-i18n="bryanTaxesFees">Bryan's taxes and fees:</span>
                             <span id="bryanFees" class="amount">$0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="label">Ayako owes (individual items):</span>
+                            <span class="label" data-i18n="ayakoOwesIndividual">Ayako owes (individual items):</span>
                             <span id="ayakoIndividual" class="amount">$0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="label">Ayako split portion:</span>
+                            <span class="label" data-i18n="ayakoSplitPortion">Ayako split portion:</span>
                             <span id="ayakoSplit" class="amount">$0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="label">Ayako's taxes and fees:</span>
+                            <span class="label" data-i18n="ayakoTaxesFees">Ayako's taxes and fees:</span>
                             <span id="ayakoFees" class="amount">$0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="label">Split items total:</span>
+                            <span class="label" data-i18n="splitItemsTotal">Split items total:</span>
                             <span id="splitTotal" class="amount">$0.00</span>
                         </div>
                         <div class="summary-divider"></div>
                         <div class="summary-row">
-                            <span class="label">Bryan total (unchecked + split + fees):</span>
+                            <span class="label" data-i18n="bryanTotal">Bryan total (unchecked + split + fees):</span>
                             <span id="bryanTotal" class="amount">$0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="label">Ayako total (individual + split + fees):</span>
+                            <span class="label" data-i18n="ayakoTotal">Ayako total (individual + split + fees):</span>
                             <span id="ayakoTotal" class="amount">$0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="label">Total taxes and fees:</span>
+                            <span class="label" data-i18n="totalTaxesFees">Total taxes and fees:</span>
                             <span id="receiptFees" class="amount">$0.00</span>
                         </div>
                         <div class="summary-row total">
-                            <span class="label">Ayako owes Bryan:</span>
+                            <span class="label" data-i18n="ayakoOwesBryan">Ayako owes Bryan:</span>
                             <span id="receiptNetAmount" class="amount">$0.00</span>
                         </div>
                     </div>
                     
                     <!-- Store/Location Description Field -->
                     <div class="form-group">
-                        <label for="receiptDescription">Store/Location:</label>
-                        <input type="text" id="receiptDescription" placeholder="e.g., Publix, Target, Whole Foods..." maxlength="100">
+                        <label for="receiptDescription" data-i18n="storeLocation">Store/Location:</label>
+                        <input type="text" id="receiptDescription" data-i18n-placeholder="storeLocationPlaceholder" placeholder="e.g., Publix, Target, Whole Foods..." maxlength="100">
                     </div>
                     
                     <div class="receipt-actions">
-                        <button type="button" id="addReceiptItems" class="btn-primary">Add Selected Items</button>
-                        <button type="button" id="clearReceipt" class="btn-secondary">Clear Receipt</button>
+                        <button type="button" id="addReceiptItems" class="btn-primary" data-i18n="addSelectedItems">Add Selected Items</button>
+                        <button type="button" id="clearReceipt" class="btn-secondary" data-i18n="clearReceipt">Clear Receipt</button>
                     </div>
                 </div>
             </form>
@@ -195,12 +196,12 @@
 
         <!-- Bottom Section: Transaction History -->
         <section class="transaction-history">
-            <h2>Transaction History</h2>
+            <h2 data-i18n="transactionHistory">Transaction History</h2>
             
             <!-- Transaction Tabs -->
             <div class="transaction-tabs">
-                <button id="unpaidTab" class="tab-button active">Unpaid</button>
-                <button id="paidTab" class="tab-button">Paid</button>
+                <button id="unpaidTab" class="tab-button active" data-i18n="unpaid">Unpaid</button>
+                <button id="paidTab" class="tab-button" data-i18n="paid">Paid</button>
             </div>
             
             <!-- Unpaid Transactions Table -->
@@ -209,17 +210,17 @@
                     <table id="unpaidTransactionsTable">
                         <thead>
                             <tr>
-                                <th>Date</th>
-                                <th>Who Paid</th>
-                                <th>Amount</th>
-                                <th>Description</th>
-                                <th>Bryan Owes</th>
-                                <th>Ayako Owes</th>
+                                <th data-i18n="date">Date</th>
+                                <th data-i18n="whoPaidHeader">Who Paid</th>
+                                <th data-i18n="amountHeader">Amount</th>
+                                <th data-i18n="descriptionHeader">Description</th>
+                                <th data-i18n="bryanOwesHeader">Bryan Owes</th>
+                                <th data-i18n="ayakoOwesHeader">Ayako Owes</th>
                             </tr>
                         </thead>
                         <tbody id="unpaidTransactionsBody">
                             <tr class="no-transactions">
-                                <td colspan="6">No unpaid transactions! 🎉</td>
+                                <td colspan="6" data-i18n="noUnpaidTransactions">No unpaid transactions! 🎉</td>
                             </tr>
                         </tbody>
                     </table>
@@ -232,16 +233,16 @@
                     <table id="paidTransactionsTable">
                         <thead>
                             <tr>
-                                <th>Date</th>
-                                <th>Who Paid</th>
-                                <th>Amount</th>
-                                <th>Description</th>
-                                <th>Settled Date</th>
+                                <th data-i18n="date">Date</th>
+                                <th data-i18n="whoPaidHeader">Who Paid</th>
+                                <th data-i18n="amountHeader">Amount</th>
+                                <th data-i18n="descriptionHeader">Description</th>
+                                <th data-i18n="settledDate">Settled Date</th>
                             </tr>
                         </thead>
                         <tbody id="paidTransactionsBody">
                             <tr class="no-transactions">
-                                <td colspan="5">No settled transactions yet.</td>
+                                <td colspan="5" data-i18n="noSettledTransactions">No settled transactions yet.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -251,7 +252,7 @@
 
         <!-- Footer: Pay All Button -->
         <footer class="footer">
-            <button id="payAllBtn" class="btn-settle" disabled>
+            <button id="payAllBtn" class="btn-settle" disabled data-i18n="payAllOutstanding">
                 Pay All Outstanding
             </button>
         </footer>
@@ -260,11 +261,11 @@
     <!-- Confirmation Modal -->
     <div id="confirmModal" class="modal">
         <div class="modal-content">
-            <h3>💸 Confirm Pay All</h3>
-            <p>This will settle all outstanding transactions and move them to the Paid tab. Your running balances will be adjusted accordingly.</p>
+            <h3 data-i18n="confirmPayAll">💸 Confirm Pay All</h3>
+            <p data-i18n="confirmPayAllMessage">This will settle all outstanding transactions and move them to the Paid tab. Your running balances will be adjusted accordingly.</p>
             <div class="modal-buttons">
-                <button id="confirmPayAll" class="btn-danger">Yes, Pay All</button>
-                <button id="cancelPayAll" class="btn-secondary">Cancel</button>
+                <button id="confirmPayAll" class="btn-danger" data-i18n="yesPayAll">Yes, Pay All</button>
+                <button id="cancelPayAll" class="btn-secondary" data-i18n="cancel">Cancel</button>
             </div>
         </div>
     </div>
@@ -272,11 +273,11 @@
     <!-- Delete Confirmation Modal -->
     <div id="deleteConfirmModal" class="modal">
         <div class="modal-content">
-            <h3>🗑️ Delete Receipt</h3>
-            <p id="deleteConfirmMessage">Are you sure you want to delete this receipt transaction? This action cannot be undone.</p>
+            <h3 data-i18n="deleteReceipt">🗑️ Delete Receipt</h3>
+            <p id="deleteConfirmMessage" data-i18n="deleteReceiptMessage">Are you sure you want to delete this receipt transaction? This action cannot be undone.</p>
             <div class="modal-buttons">
-                <button id="confirmDeleteTransaction" class="btn-danger">Delete</button>
-                <button id="cancelDeleteTransaction" class="btn-secondary">Cancel</button>
+                <button id="confirmDeleteTransaction" class="btn-danger" data-i18n="delete">Delete</button>
+                <button id="cancelDeleteTransaction" class="btn-secondary" data-i18n="cancel">Cancel</button>
             </div>
         </div>
     </div>
@@ -287,13 +288,13 @@
         <div class="bottom-sheet-content">
             <div class="bottom-sheet-handle"></div>
             <div class="bottom-sheet-header">
-                <h3>💸 Pay Individual Item</h3>
+                <h3 data-i18n="payIndividualItem">💸 Pay Individual Item</h3>
                 <button id="closeBottomSheet" class="close-button">×</button>
             </div>
             <div class="bottom-sheet-body">
                 <!-- Receipt breakdown section (hidden by default) -->
                 <div id="receiptBreakdownSection" class="receipt-breakdown-section">
-                    <h4>Receipt Breakdown</h4>
+                    <h4 data-i18n="receiptBreakdown">Receipt Breakdown</h4>
                     <div id="receiptTransactionInfo" class="receipt-transaction-info">
                         <!-- Date and who paid will be populated here -->
                     </div>
@@ -307,15 +308,15 @@
                 </div>
                 
                 <div id="receiptImageContainer" class="receipt-image-container hidden">
-                    <h4>Receipt</h4>
-                    <img id="receiptImage" class="receipt-image" alt="Receipt">
+                    <h4 data-i18n="receipt">Receipt</h4>
+                    <img id="receiptImage" class="receipt-image" data-i18n-alt="receiptPreview" alt="Receipt">
                 </div>
                 <p id="payTransactionMessage"></p>
             </div>
             <div class="bottom-sheet-actions">
-                <button id="confirmPayTransaction" class="btn-primary">Pay Bryan's Share</button>
-                <button id="cancelPayTransaction" class="btn-secondary">Cancel</button>
-                <button id="deleteTransaction" class="btn-danger hidden">Delete Receipt</button>
+                <button id="confirmPayTransaction" class="btn-primary" data-i18n="payBryanShare">Pay Bryan's Share</button>
+                <button id="cancelPayTransaction" class="btn-secondary" data-i18n="cancel">Cancel</button>
+                <button id="deleteTransaction" class="btn-danger hidden" data-i18n="deleteReceiptButton">Delete Receipt</button>
             </div>
         </div>
     </div>

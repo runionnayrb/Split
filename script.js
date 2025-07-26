@@ -86,6 +86,49 @@ class SplitMate {
         this.initializeReceiptProcessor();
         // Set receipt tab as default
         this.switchTab('receipt');
+        
+        // Set up i18n language change listener
+        this.setupI18nListener();
+    }
+    
+    /**
+     * Helper method to get translations with fallback
+     */
+    t(key, fallback = '') {
+        if (window.i18n && window.i18n.t) {
+            return window.i18n.t(key);
+        }
+        return fallback;
+    }
+    
+    /**
+     * Set up language change listener
+     */
+    setupI18nListener() {
+        window.addEventListener('languageChanged', () => {
+            this.updateDynamicTexts();
+        });
+    }
+    
+    /**
+     * Update dynamic texts when language changes
+     */
+    updateDynamicTexts() {
+        // Update balance display
+        this.updateBalanceDisplay();
+        
+        // Update table content if there are transactions
+        this.updateTransactionTable();
+        
+        // Update category mapping
+        this.updateCategoryMappings();
+    }
+    
+    /**
+     * Update category mappings for current language
+     */
+    updateCategoryMappings() {
+        // Category emoji mapping will be updated by getCategoryDisplay method automatically
     }
     
     /**
@@ -494,20 +537,20 @@ class SplitMate {
             const splitButton = document.createElement('button');
             splitButton.type = 'button';
             splitButton.className = 'split-toggle-btn active';
-            splitButton.textContent = 'Split';
-            splitButton.title = 'Split: Both pay 50%. Individual: Other person owes the payer';
+            splitButton.textContent = this.t('split', 'Split');
+            splitButton.title = this.t('splitTooltip', 'Split: Both pay 50%. Individual: Other person owes the payer');
             splitButton.addEventListener('click', (e) => {
                 e.preventDefault();
                 const isSplit = splitButton.classList.contains('active');
                 if (isSplit) {
                     // Currently split, change to individual 
                     splitButton.classList.remove('active');
-                    splitButton.textContent = 'Individual';
+                    splitButton.textContent = this.t('individual', 'Individual');
                     this.splitReceiptItems.delete(index);
                 } else {
                     // Currently individual, change to split
                     splitButton.classList.add('active');
-                    splitButton.textContent = 'Split';
+                    splitButton.textContent = this.t('split', 'Split');
                     this.splitReceiptItems.set(index, true);
                 }
                 this.updateReceiptSummary();
@@ -946,14 +989,14 @@ class SplitMate {
         
         if (Math.abs(netBalance) < 0.01) {
             // Essentially settled up
-            this.netBalanceElement.textContent = 'All settled up! 🎉';
+            this.netBalanceElement.textContent = this.t('allSettledUp', 'All settled up! 🎉');
         } else if (netBalance > 0) {
             // Bryan owes Ayako
-            this.netBalanceElement.textContent = `Bryan owes Ayako ${this.formatCurrency(netBalance)}`;
+            this.netBalanceElement.textContent = `${this.t('bryanOwes', 'Bryan owes Ayako:')} ${this.formatCurrency(netBalance)}`;
             this.netBalanceElement.classList.add('you-owe');
         } else {
             // Ayako owes Bryan
-            this.netBalanceElement.textContent = `Ayako owes Bryan ${this.formatCurrency(Math.abs(netBalance))}`;
+            this.netBalanceElement.textContent = `${this.t('ayakoOwes', 'Ayako owes Bryan:')} ${this.formatCurrency(Math.abs(netBalance))}`;
             this.netBalanceElement.classList.add('spouse-owes');
         }
     }
@@ -995,7 +1038,7 @@ class SplitMate {
         if (unpaidTransactions.length === 0) {
             const row = document.createElement('tr');
             row.className = 'no-transactions';
-            row.innerHTML = '<td colspan="6">No unpaid transactions! 🎉</td>';
+            row.innerHTML = `<td colspan="6">${this.t('noUnpaidTransactions', 'No unpaid transactions! 🎉')}</td>`;
             this.unpaidTransactionsBody.appendChild(row);
             return;
         }
@@ -1015,7 +1058,7 @@ class SplitMate {
         if (paidTransactions.length === 0) {
             const row = document.createElement('tr');
             row.className = 'no-transactions';
-            row.innerHTML = '<td colspan="6">No settled transactions yet.</td>';
+            row.innerHTML = `<td colspan="5">${this.t('noSettledTransactions', 'No settled transactions yet.')}</td>`;
             this.paidTransactionsBody.appendChild(row);
             return;
         }
@@ -1033,8 +1076,8 @@ class SplitMate {
         const row = document.createElement('tr');
         row.className = 'transaction-row';
         
-        const date = new Date(transaction.date).toLocaleDateString();
-        const whoPaidDisplay = transaction.whoPaid === 'me' ? 'Bryan' : 'Ayako';
+        const date = window.i18n ? window.i18n.formatDate(transaction.date) : new Date(transaction.date).toLocaleDateString();
+        const whoPaidDisplay = transaction.whoPaid === 'me' ? this.t('bryan', 'Bryan') : this.t('ayako', 'Ayako');
         const category = this.getCategoryDisplay(transaction.category);
         const notes = transaction.notes || '-';
         
@@ -1118,7 +1161,9 @@ class SplitMate {
             }
         } else {
             // Paid transaction - show "Settled Date" column
-            const settledDate = transaction.settledDate ? new Date(transaction.settledDate).toLocaleDateString() : '-';
+            const settledDate = transaction.settledDate ? 
+                (window.i18n ? window.i18n.formatDate(transaction.settledDate) : new Date(transaction.settledDate).toLocaleDateString()) : 
+                '-';
             
             row.innerHTML = `
                 <td>${date}</td>
@@ -1157,11 +1202,11 @@ class SplitMate {
      */
     getCategoryDisplay(category) {
         const categoryMap = {
-            'groceries': '🛒 Groceries',
-            'dining': '🍽️ Dining',
-            'travel': '✈️ Travel',
-            'shopping': '🛍️ Shopping',
-            'other': '📋 Other'
+            'groceries': this.t('groceries', '🥬 Groceries'),
+            'dining': this.t('dining', '🍽️ Dining'),
+            'travel': this.t('travel', '✈️ Travel'),
+            'shopping': this.t('shopping', '🛍️ Shopping'),
+            'other': this.t('other', '📋 Other')
         };
         return categoryMap[category] || category;
     }
@@ -1170,6 +1215,10 @@ class SplitMate {
      * Format number as currency
      */
     formatCurrency(amount) {
+        // Use i18n formatCurrency if available, otherwise fallback
+        if (window.i18n && window.i18n.formatCurrency) {
+            return window.i18n.formatCurrency(amount);
+        }
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'USD'

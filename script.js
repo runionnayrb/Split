@@ -612,9 +612,18 @@ class SplitMate {
         
         const totalReceiptAmount = grandTotal + totalFees;
         
+        // Debug the calculations
+        console.log('=== Transaction Creation Debug ===');
+        console.log('Grand Total:', grandTotal);
+        console.log('Total Fees:', totalFees);
+        console.log('Bryan Total:', bryanTotal);
+        console.log('Calculated Ayako Owes:', ayakoOwes);
+        
         // Get the exact amount from the receipt summary display
         const receiptNetAmountElement = document.getElementById('receiptNetAmount');
         const displayedNetAmount = parseFloat(receiptNetAmountElement.textContent.replace(/[$,]/g, ''));
+        console.log('Displayed Net Amount:', displayedNetAmount);
+        console.log('=== End Debug ===');
         
         // Create a single combined transaction for the entire receipt
         // Bryan paid the full amount, Ayako owes him the calculated amount

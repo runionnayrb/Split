@@ -525,27 +525,30 @@ class SplitMate {
         const bryanSplitPortion = splitTotal / 2;
         const ayakoSplitPortion = splitTotal / 2;
         
-        // Calculate each person's total responsibility
-        const bryanTotal = uncheckedTotal + bryanSplitPortion;
-        const ayakoTotal = individualTotal + ayakoSplitPortion;
-        
         // Calculate fees (always split 50/50)
         const totalFees = this.currentReceiptData.tax + this.currentReceiptData.tip + this.currentReceiptData.fees;
-        const feesPer = totalFees / 2;
+        const bryanFees = totalFees / 2;
+        const ayakoFees = totalFees / 2;
+        
+        // Calculate each person's total responsibility including fees
+        const bryanTotal = uncheckedTotal + bryanSplitPortion + bryanFees;
+        const ayakoTotal = individualTotal + ayakoSplitPortion + ayakoFees;
         
         // Final calculation: Total - Bryan's responsibility = what Ayako owes Bryan
-        const ayakoOwes = grandTotal + totalFees - (bryanTotal + feesPer);
+        const ayakoOwes = grandTotal + totalFees - bryanTotal;
         
         // Update display
         document.getElementById('receiptGrandTotal').textContent = this.formatCurrency(grandTotal + totalFees);
         document.getElementById('bryanUnchecked').textContent = this.formatCurrency(uncheckedTotal);
         document.getElementById('bryanSplit').textContent = this.formatCurrency(bryanSplitPortion);
+        document.getElementById('bryanFees').textContent = this.formatCurrency(bryanFees);
         document.getElementById('ayakoIndividual').textContent = this.formatCurrency(individualTotal);
         document.getElementById('ayakoSplit').textContent = this.formatCurrency(ayakoSplitPortion);
+        document.getElementById('ayakoFees').textContent = this.formatCurrency(ayakoFees);
         document.getElementById('splitTotal').textContent = this.formatCurrency(splitTotal);
         document.getElementById('bryanTotal').textContent = this.formatCurrency(bryanTotal);
         document.getElementById('ayakoTotal').textContent = this.formatCurrency(ayakoTotal);
-        document.getElementById('receiptFees').textContent = this.formatCurrency(feesPer);
+        document.getElementById('receiptFees').textContent = this.formatCurrency(totalFees);
         document.getElementById('receiptNetAmount').textContent = this.formatCurrency(ayakoOwes);
     }
     

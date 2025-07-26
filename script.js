@@ -1110,7 +1110,11 @@ class SplitMate {
         }
         
         // Set payment message
-        if (transaction.youOwe > 0) {
+        if (transaction.isFromReceipt) {
+            // For receipt transactions, always show what Ayako owes Bryan
+            this.payTransactionMessage.textContent = `Ayako owes Bryan: ${this.formatCurrency(youOweAmount)}`;
+            this.confirmPayTransactionBtn.textContent = `Mark as Settled`;
+        } else if (transaction.youOwe > 0) {
             this.payTransactionMessage.textContent = `Pay your share: ${this.formatCurrency(youOweAmount)}`;
             this.confirmPayTransactionBtn.textContent = `Pay ${this.formatCurrency(youOweAmount)}`;
         } else {

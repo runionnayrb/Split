@@ -513,8 +513,8 @@ class SplitMate {
         const yourShareFees = totalFees / 2;
         const yourShareTotal = yourShareSubtotal + yourShareFees;
         
-        // Update display to show your share
-        document.getElementById('receiptSubtotal').textContent = this.formatCurrency(yourShareSubtotal);
+        // Update display to show actual totals vs your share
+        document.getElementById('receiptSubtotal').textContent = this.formatCurrency(selectedSubtotal);
         document.getElementById('receiptFees').textContent = this.formatCurrency(yourShareFees);
         document.getElementById('receiptTotal').textContent = this.formatCurrency(yourShareTotal);
     }
@@ -667,7 +667,7 @@ class SplitMate {
             return img?.src || null;
         }
         
-        // For PDFs, we need to get the converted image from canvas
+        // For PDFs, we need to get the converted image from canvas or preview
         const canvas = document.querySelector('#previewContainer canvas');
         console.log('Canvas element found:', !!canvas);
         if (canvas) {
@@ -678,9 +678,16 @@ class SplitMate {
         
         // Fallback: try to get from the preview image that might have been set by PDF conversion
         const img = document.getElementById('previewImage');
+        console.log('Checking preview image fallback:', img, img?.src, img?.classList.contains('hidden'));
         if (img && img.src && !img.classList.contains('hidden')) {
             console.log('Using preview image as fallback for PDF');
             return img.src;
+        }
+        
+        // For PDFs without canvas, try to store the file reference for later display
+        if (this.currentReceiptFile && this.currentReceiptFile.type === 'application/pdf') {
+            console.log('PDF file detected, storing file for later processing');
+            return 'PDF_FILE_REFERENCE'; // Special marker for PDF files
         }
         
         console.log('No image data found');
@@ -991,10 +998,25 @@ class SplitMate {
         
         // Show receipt image if available
         console.log('Transaction has receipt image:', !!transaction.receiptImage);
-        if (transaction.receiptImage) {
+        if (transaction.receiptImage && transaction.receiptImage !== 'PDF_FILE_REFERENCE') {
             console.log('Showing receipt image');
             this.receiptImageContainer.classList.remove('hidden');
             this.receiptImage.src = transaction.receiptImage;
+        } else if (transaction.receiptImage === 'PDF_FILE_REFERENCE') {
+            // For PDF files, show a placeholder or message
+            console.log('Transaction from PDF receipt - showing placeholder');
+            this.receiptImageContainer.classList.remove('hidden');
+            this.receiptImage.src = 'data:image/svg+xml;base64,' + btoa(`
+                <svg width="200" height="150" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="200" height="150" fill="#f3f4f6" stroke="#d1d5db" stroke-width="2"/>
+                    <text x="100" y="75" text-anchor="middle" font-family="Arial" font-size="14" fill="#6b7280">
+                        PDF Receipt
+                    </text>
+                    <text x="100" y="95" text-anchor="middle" font-family="Arial" font-size="12" fill="#9ca3af">
+                        (Original file)
+                    </text>
+                </svg>
+            `);
         } else {
             console.log('No receipt image to show');
             this.receiptImageContainer.classList.add('hidden');

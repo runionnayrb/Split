@@ -574,6 +574,27 @@ table tr:hover {
     background-color: #f8f9fa !important;
 }
 
+.bottom-sheet-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.bottom-sheet-actions .btn-danger {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.bottom-sheet-actions .btn-danger:hover {
+    background: #c82333;
+}
+
 .btn-secondary {
     background: #e2e8f0;
     color: #4a5568;

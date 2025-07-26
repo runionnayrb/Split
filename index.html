@@ -275,6 +275,18 @@
         </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" class="modal">
+        <div class="modal-content">
+            <h3>🗑️ Delete Receipt</h3>
+            <p id="deleteConfirmMessage">Are you sure you want to delete this receipt transaction? This action cannot be undone.</p>
+            <div class="modal-buttons">
+                <button id="confirmDeleteTransaction" class="btn-danger">Delete</button>
+                <button id="cancelDeleteTransaction" class="btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- iOS Style Bottom Sheet Modal -->
     <div id="payTransactionModal" class="bottom-sheet-modal">
         <div class="bottom-sheet-backdrop"></div>
@@ -309,6 +321,7 @@
             <div class="bottom-sheet-actions">
                 <button id="confirmPayTransaction" class="btn-primary">Pay Bryan's Share</button>
                 <button id="cancelPayTransaction" class="btn-secondary">Cancel</button>
+                <button id="deleteTransaction" class="btn-danger hidden">Delete Receipt</button>
             </div>
         </div>
     </div>

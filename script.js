@@ -37,7 +37,14 @@ class SplitMate {
         this.payTransactionMessage = document.getElementById('payTransactionMessage');
         this.confirmPayTransactionBtn = document.getElementById('confirmPayTransaction');
         this.cancelPayTransactionBtn = document.getElementById('cancelPayTransaction');
+        this.deleteTransactionBtn = document.getElementById('deleteTransaction');
         this.closeBottomSheetBtn = document.getElementById('closeBottomSheet');
+        
+        // Delete confirmation modal elements
+        this.deleteConfirmModal = document.getElementById('deleteConfirmModal');
+        this.confirmDeleteTransactionBtn = document.getElementById('confirmDeleteTransaction');
+        this.cancelDeleteTransactionBtn = document.getElementById('cancelDeleteTransaction');
+        this.deleteConfirmMessage = document.getElementById('deleteConfirmMessage');
         this.receiptImageContainer = document.getElementById('receiptImageContainer');
         this.receiptImage = document.getElementById('receiptImage');
         this.currentPaymentTransaction = null;
@@ -196,12 +203,44 @@ class SplitMate {
             console.error('Close bottom sheet button not found!');
         }
         
+        // Delete transaction button
+        if (this.deleteTransactionBtn) {
+            this.deleteTransactionBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showDeleteConfirmation();
+            });
+        }
+        
+        // Delete confirmation modal events
+        if (this.confirmDeleteTransactionBtn) {
+            this.confirmDeleteTransactionBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.deleteTransaction();
+            });
+        }
+        
+        if (this.cancelDeleteTransactionBtn) {
+            this.cancelDeleteTransactionBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.hideDeleteConfirmation();
+            });
+        }
+        
         // Click outside modal to close
         this.confirmModal.addEventListener('click', (e) => {
             if (e.target === this.confirmModal) {
                 this.hideConfirmModal();
             }
         });
+        
+        // Close delete modal when clicking outside
+        if (this.deleteConfirmModal) {
+            this.deleteConfirmModal.addEventListener('click', (e) => {
+                if (e.target === this.deleteConfirmModal) {
+                    this.hideDeleteConfirmation();
+                }
+            });
+        }
         
         // Bottom sheet backdrop click
         this.payTransactionModal.addEventListener('click', (e) => {
@@ -213,7 +252,9 @@ class SplitMate {
         // Escape key to close modal
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                if (this.confirmModal.style.display === 'block') {
+                if (this.deleteConfirmModal && this.deleteConfirmModal.style.display === 'block') {
+                    this.hideDeleteConfirmation();
+                } else if (this.confirmModal.style.display === 'block') {
                     this.hideConfirmModal();
                 } else if (this.payTransactionModal.style.display === 'block') {
                     this.hidePayTransactionModal();
@@ -1162,11 +1203,16 @@ class SplitMate {
                 this.confirmPayTransactionBtn.textContent = 'Mark as Settled';
                 this.confirmPayTransactionBtn.className = 'btn-primary';
             }
+            
+            // Show delete button for receipt transactions
+            this.deleteTransactionBtn.classList.remove('hidden');
         } else {
             console.log('Hiding receipt breakdown - showing standard transaction details');
             receiptBreakdownSection.classList.add('hidden');
             receiptBreakdownSection.style.display = 'none';
             payTransactionDetails.classList.remove('hidden');
+            // Hide delete button for non-receipt transactions
+            this.deleteTransactionBtn.classList.add('hidden');
         }
         
         // Set payment message
@@ -1334,6 +1380,80 @@ class SplitMate {
                 <span class="amount">${this.formatCurrency(breakdown.ayakoOwes)}</span>
             </div>
         `;
+    }
+
+    /**
+     * Show delete confirmation modal
+     */
+    showDeleteConfirmation() {
+        if (!this.currentPaymentTransaction) return;
+        
+        const transaction = this.currentPaymentTransaction;
+        const itemName = transaction.notes || this.getCategoryDisplay(transaction.category);
+        const amount = this.formatCurrency(transaction.amount);
+        
+        this.deleteConfirmMessage.textContent = `Are you sure you want to delete "${itemName}" (${amount})? This action cannot be undone.`;
+        this.deleteConfirmModal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+    
+    /**
+     * Hide delete confirmation modal
+     */
+    hideDeleteConfirmation() {
+        this.deleteConfirmModal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+    
+    /**
+     * Delete the current transaction
+     */
+    deleteTransaction() {
+        if (!this.currentPaymentTransaction) return;
+        
+        const transaction = this.currentPaymentTransaction;
+        const transactionIndex = this.transactions.findIndex(t => t.id === transaction.id);
+        
+        if (transactionIndex === -1) {
+            alert('❌ Transaction not found');
+            return;
+        }
+        
+        // If transaction was settled, we need to reverse the balance adjustments
+        if (transaction.settled) {
+            const originalAmount = Math.abs(transaction.youOwe || 21.82); // Fallback to known amount
+            
+            // Reverse the settlement adjustments
+            if (transaction.whoPaid === 'me') {
+                this.totals.me += originalAmount;
+                this.totals.spouse -= originalAmount;
+            } else {
+                this.totals.spouse += originalAmount;
+                this.totals.me -= originalAmount;
+            }
+        }
+        
+        // Remove transaction amount from the payer's total
+        if (transaction.whoPaid === 'me') {
+            this.totals.me -= transaction.amount;
+        } else {
+            this.totals.spouse -= transaction.amount;
+        }
+        
+        // Remove transaction from array
+        this.transactions.splice(transactionIndex, 1);
+        
+        // Save and update display
+        this.saveToStorage();
+        this.updateDisplay();
+        
+        // Close modals
+        this.hideDeleteConfirmation();
+        this.hidePayTransactionModal();
+        
+        // Show success message
+        const itemName = transaction.notes || this.getCategoryDisplay(transaction.category);
+        alert(`✅ "${itemName}" has been deleted successfully.`);
     }
 
     /**

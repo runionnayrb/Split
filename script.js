@@ -1102,8 +1102,8 @@ class SplitMate {
             let bryanOwesClass = 'you-owe-cell';
             let ayakoOwesClass = 'you-owe-cell';
             
-            if (transaction.isFromReceipt && transaction.receiptBreakdown) {
-                // Receipt transaction - calculate based on receipt breakdown
+            if (transaction.isFromReceipt && transaction.receiptBreakdown && transaction.receiptBreakdown.selectedItems) {
+                // Receipt transaction with full breakdown - calculate based on receipt breakdown
                 let bryanOwes = 0;
                 let ayakoOwes = 0;
                 

@@ -611,7 +611,10 @@ class SplitMate {
         const ayakoOwes = grandTotal + totalFees - bryanTotal;
         
         const totalReceiptAmount = grandTotal + totalFees;
-        const yourOweAmount = ayakoOwes;
+        
+        // Get the exact amount from the receipt summary display
+        const receiptNetAmountElement = document.getElementById('receiptNetAmount');
+        const displayedNetAmount = parseFloat(receiptNetAmountElement.textContent.replace(/[$,]/g, ''));
         
         // Create a single combined transaction for the entire receipt
         // Bryan paid the full amount, Ayako owes him the calculated amount
@@ -622,7 +625,7 @@ class SplitMate {
             amount: totalReceiptAmount,
             category: this.getMostCommonCategory() || 'groceries',
             notes: this.createReceiptNotesWithSplits(selectedItemNames, splitDetails, totalFees),
-            youOwe: -ayakoOwes, // Negative because Bryan is owed money (from Bryan's perspective)
+            youOwe: -displayedNetAmount, // Use exact amount from receipt summary (negative = Bryan is owed)
             receiptImage: this.getReceiptImageData(),
             isFromReceipt: true
         };

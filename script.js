@@ -564,36 +564,57 @@ class SplitMate {
         const whoPaid = document.getElementById('receiptWhoPaid').value;
         const timestamp = Date.now();
         
-        // Calculate totals with different split ratios per item
-        let totalReceiptAmount = 0; // Total actual amount paid by whoPaid
-        let yourOweAmount = 0; // Amount you owe based on split settings
+        // Use same calculation logic as receipt summary
+        let grandTotal = 0;
+        let uncheckedTotal = 0;
+        let individualTotal = 0;
+        let splitTotal = 0;
         const selectedItemNames = [];
         const splitDetails = [];
         
-        this.selectedReceiptItems.forEach(index => {
-            const item = this.currentReceiptData.items[index];
-            totalReceiptAmount += item.price;
-            selectedItemNames.push(item.name);
-            
-            if (this.splitReceiptItems.has(index)) {
-                // Split item - Bryan owes 50% of this item
-                yourOweAmount += item.price / 2;
-                splitDetails.push(`${item.name} (split 50/50)`);
-            } else {
-                // Individual item - this is a credit that reduces what Bryan owes
-                yourOweAmount -= item.price;
-                const whoPaidName = whoPaid === 'me' ? 'Bryan' : 'Ayako';
-                const whoOwesName = whoPaid === 'me' ? 'Ayako' : 'Bryan';
-                splitDetails.push(`${item.name} (${whoOwesName} owes ${whoPaidName})`);
+        // Calculate grand total of ALL items on receipt
+        this.currentReceiptData.items.forEach(item => {
+            grandTotal += item.price;
+        });
+        
+        // Calculate unchecked items (Bryan pays these)
+        this.currentReceiptData.items.forEach((item, index) => {
+            if (!this.selectedReceiptItems.has(index)) {
+                uncheckedTotal += item.price;
             }
         });
         
-        // Add shared fees (always split 50/50)
+        // Calculate checked items based on split settings
+        this.selectedReceiptItems.forEach(index => {
+            const item = this.currentReceiptData.items[index];
+            selectedItemNames.push(item.name);
+            
+            if (this.splitReceiptItems.has(index)) {
+                splitTotal += item.price;
+                splitDetails.push(`${item.name} (split 50/50)`);
+            } else {
+                individualTotal += item.price;
+                splitDetails.push(`${item.name} (individual)`);
+            }
+        });
+        
+        // Calculate fees (always split 50/50)
         const totalFees = this.currentReceiptData.tax + this.currentReceiptData.tip + this.currentReceiptData.fees;
-        totalReceiptAmount += totalFees;
-        yourOweAmount += totalFees / 2;
+        const bryanFees = totalFees / 2;
+        const ayakoFees = totalFees / 2;
+        
+        // Calculate each person's total responsibility
+        const bryanTotal = uncheckedTotal + (splitTotal / 2) + bryanFees;
+        const ayakoTotal = individualTotal + (splitTotal / 2) + ayakoFees;
+        
+        // Final calculation: what Ayako owes Bryan
+        const ayakoOwes = grandTotal + totalFees - bryanTotal;
+        
+        const totalReceiptAmount = grandTotal + totalFees;
+        const yourOweAmount = ayakoOwes;
         
         // Create a single combined transaction for the entire receipt
+        // Bryan paid the full amount, Ayako owes him the calculated amount
         const receiptTransaction = {
             id: timestamp,
             date: new Date().toISOString(),
@@ -601,7 +622,7 @@ class SplitMate {
             amount: totalReceiptAmount,
             category: this.getMostCommonCategory() || 'groceries',
             notes: this.createReceiptNotesWithSplits(selectedItemNames, splitDetails, totalFees),
-            youOwe: whoPaid === 'spouse' ? yourOweAmount : -yourOweAmount,
+            youOwe: -ayakoOwes, // Negative because Bryan is owed money (from Bryan's perspective)
             receiptImage: this.getReceiptImageData(),
             isFromReceipt: true
         };

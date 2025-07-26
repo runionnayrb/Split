@@ -493,36 +493,48 @@ class SplitMate {
     updateReceiptSummary() {
         if (!this.currentReceiptData) return;
         
-        let selectedSubtotal = 0;
-        let yourNetAmount = 0;
-        
-        // Calculate based on your described logic:
-        // 1. Add all selected items together 
-        // 2. Subtract individual items (credits)
-        // 3. Add 50% of split items (debts)
+        let totalAllItems = 0;        // Total of all selected items (100%)
+        let yourSubtotal = 0;         // Individual items (100%) + Split items (50%)
+        let individualItems = 0;      // Items Ayako owes Bryan
+        let splitItems = 0;           // Items to split 50/50
         
         this.selectedReceiptItems.forEach(index => {
             const itemPrice = this.currentReceiptData.items[index].price;
-            selectedSubtotal += itemPrice;
+            totalAllItems += itemPrice;
             
             if (this.splitReceiptItems.has(index)) {
-                // Split item - you owe 50% of this item
-                yourNetAmount += itemPrice / 2;
+                // Split item - Bryan pays 50%
+                splitItems += itemPrice;
+                yourSubtotal += itemPrice / 2;
             } else {
-                // Individual item - this deducts from what you owe
-                yourNetAmount -= itemPrice;
+                // Individual item - Ayako owes Bryan 100%
+                individualItems += itemPrice;
+                yourSubtotal += itemPrice;
             }
         });
         
-        // Calculate proportional fees (always split 50/50)
+        // Calculate fees (always split 50/50)
         const totalFees = this.currentReceiptData.tax + this.currentReceiptData.tip + this.currentReceiptData.fees;
         const yourShareFees = totalFees / 2;
-        const yourNetTotal = yourNetAmount + yourShareFees;
+        
+        // Net amount = what Bryan actually owes/is owed
+        // If Bryan paid: negative means Ayako owes him, positive means he owes for shared items
+        const whoPaid = document.getElementById('receiptWhoPaid').value;
+        let yourNetAmount;
+        
+        if (whoPaid === 'me') {
+            // Bryan paid - he's owed money for individual items, owes for split items
+            yourNetAmount = (splitItems / 2) - individualItems + yourShareFees;
+        } else {
+            // Ayako paid - Bryan owes for individual items + split items  
+            yourNetAmount = individualItems + (splitItems / 2) + yourShareFees;
+        }
         
         // Update display
-        document.getElementById('receiptSubtotal').textContent = this.formatCurrency(selectedSubtotal);
+        document.getElementById('receiptSubtotal').textContent = this.formatCurrency(totalAllItems);
+        document.getElementById('receiptYourSubtotal').textContent = this.formatCurrency(yourSubtotal);
         document.getElementById('receiptFees').textContent = this.formatCurrency(yourShareFees);
-        document.getElementById('receiptTotal').textContent = this.formatCurrency(yourNetTotal);
+        document.getElementById('receiptTotal').textContent = this.formatCurrency(yourNetAmount);
     }
     
     /**

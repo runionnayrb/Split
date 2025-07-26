@@ -1173,15 +1173,15 @@ class SplitMate {
                 <td>${settledDate}</td>
             `;
             
-            // Add click handler for receipt transactions in paid table
+            // Add click handler for all paid transactions
+            row.style.cursor = 'pointer';
+            row.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.showPayTransactionModal(transaction);
+            });
+            row.title = transaction.isFromReceipt ? 'Tap to view receipt breakdown' : 'Tap to view transaction details';
             if (transaction.isFromReceipt) {
-                row.style.cursor = 'pointer';
-                row.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this.showPayTransactionModal(transaction);
-                });
-                row.title = 'Tap to view receipt breakdown';
                 row.classList.add('clickable-receipt');
             }
         }
@@ -1332,8 +1332,8 @@ class SplitMate {
             receiptBreakdownSection.classList.add('hidden');
             receiptBreakdownSection.style.display = 'none';
             payTransactionDetails.classList.remove('hidden');
-            // Hide delete button for non-receipt transactions
-            this.deleteTransactionBtn.classList.add('hidden');
+            // Show delete button for all transactions
+            this.deleteTransactionBtn.classList.remove('hidden');
         }
         
         // Set payment message

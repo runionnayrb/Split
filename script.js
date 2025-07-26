@@ -526,7 +526,7 @@ class SplitMate {
         const ayakoSplitPortion = splitTotal / 2;
         
         // Calculate each person's total responsibility
-        const bryanTotal = uncheckedTotal + individualTotal + bryanSplitPortion;
+        const bryanTotal = uncheckedTotal + bryanSplitPortion;
         const ayakoTotal = individualTotal + ayakoSplitPortion;
         
         // Calculate fees (always split 50/50)

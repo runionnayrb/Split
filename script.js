@@ -621,8 +621,8 @@ class SplitMate {
         const bryanTotal = uncheckedTotal + bryanSplitPortion + bryanFees;
         const ayakoTotal = individualTotal + ayakoSplitPortion + ayakoFees;
         
-        // Final calculation: Total - Bryan's responsibility = what Ayako owes Bryan
-        const ayakoOwes = grandTotal + totalFees - bryanTotal;
+        // Final calculation: What Ayako owes Bryan is simply her total responsibility
+        const ayakoOwes = ayakoTotal;
         
         // Update display
         document.getElementById('receiptGrandTotal').textContent = this.formatCurrency(grandTotal + totalFees);
@@ -694,8 +694,8 @@ class SplitMate {
         const bryanTotal = uncheckedTotal + (splitTotal / 2) + bryanFees;
         const ayakoTotal = individualTotal + (splitTotal / 2) + ayakoFees;
         
-        // Final calculation: what Ayako owes Bryan
-        const ayakoOwes = grandTotal + totalFees - bryanTotal;
+        // Final calculation: what Ayako owes Bryan is simply her total responsibility
+        const ayakoOwes = ayakoTotal;
         
         const totalReceiptAmount = grandTotal + totalFees;
         
@@ -703,7 +703,11 @@ class SplitMate {
         console.log('=== Transaction Creation Debug ===');
         console.log('Grand Total:', grandTotal);
         console.log('Total Fees:', totalFees);
+        console.log('Unchecked Total (Bryan pays):', uncheckedTotal);
+        console.log('Individual Total (Ayako):', individualTotal);
+        console.log('Split Total:', splitTotal);
         console.log('Bryan Total:', bryanTotal);
+        console.log('Ayako Total:', ayakoTotal);
         console.log('Calculated Ayako Owes:', ayakoOwes);
         
         // Get the exact amount from the receipt summary display

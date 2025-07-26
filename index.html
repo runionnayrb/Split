@@ -139,19 +139,37 @@
                     
                     <div class="receipt-summary">
                         <div class="summary-row">
-                            <span class="label">Total (all items on receipt):</span>
-                            <span id="receiptTotal" class="amount">$0.00</span>
+                            <span class="label">Total (all items):</span>
+                            <span id="receiptGrandTotal" class="amount">$0.00</span>
+                        </div>
+                        <div class="summary-divider"></div>
+                        <div class="summary-row">
+                            <span class="label">Bryan pays (unchecked items):</span>
+                            <span id="bryanUnchecked" class="amount">$0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="label">Subtotal (selected: individual 100% + split 50%):</span>
-                            <span id="receiptSubtotal" class="amount">$0.00</span>
+                            <span class="label">Ayako owes (individual items):</span>
+                            <span id="ayakoIndividual" class="amount">$0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="label">Your share of taxes/fees:</span>
+                            <span class="label">Split items total:</span>
+                            <span id="splitTotal" class="amount">$0.00</span>
+                        </div>
+                        <div class="summary-divider"></div>
+                        <div class="summary-row">
+                            <span class="label">Bryan total (unchecked + individual + split/2):</span>
+                            <span id="bryanTotal" class="amount">$0.00</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="label">Ayako total (individual + split/2):</span>
+                            <span id="ayakoTotal" class="amount">$0.00</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="label">Taxes/fees (split 50/50):</span>
                             <span id="receiptFees" class="amount">$0.00</span>
                         </div>
                         <div class="summary-row total">
-                            <span class="label">Your net amount:</span>
+                            <span class="label">Ayako owes Bryan:</span>
                             <span id="receiptNetAmount" class="amount">$0.00</span>
                         </div>
                     </div>

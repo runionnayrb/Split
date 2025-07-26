@@ -858,7 +858,6 @@ class SplitMate {
         // Get form data
         const whoPaid = document.getElementById('whoPaid').value;
         const amount = parseFloat(document.getElementById('amount').value);
-        const category = document.getElementById('category').value;
         const notes = document.getElementById('notes').value.trim();
         
         // Validate amount
@@ -873,7 +872,7 @@ class SplitMate {
             date: new Date().toISOString(),
             whoPaid: whoPaid,
             amount: amount,
-            category: category,
+            category: 'other', // Default category since it's hidden
             notes: notes || '',
             // For 50/50 split, each person owes half of what the other paid
             youOwe: whoPaid === 'spouse' ? amount / 2 : -(amount / 2)
@@ -1057,7 +1056,6 @@ class SplitMate {
                 <td>${date}</td>
                 <td><strong>${whoPaidDisplay}</strong></td>
                 <td class="amount-cell">${this.formatCurrency(transaction.amount)}</td>
-                <td class="category-cell">${category}</td>
                 <td>${notes}</td>
                 <td class="${youOweClass}">${youOweDisplay}</td>
             `;
@@ -1080,7 +1078,6 @@ class SplitMate {
                 <td>${date}</td>
                 <td><strong>${whoPaidDisplay}</strong></td>
                 <td class="amount-cell">${this.formatCurrency(transaction.amount)}</td>
-                <td class="category-cell">${category}</td>
                 <td>${notes}</td>
                 <td>${settledDate}</td>
             `;

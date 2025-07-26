@@ -1039,21 +1039,6 @@ class SplitMate {
         const notes = transaction.notes || '-';
         
         if (isUnpaid) {
-            // Unpaid transaction - show "You Owe" column
-            const youOweAmount = transaction.youOwe;
-            let youOweDisplay = '';
-            let youOweClass = 'you-owe-cell';
-            
-            if (Math.abs(youOweAmount) < 0.01) {
-                youOweDisplay = '-';
-            } else if (youOweAmount > 0) {
-                youOweDisplay = this.formatCurrency(youOweAmount);
-                youOweClass += ' you-owe-positive';
-            } else {
-                youOweDisplay = `(${this.formatCurrency(Math.abs(youOweAmount))})`;
-                youOweClass += ' you-owe-negative';
-            }
-            
             // Calculate what each person owes
             const youOweAmount = transaction.youOwe;
             let bryanOwesDisplay = '-';

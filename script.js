@@ -500,9 +500,9 @@ class SplitMate {
             const itemPrice = this.currentReceiptData.items[index].price;
             selectedSubtotal += itemPrice;
             
-            // Calculate your net amount based on split setting and who paid
+            // Calculate your net amount based on split setting
             if (this.splitReceiptItems.has(index)) {
-                yourShareSubtotal += itemPrice / 2; // Split 50/50
+                yourShareSubtotal += itemPrice / 2; // Split 50/50 - always half regardless of who paid
             } else {
                 // Individual items - depends on who paid
                 const whoPaid = document.getElementById('receiptWhoPaid').value;

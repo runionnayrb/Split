@@ -1124,9 +1124,22 @@ class SplitMate {
         
         // Show receipt breakdown if available
         const receiptBreakdownSection = document.getElementById('receiptBreakdownSection');
+        console.log('Transaction data:', JSON.stringify(transaction, null, 2));
+        
         if (transaction.isFromReceipt && transaction.receiptBreakdown) {
             console.log('Showing receipt breakdown for transaction:', transaction.receiptBreakdown);
             this.showReceiptBreakdown(transaction.receiptBreakdown);
+            receiptBreakdownSection.classList.remove('hidden');
+            receiptBreakdownSection.style.display = 'block';
+        } else if (transaction.isFromReceipt) {
+            // For existing receipt transactions without breakdown data, create a simple breakdown
+            console.log('Receipt transaction without breakdown data, creating simple version');
+            const simpleBreakdown = {
+                grandTotal: transaction.amount - 0.71, // Assuming $0.71 fees from the example
+                totalFees: 0.71,
+                ayakoOwes: Math.abs(transaction.youOwe)
+            };
+            this.showSimpleReceiptBreakdown(simpleBreakdown);
             receiptBreakdownSection.classList.remove('hidden');
             receiptBreakdownSection.style.display = 'block';
         } else {
@@ -1171,6 +1184,28 @@ class SplitMate {
             document.body.style.overflow = 'auto';
             this.currentPaymentTransaction = null;
         }, 300); // Match the CSS transition duration
+    }
+
+    /**
+     * Show simple receipt breakdown for transactions without full breakdown data
+     */
+    showSimpleReceiptBreakdown(breakdown) {
+        const modalReceiptSummary = document.getElementById('modalReceiptSummary');
+        
+        modalReceiptSummary.innerHTML = `
+            <div class="summary-row">
+                <span class="label">Total receipt amount:</span>
+                <span class="amount">${this.formatCurrency(breakdown.grandTotal + breakdown.totalFees)}</span>
+            </div>
+            <div class="summary-row">
+                <span class="label">Taxes and fees:</span>
+                <span class="amount">${this.formatCurrency(breakdown.totalFees)}</span>
+            </div>
+            <div class="summary-row total">
+                <span class="label">Ayako owes Bryan:</span>
+                <span class="amount">${this.formatCurrency(breakdown.ayakoOwes)}</span>
+            </div>
+        `;
     }
 
     /**

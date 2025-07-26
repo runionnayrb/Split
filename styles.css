@@ -537,6 +537,35 @@ table tr:hover {
     font-size: 1.1em;
 }
 
+.receipt-transaction-info {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #fff;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+}
+
+.transaction-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.transaction-info-row:last-child {
+    margin-bottom: 0;
+}
+
+.transaction-info-row .label {
+    font-weight: 500;
+    color: #4a5568;
+}
+
+.transaction-info-row .value {
+    color: #2d3748;
+    font-weight: 600;
+}
+
 .btn-secondary {
     background: #e2e8f0;
     color: #4a5568;

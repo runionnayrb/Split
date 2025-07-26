@@ -1126,22 +1126,26 @@ class SplitMate {
         const receiptBreakdownSection = document.getElementById('receiptBreakdownSection');
         console.log('Transaction data:', JSON.stringify(transaction, null, 2));
         
-        if (transaction.isFromReceipt && transaction.receiptBreakdown) {
-            console.log('Showing receipt breakdown for transaction:', transaction.receiptBreakdown);
-            this.showReceiptBreakdown(transaction.receiptBreakdown);
+        const payTransactionDetails = document.getElementById('payTransactionDetails');
+        
+        if (transaction.isFromReceipt) {
+            // Show receipt breakdown section and hide standard transaction details
+            if (transaction.receiptBreakdown) {
+                console.log('Showing receipt breakdown for transaction:', transaction.receiptBreakdown);
+                this.showReceiptBreakdown(transaction.receiptBreakdown, transaction);
+            } else {
+                console.log('Receipt transaction without breakdown data, recreating full breakdown');
+                const recreatedBreakdown = this.recreateReceiptBreakdown(transaction);
+                this.showReceiptBreakdown(recreatedBreakdown, transaction);
+            }
             receiptBreakdownSection.classList.remove('hidden');
             receiptBreakdownSection.style.display = 'block';
-        } else if (transaction.isFromReceipt) {
-            // For existing receipt transactions without breakdown data, recreate the full breakdown
-            console.log('Receipt transaction without breakdown data, recreating full breakdown');
-            const recreatedBreakdown = this.recreateReceiptBreakdown(transaction);
-            this.showReceiptBreakdown(recreatedBreakdown);
-            receiptBreakdownSection.classList.remove('hidden');
-            receiptBreakdownSection.style.display = 'block';
+            payTransactionDetails.classList.add('hidden');
         } else {
-            console.log('Hiding receipt breakdown - isFromReceipt:', transaction.isFromReceipt, 'hasBreakdown:', !!transaction.receiptBreakdown);
+            console.log('Hiding receipt breakdown - showing standard transaction details');
             receiptBreakdownSection.classList.add('hidden');
             receiptBreakdownSection.style.display = 'none';
+            payTransactionDetails.classList.remove('hidden');
         }
         
         // Set payment message
@@ -1229,7 +1233,23 @@ class SplitMate {
     /**
      * Show receipt breakdown in the modal
      */
-    showReceiptBreakdown(breakdown) {
+    showReceiptBreakdown(breakdown, transaction) {
+        // Show transaction info under the title
+        const receiptTransactionInfo = document.getElementById('receiptTransactionInfo');
+        const transactionDate = new Date(transaction.date).toLocaleDateString();
+        const whoPaidText = transaction.whoPaid === 'me' ? 'Bryan' : 'Ayako';
+        
+        receiptTransactionInfo.innerHTML = `
+            <div class="transaction-info-row">
+                <span class="label">Date:</span>
+                <span class="value">${transactionDate}</span>
+            </div>
+            <div class="transaction-info-row">
+                <span class="label">Paid by:</span>
+                <span class="value">${whoPaidText}</span>
+            </div>
+        `;
+        
         const modalReceiptSummary = document.getElementById('modalReceiptSummary');
         
         modalReceiptSummary.innerHTML = `

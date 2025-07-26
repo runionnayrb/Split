@@ -285,16 +285,19 @@
                 <button id="closeBottomSheet" class="close-button">×</button>
             </div>
             <div class="bottom-sheet-body">
-                <div id="payTransactionDetails">
-                    <!-- Transaction details will be inserted here -->
-                </div>
-                
                 <!-- Receipt breakdown section (hidden by default) -->
                 <div id="receiptBreakdownSection" class="receipt-breakdown-section">
                     <h4>Receipt Breakdown</h4>
+                    <div id="receiptTransactionInfo" class="receipt-transaction-info">
+                        <!-- Date and who paid will be populated here -->
+                    </div>
                     <div id="modalReceiptSummary" class="receipt-summary">
                         <!-- Receipt breakdown will be populated here -->
                     </div>
+                </div>
+                
+                <div id="payTransactionDetails" class="hidden">
+                    <!-- Transaction details will be inserted here (hidden for receipt transactions) -->
                 </div>
                 
                 <div id="receiptImageContainer" class="receipt-image-container hidden">

@@ -380,9 +380,6 @@ class SplitMate {
         
         // Receipt results buttons
         this.addReceiptItemsBtn.addEventListener('click', () => {
-            console.log('Add Receipt Items button clicked');
-            console.log('Current receipt data:', this.currentReceiptData);
-            console.log('Selected items:', this.selectedReceiptItems);
             this.addSelectedReceiptItems();
         });
         
@@ -646,12 +643,7 @@ class SplitMate {
      * Add selected receipt items to transactions as a single combined transaction
      */
     addSelectedReceiptItems() {
-        console.log('addSelectedReceiptItems called');
-        console.log('currentReceiptData:', !!this.currentReceiptData);
-        console.log('selectedReceiptItems size:', this.selectedReceiptItems.size);
-        
         if (!this.currentReceiptData || this.selectedReceiptItems.size === 0) {
-            console.log('Missing receipt data or no items selected');
             alert('Please select at least one item to add.');
             return;
         }
@@ -743,13 +735,7 @@ class SplitMate {
                 ayakoFees: ayakoFees,
                 bryanTotal: bryanTotal,
                 ayakoTotal: ayakoTotal,
-                ayakoOwes: displayedNetAmount,
-                selectedItems: Array.from(this.selectedReceiptItems).map(index => ({
-                    name: this.currentReceiptData.items[index].name,
-                    amount: this.currentReceiptData.items[index].price,
-                    category: this.currentReceiptData.items[index].category,
-                    isShared: this.splitReceiptItems.has(index)
-                }))
+                ayakoOwes: displayedNetAmount
             }
         };
         
@@ -1102,54 +1088,20 @@ class SplitMate {
             let bryanOwesClass = 'you-owe-cell';
             let ayakoOwesClass = 'you-owe-cell';
             
-            if (transaction.isFromReceipt && transaction.receiptBreakdown && transaction.receiptBreakdown.selectedItems) {
-                // Receipt transaction with full breakdown - calculate based on receipt breakdown
-                let bryanOwes = 0;
-                let ayakoOwes = 0;
-                
-                // Calculate Bryan's share from selected items
-                transaction.receiptBreakdown.selectedItems.forEach(item => {
-                    bryanOwes += item.amount / 2; // Split each item 50/50
-                });
-                
-                // Add Bryan's share of fees (taxes, tips, delivery)
-                if (transaction.receiptBreakdown.fees) {
-                    bryanOwes += transaction.receiptBreakdown.fees / 2;
-                }
-                
-                // Ayako owes the same amount (50/50 split)
-                ayakoOwes = bryanOwes;
-                
-                // Determine who actually owes money based on who paid
-                if (transaction.whoPaid === 'me') {
-                    // Bryan paid, so Ayako owes her share
-                    if (ayakoOwes >= 0.01) {
-                        ayakoOwesDisplay = this.formatCurrency(ayakoOwes);
-                        ayakoOwesClass += ' you-owe-positive';
-                    }
-                } else {
-                    // Ayako paid, so Bryan owes his share
-                    if (bryanOwes >= 0.01) {
-                        bryanOwesDisplay = this.formatCurrency(bryanOwes);
-                        bryanOwesClass += ' you-owe-positive';
-                    }
+            // Simple 50/50 split for all transactions
+            const halfAmount = transaction.amount / 2;
+            
+            if (transaction.whoPaid === 'me') {
+                // Bryan paid, so Ayako owes half
+                if (halfAmount >= 0.01) {
+                    ayakoOwesDisplay = this.formatCurrency(halfAmount);
+                    ayakoOwesClass += ' you-owe-positive';
                 }
             } else {
-                // Manual transaction - 50/50 split
-                const halfAmount = transaction.amount / 2;
-                
-                if (transaction.whoPaid === 'me') {
-                    // Bryan paid, so Ayako owes half
-                    if (halfAmount >= 0.01) {
-                        ayakoOwesDisplay = this.formatCurrency(halfAmount);
-                        ayakoOwesClass += ' you-owe-positive';
-                    }
-                } else {
-                    // Ayako paid, so Bryan owes half
-                    if (halfAmount >= 0.01) {
-                        bryanOwesDisplay = this.formatCurrency(halfAmount);
-                        bryanOwesClass += ' you-owe-positive';
-                    }
+                // Ayako paid, so Bryan owes half
+                if (halfAmount >= 0.01) {
+                    bryanOwesDisplay = this.formatCurrency(halfAmount);
+                    bryanOwesClass += ' you-owe-positive';
                 }
             }
             

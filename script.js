@@ -380,6 +380,9 @@ class SplitMate {
         
         // Receipt results buttons
         this.addReceiptItemsBtn.addEventListener('click', () => {
+            console.log('Add Receipt Items button clicked');
+            console.log('Current receipt data:', this.currentReceiptData);
+            console.log('Selected items:', this.selectedReceiptItems);
             this.addSelectedReceiptItems();
         });
         
@@ -643,7 +646,12 @@ class SplitMate {
      * Add selected receipt items to transactions as a single combined transaction
      */
     addSelectedReceiptItems() {
+        console.log('addSelectedReceiptItems called');
+        console.log('currentReceiptData:', !!this.currentReceiptData);
+        console.log('selectedReceiptItems size:', this.selectedReceiptItems.size);
+        
         if (!this.currentReceiptData || this.selectedReceiptItems.size === 0) {
+            console.log('Missing receipt data or no items selected');
             alert('Please select at least one item to add.');
             return;
         }

@@ -1517,6 +1517,11 @@ class SplitMate {
         
         // Close modal
         this.hidePayTransactionModal();
+        
+        // Show confetti for receipt transactions
+        if (transaction.isFromReceipt) {
+            this.showConfetti();
+        }
     }
     
     /**
@@ -1560,6 +1565,17 @@ class SplitMate {
         // Save and update display
         this.saveToStorage();
         this.updateDisplay();
+        
+        // Show confetti if any receipt transactions were settled
+        const receiptTransactionsSettled = this.transactions.some(t => 
+            t.settled && t.settledDate && 
+            new Date(t.settledDate).getTime() > Date.now() - 1000 && // settled in last second
+            t.isFromReceipt
+        );
+        
+        if (receiptTransactionsSettled) {
+            this.showConfetti();
+        }
     }
     
     /**
@@ -1602,6 +1618,33 @@ class SplitMate {
             console.log('All data cleared successfully');
         } catch (error) {
             console.error('Failed to clear data:', error);
+        }
+    }
+    
+    /**
+     * Show confetti animation
+     */
+    showConfetti() {
+        const confettiContainer = document.getElementById('confettiContainer');
+        const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3', '#54a0ff'];
+        
+        // Create 50 confetti pieces
+        for (let i = 0; i < 50; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.left = Math.random() * 100 + '%';
+            confetti.style.animationDelay = Math.random() * 0.3 + 's';
+            confetti.style.animationDuration = (Math.random() * 1 + 2.5) + 's';
+            
+            confettiContainer.appendChild(confetti);
+            
+            // Remove confetti after animation completes
+            setTimeout(() => {
+                if (confetti.parentNode) {
+                    confetti.parentNode.removeChild(confetti);
+                }
+            }, 4000);
         }
     }
     

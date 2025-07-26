@@ -62,6 +62,7 @@ class SplitMate {
         this.receiptProcessor = null;
         this.currentReceiptData = null;
         this.selectedReceiptItems = new Set();
+        this.splitReceiptItems = new Map(); // Track which items are set to split (50/50)
         
         // Initialize the app
         this.init();
@@ -414,6 +415,7 @@ class SplitMate {
         const itemsList = document.getElementById('receiptItemsList');
         itemsList.innerHTML = '';
         this.selectedReceiptItems.clear();
+        this.splitReceiptItems.clear();
         
         // Create item checkboxes
         receiptData.items.forEach((item, index) => {
@@ -431,6 +433,7 @@ class SplitMate {
                     itemDiv.classList.add('selected');
                 } else {
                     this.selectedReceiptItems.delete(index);
+                    this.splitReceiptItems.delete(index); // Remove from split map if unselected
                     itemDiv.classList.remove('selected');
                 }
                 this.updateReceiptSummary();
@@ -443,12 +446,37 @@ class SplitMate {
                 <span class="item-price">${this.formatCurrency(item.price)}</span>
             `;
             
+            // Create split toggle button
+            const splitButton = document.createElement('button');
+            splitButton.type = 'button';
+            splitButton.className = 'split-toggle-btn active';
+            splitButton.textContent = 'Split';
+            splitButton.title = 'Click to toggle between 50% (split) and 100% (individual) payment';
+            splitButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                const isSplit = splitButton.classList.contains('active');
+                if (isSplit) {
+                    // Currently split, change to individual (100%)
+                    splitButton.classList.remove('active');
+                    splitButton.textContent = 'Individual';
+                    this.splitReceiptItems.delete(index);
+                } else {
+                    // Currently individual, change to split (50%)
+                    splitButton.classList.add('active');
+                    splitButton.textContent = 'Split';
+                    this.splitReceiptItems.set(index, true);
+                }
+                this.updateReceiptSummary();
+            });
+            
             itemDiv.appendChild(checkbox);
             itemDiv.appendChild(itemDetails);
+            itemDiv.appendChild(splitButton);
             itemsList.appendChild(itemDiv);
             
-            // Start with all items selected
+            // Start with all items selected and set to split
             this.selectedReceiptItems.add(index);
+            this.splitReceiptItems.set(index, true); // Default to split
             itemDiv.classList.add('selected');
         });
         
@@ -460,24 +488,35 @@ class SplitMate {
     }
     
     /**
-     * Update receipt summary based on selected items
+     * Update receipt summary based on selected items and split settings
      */
     updateReceiptSummary() {
         if (!this.currentReceiptData) return;
         
         let selectedSubtotal = 0;
+        let yourShareSubtotal = 0;
+        
         this.selectedReceiptItems.forEach(index => {
-            selectedSubtotal += this.currentReceiptData.items[index].price;
+            const itemPrice = this.currentReceiptData.items[index].price;
+            selectedSubtotal += itemPrice;
+            
+            // Calculate your share based on split setting
+            if (this.splitReceiptItems.has(index)) {
+                yourShareSubtotal += itemPrice / 2; // Split 50/50
+            } else {
+                yourShareSubtotal += itemPrice; // Pay full amount
+            }
         });
         
-        // Calculate proportional fees (tax, tip, delivery fees split 50/50)
+        // Calculate proportional fees (always split 50/50)
         const totalFees = this.currentReceiptData.tax + this.currentReceiptData.tip + this.currentReceiptData.fees;
-        const selectedTotal = selectedSubtotal + (totalFees / 2); // Split fees 50/50
+        const yourShareFees = totalFees / 2;
+        const yourShareTotal = yourShareSubtotal + yourShareFees;
         
-        // Update display
-        document.getElementById('receiptSubtotal').textContent = this.formatCurrency(selectedSubtotal);
-        document.getElementById('receiptFees').textContent = this.formatCurrency(totalFees / 2);
-        document.getElementById('receiptTotal').textContent = this.formatCurrency(selectedTotal);
+        // Update display to show your share
+        document.getElementById('receiptSubtotal').textContent = this.formatCurrency(yourShareSubtotal);
+        document.getElementById('receiptFees').textContent = this.formatCurrency(yourShareFees);
+        document.getElementById('receiptTotal').textContent = this.formatCurrency(yourShareTotal);
     }
     
     /**
@@ -492,36 +531,53 @@ class SplitMate {
         const whoPaid = document.getElementById('receiptWhoPaid').value;
         const timestamp = Date.now();
         
-        // Calculate total for selected items
-        let selectedSubtotal = 0;
+        // Calculate totals with different split ratios per item
+        let totalReceiptAmount = 0; // Total actual amount paid by whoPaid
+        let yourOweAmount = 0; // Amount you owe based on split settings
         const selectedItemNames = [];
+        const splitDetails = [];
         
         this.selectedReceiptItems.forEach(index => {
             const item = this.currentReceiptData.items[index];
-            selectedSubtotal += item.price;
+            totalReceiptAmount += item.price;
             selectedItemNames.push(item.name);
+            
+            if (this.splitReceiptItems.has(index)) {
+                // Split item - you owe half
+                yourOweAmount += item.price / 2;
+                splitDetails.push(`${item.name} (split)`);
+            } else {
+                // Individual item - you owe nothing if they paid, full amount if you paid
+                if (whoPaid === 'spouse') {
+                    yourOweAmount += item.price; // Spouse paid, you owe full amount
+                } else {
+                    yourOweAmount += 0; // You paid, you owe nothing
+                }
+                splitDetails.push(`${item.name} (individual)`);
+            }
         });
         
-        // Add shared fees (tax, tip, delivery fees split 50/50)
+        // Add shared fees (always split 50/50)
         const totalFees = this.currentReceiptData.tax + this.currentReceiptData.tip + this.currentReceiptData.fees;
-        const totalAmount = selectedSubtotal + totalFees;
+        totalReceiptAmount += totalFees;
+        yourOweAmount += totalFees / 2;
         
         // Create a single combined transaction for the entire receipt
         const receiptTransaction = {
             id: timestamp,
             date: new Date().toISOString(),
             whoPaid: whoPaid,
-            amount: totalAmount,
+            amount: totalReceiptAmount,
             category: this.getMostCommonCategory() || 'groceries',
-            notes: this.createReceiptNotes(selectedItemNames, selectedSubtotal, totalFees),
-            youOwe: whoPaid === 'spouse' ? totalAmount / 2 : -(totalAmount / 2),
+            notes: this.createReceiptNotesWithSplits(selectedItemNames, splitDetails, totalFees),
+            youOwe: whoPaid === 'spouse' ? yourOweAmount : -yourOweAmount,
             receiptImage: this.getReceiptImageData(),
             isFromReceipt: true
         };
         
         // Add the single transaction
         this.transactions.unshift(receiptTransaction);
-        this.totals[whoPaid] += totalAmount;
+        this.totals[whoPaid] += totalReceiptAmount;
         
         // Save and update display
         this.saveToStorage();
@@ -533,8 +589,10 @@ class SplitMate {
         // Switch back to manual tab
         this.switchTab('manual');
         
-        // Show success message
-        alert(`✅ Receipt added! ${selectedItemNames.length} item(s) combined into one transaction totaling ${this.formatCurrency(totalAmount)}.`);
+        // Show success message with split info
+        const splitCount = Array.from(this.splitReceiptItems.values()).length;
+        const individualCount = selectedItemNames.length - splitCount;
+        alert(`✅ Receipt added! ${selectedItemNames.length} item(s) combined into one transaction (${splitCount} split, ${individualCount} individual) totaling ${this.formatCurrency(totalReceiptAmount)}.`);
     }
     
     /**
@@ -557,17 +615,37 @@ class SplitMate {
     }
     
     /**
-     * Create descriptive notes for receipt transaction
+     * Create descriptive notes for receipt transaction with split details
      */
-    createReceiptNotes(itemNames, subtotal, fees) {
-        let notes = itemNames.slice(0, 3).join(', ');
-        if (itemNames.length > 3) {
-            notes += ` + ${itemNames.length - 3} more`;
+    createReceiptNotesWithSplits(itemNames, splitDetails, fees) {
+        let notes = itemNames.slice(0, 2).join(', ');
+        if (itemNames.length > 2) {
+            notes += ` + ${itemNames.length - 2} more items`;
         }
+        
+        // Count split vs individual items
+        const splitCount = splitDetails.filter(d => d.includes('(split)')).length;
+        const individualCount = splitDetails.filter(d => d.includes('(individual)')).length;
+        
+        if (splitCount > 0 && individualCount > 0) {
+            notes += ` (${splitCount} split, ${individualCount} individual)`;
+        } else if (splitCount > 0) {
+            notes += ` (${splitCount} split items)`;
+        } else if (individualCount > 0) {
+            notes += ` (${individualCount} individual items)`;
+        }
+        
         if (fees > 0) {
-            notes += ` (+ ${this.formatCurrency(fees)} fees split 50/50)`;
+            notes += ` + ${this.formatCurrency(fees)} fees split 50/50`;
         }
         return notes;
+    }
+    
+    /**
+     * Create descriptive notes for receipt transaction (legacy method)
+     */
+    createReceiptNotes(itemNames, subtotal, fees) {
+        return this.createReceiptNotesWithSplits(itemNames, [], fees);
     }
     
     /**

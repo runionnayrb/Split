@@ -770,6 +770,37 @@ table tr:hover {
     color: #4a5568;
 }
 
+/* Split toggle button */
+.split-toggle-btn {
+    margin-left: 12px;
+    padding: 6px 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 20px;
+    background: white;
+    color: #4a5568;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 70px;
+    flex-shrink: 0;
+}
+
+.split-toggle-btn:hover {
+    border-color: #cbd5e0;
+    background: #f7fafc;
+}
+
+.split-toggle-btn.active {
+    background: #667eea;
+    border-color: #667eea;
+    color: white;
+}
+
+.split-toggle-btn:active {
+    transform: scale(0.95);
+}
+
 .receipt-summary {
     background: white;
     padding: 20px;

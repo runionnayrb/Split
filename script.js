@@ -904,12 +904,19 @@ class SplitMate {
      * Update the balance summary at the top
      */
     updateBalanceDisplay() {
-        // Update individual totals
-        this.myTotalElement.textContent = this.formatCurrency(this.totals.me);
-        this.spouseTotalElement.textContent = this.formatCurrency(this.totals.spouse);
+        // Calculate totals from only unpaid transactions
+        const unpaidTotals = { me: 0, spouse: 0 };
         
-        // Calculate net balance (positive means you owe, negative means spouse owes you)
-        const netBalance = (this.totals.spouse - this.totals.me) / 2;
+        this.transactions.filter(t => !t.settled).forEach(transaction => {
+            unpaidTotals[transaction.whoPaid] += transaction.amount;
+        });
+        
+        // Update individual totals (showing only unpaid amounts)
+        this.myTotalElement.textContent = this.formatCurrency(unpaidTotals.me);
+        this.spouseTotalElement.textContent = this.formatCurrency(unpaidTotals.spouse);
+        
+        // Calculate net balance from unpaid transactions only
+        const netBalance = (unpaidTotals.spouse - unpaidTotals.me) / 2;
         
         // Update net balance display
         this.netBalanceElement.className = 'net-balance';

@@ -352,13 +352,13 @@ class SplitMate {
         if (tabName === 'manual') {
             this.manualTab.classList.add('active');
             this.receiptTab.classList.remove('active');
-            this.manualForm.style.display = 'block';
+            this.manualForm.classList.remove('hidden');
             this.receiptUpload.classList.add('hidden');
             this.receiptResults.classList.add('hidden');
         } else if (tabName === 'receipt') {
             this.receiptTab.classList.add('active');
             this.manualTab.classList.remove('active');
-            this.manualForm.style.display = 'none';
+            this.manualForm.classList.add('hidden');
             this.receiptUpload.classList.remove('hidden');
         }
     }

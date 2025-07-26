@@ -493,14 +493,19 @@ class SplitMate {
     updateReceiptSummary() {
         if (!this.currentReceiptData) return;
         
-        let totalAllItems = 0;        // Total of all selected items (100%)
-        let yourSubtotal = 0;         // Individual items (100%) + Split items (50%)
+        let totalAllItems = 0;        // Total of ALL items on receipt (selected + unselected)
+        let yourSubtotal = 0;         // Selected items: Individual (100%) + Split (50%)
         let individualItems = 0;      // Items Ayako owes Bryan
         let splitItems = 0;           // Items to split 50/50
         
+        // Calculate total of ALL items on receipt
+        this.currentReceiptData.items.forEach(item => {
+            totalAllItems += item.price;
+        });
+        
+        // Calculate subtotal of SELECTED items based on split settings
         this.selectedReceiptItems.forEach(index => {
             const itemPrice = this.currentReceiptData.items[index].price;
-            totalAllItems += itemPrice;
             
             if (this.splitReceiptItems.has(index)) {
                 // Split item - Bryan pays 50%
@@ -531,10 +536,10 @@ class SplitMate {
         }
         
         // Update display
-        document.getElementById('receiptSubtotal').textContent = this.formatCurrency(totalAllItems);
-        document.getElementById('receiptYourSubtotal').textContent = this.formatCurrency(yourSubtotal);
+        document.getElementById('receiptTotal').textContent = this.formatCurrency(totalAllItems);
+        document.getElementById('receiptSubtotal').textContent = this.formatCurrency(yourSubtotal);
         document.getElementById('receiptFees').textContent = this.formatCurrency(yourShareFees);
-        document.getElementById('receiptTotal').textContent = this.formatCurrency(yourNetAmount);
+        document.getElementById('receiptNetAmount').textContent = this.formatCurrency(yourNetAmount);
     }
     
     /**

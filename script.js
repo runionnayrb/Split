@@ -636,7 +636,20 @@ class SplitMate {
             notes: this.createReceiptNotesWithSplits(selectedItemNames, splitDetails, totalFees),
             youOwe: displayedNetAmount, // Use exact amount from receipt summary (positive = what Ayako owes Bryan)
             receiptImage: this.getReceiptImageData(),
-            isFromReceipt: true
+            isFromReceipt: true,
+            // Store receipt breakdown data for modal display
+            receiptBreakdown: {
+                grandTotal: grandTotal,
+                totalFees: totalFees,
+                uncheckedTotal: uncheckedTotal,
+                individualTotal: individualTotal,
+                splitTotal: splitTotal,
+                bryanFees: bryanFees,
+                ayakoFees: ayakoFees,
+                bryanTotal: bryanTotal,
+                ayakoTotal: ayakoTotal,
+                ayakoOwes: displayedNetAmount
+            }
         };
         
         // Add the single transaction
@@ -1109,6 +1122,15 @@ class SplitMate {
             this.receiptImageContainer.classList.add('hidden');
         }
         
+        // Show receipt breakdown if available
+        const receiptBreakdownSection = document.getElementById('receiptBreakdownSection');
+        if (transaction.isFromReceipt && transaction.receiptBreakdown) {
+            this.showReceiptBreakdown(transaction.receiptBreakdown);
+            receiptBreakdownSection.classList.remove('hidden');
+        } else {
+            receiptBreakdownSection.classList.add('hidden');
+        }
+        
         // Set payment message
         if (transaction.isFromReceipt) {
             // For receipt transactions, always show what Ayako owes Bryan
@@ -1145,6 +1167,66 @@ class SplitMate {
             document.body.style.overflow = 'auto';
             this.currentPaymentTransaction = null;
         }, 300); // Match the CSS transition duration
+    }
+
+    /**
+     * Show receipt breakdown in the modal
+     */
+    showReceiptBreakdown(breakdown) {
+        const modalReceiptSummary = document.getElementById('modalReceiptSummary');
+        
+        modalReceiptSummary.innerHTML = `
+            <div class="summary-row">
+                <span class="label">Total (all items):</span>
+                <span class="amount">${this.formatCurrency(breakdown.grandTotal + breakdown.totalFees)}</span>
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-row">
+                <span class="label">Bryan pays (unchecked items):</span>
+                <span class="amount">${this.formatCurrency(breakdown.uncheckedTotal)}</span>
+            </div>
+            <div class="summary-row">
+                <span class="label">Bryan split portion:</span>
+                <span class="amount">${this.formatCurrency(breakdown.splitTotal / 2)}</span>
+            </div>
+            <div class="summary-row">
+                <span class="label">Bryan's taxes and fees:</span>
+                <span class="amount">${this.formatCurrency(breakdown.bryanFees)}</span>
+            </div>
+            <div class="summary-row">
+                <span class="label">Ayako owes (individual items):</span>
+                <span class="amount">${this.formatCurrency(breakdown.individualTotal)}</span>
+            </div>
+            <div class="summary-row">
+                <span class="label">Ayako split portion:</span>
+                <span class="amount">${this.formatCurrency(breakdown.splitTotal / 2)}</span>
+            </div>
+            <div class="summary-row">
+                <span class="label">Ayako's taxes and fees:</span>
+                <span class="amount">${this.formatCurrency(breakdown.ayakoFees)}</span>
+            </div>
+            <div class="summary-row">
+                <span class="label">Split items total:</span>
+                <span class="amount">${this.formatCurrency(breakdown.splitTotal)}</span>
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-row">
+                <span class="label">Bryan total (unchecked + split + fees):</span>
+                <span class="amount">${this.formatCurrency(breakdown.bryanTotal)}</span>
+            </div>
+            <div class="summary-row">
+                <span class="label">Ayako total (individual + split + fees):</span>
+                <span class="amount">${this.formatCurrency(breakdown.ayakoTotal)}</span>
+            </div>
+            <div class="summary-row">
+                <span class="label">Total taxes and fees:</span>
+                <span class="amount">${this.formatCurrency(breakdown.totalFees)}</span>
+            </div>
+            <div class="summary-row total">
+                <span class="label">Ayako owes Bryan:</span>
+                <span class="amount">${this.formatCurrency(breakdown.ayakoOwes)}</span>
+            </div>
+        `;
     }
 
     /**

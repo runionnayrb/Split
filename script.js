@@ -1247,7 +1247,8 @@ class SplitMate {
             ayakoFees: ayakoFees,
             bryanTotal: bryanTotal,
             ayakoTotal: ayakoTotal,
-            ayakoOwes: ayakoOwes
+            ayakoOwes: ayakoOwes,
+            isSettled: transaction.settled
         };
     }
 
@@ -1321,7 +1322,7 @@ class SplitMate {
                 <span class="amount">${this.formatCurrency(breakdown.totalFees)}</span>
             </div>
             <div class="summary-row total">
-                <span class="label">Ayako owes Bryan:</span>
+                <span class="label">${breakdown.isSettled || transaction.settled ? 'Ayako paid Bryan:' : 'Ayako owes Bryan:'}</span>
                 <span class="amount">${this.formatCurrency(breakdown.ayakoOwes)}</span>
             </div>
         `;

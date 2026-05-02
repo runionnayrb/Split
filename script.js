@@ -330,6 +330,12 @@ class SplitMate {
         
         // Receipt upload events
         this.setupReceiptUploadListeners();
+
+        // Init sliding pills on both tab groups
+        requestAnimationFrame(() => {
+            this.initTabPill(document.querySelector('.upload-tabs'));
+            this.initTabPill(document.querySelector('.transaction-tabs'));
+        });
     }
     
     /**
@@ -394,6 +400,35 @@ class SplitMate {
     }
     
     /**
+     * Inject a sliding pill into a tab group and set its initial position
+     */
+    initTabPill(tabGroup) {
+        if (!tabGroup || tabGroup.querySelector('.tab-pill')) return;
+        const pill = document.createElement('span');
+        pill.className = 'tab-pill';
+        tabGroup.insertBefore(pill, tabGroup.firstChild);
+        // Disable transition for the initial snap
+        pill.style.transition = 'none';
+        this.updateTabPill(tabGroup);
+        // Re-enable transition after one frame
+        requestAnimationFrame(() => {
+            pill.style.transition = '';
+        });
+    }
+
+    /**
+     * Slide the pill to the currently active button
+     */
+    updateTabPill(tabGroup) {
+        if (!tabGroup) return;
+        const activeBtn = tabGroup.querySelector('.tab-button.active');
+        const pill = tabGroup.querySelector('.tab-pill');
+        if (!activeBtn || !pill) return;
+        pill.style.transform = `translateX(${activeBtn.offsetLeft}px)`;
+        pill.style.width = `${activeBtn.offsetWidth}px`;
+    }
+
+    /**
      * Switch between manual and receipt tabs
      */
     switchTab(tabName) {
@@ -409,6 +444,7 @@ class SplitMate {
             this.manualForm.classList.add('hidden');
             this.receiptUpload.classList.remove('hidden');
         }
+        this.updateTabPill(document.querySelector('.upload-tabs'));
     }
     
     /**
@@ -1049,6 +1085,8 @@ class SplitMate {
         // Update tab content
         this.unpaidTransactions.classList.toggle('active', tab === 'unpaid');
         this.paidTransactions.classList.toggle('active', tab === 'paid');
+
+        this.updateTabPill(document.querySelector('.transaction-tabs'));
     }
 
     /**

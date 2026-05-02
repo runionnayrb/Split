@@ -15,16 +15,16 @@ class I18n {
                 transactionHistory: 'Transaction History',
                 
                 // Balance summary
-                bryanHasPaid: 'Bryan has paid:',
-                ayakoHasPaid: 'Ayako has paid:',
+                bryanHasPaid: '{p1} has paid:',
+                ayakoHasPaid: '{p2} has paid:',
                 allSettledUp: 'All settled up! 🎉',
-                bryanOwes: 'Bryan owes Ayako:',
-                ayakoOwes: 'Ayako owes Bryan:',
+                bryanOwes: '{p1} owes {p2}:',
+                ayakoOwes: '{p2} owes {p1}:',
                 
                 // Form fields and buttons
                 whoPaid: 'Who paid?',
-                bryan: 'Bryan',
-                ayako: 'Ayako',
+                bryan: '{p1}',
+                ayako: '{p2}',
                 amount: 'Amount ($)',
                 description: 'Description (optional)',
                 descriptionPlaceholder: 'What was this for?',
@@ -46,17 +46,18 @@ class I18n {
                 receiptItems: 'Receipt Items',
                 whoPaidReceipt: 'Who paid for this receipt?',
                 totalAllItems: 'Total (all items):',
-                bryanPaysUnchecked: 'Bryan pays (unchecked items):',
-                bryanSplitPortion: 'Bryan split portion:',
-                bryanTaxesFees: "Bryan's taxes and fees:",
-                ayakoOwesIndividual: 'Ayako owes (individual items):',
-                ayakoSplitPortion: 'Ayako split portion:',
-                ayakoTaxesFees: "Ayako's taxes and fees:",
+                bryanPaysUnchecked: '{p1} pays (unchecked items):',
+                bryanSplitPortion: '{p1} split portion:',
+                bryanTaxesFees: "{p1}'s taxes and fees:",
+                ayakoOwesIndividual: '{p2} owes (individual items):',
+                ayakoSplitPortion: '{p2} split portion:',
+                ayakoTaxesFees: "{p2}'s taxes and fees:",
                 splitItemsTotal: 'Split items total:',
-                bryanTotal: 'Bryan total (unchecked + split + fees):',
-                ayakoTotal: 'Ayako total (individual + split + fees):',
+                bryanTotal: '{p1} total (unchecked + split + fees):',
+                ayakoTotal: '{p2} total (individual + split + fees):',
                 totalTaxesFees: 'Total taxes and fees:',
-                ayakoOwesBryan: 'Ayako owes Bryan:',
+                ayakoOwesBryan: '{p2} owes {p1}:',
+                ayakoPaidBryan: '{p2} paid {p1}:',
                 storeLocation: 'Store/Location:',
                 storeLocationPlaceholder: 'e.g., Publix, Target, Whole Foods...',
                 addSelectedItems: 'Add Selected Items',
@@ -67,8 +68,8 @@ class I18n {
                 whoPaidHeader: 'Who Paid',
                 amountHeader: 'Amount',
                 descriptionHeader: 'Description',
-                bryanOwesHeader: 'Bryan Owes',
-                ayakoOwesHeader: 'Ayako Owes',
+                bryanOwesHeader: '{p1} Owes',
+                ayakoOwesHeader: '{p2} Owes',
                 settledDate: 'Settled Date',
                 
                 // Transaction tabs
@@ -92,8 +93,18 @@ class I18n {
                 payIndividualItem: '💸 Pay Individual Item',
                 receiptBreakdown: 'Receipt Breakdown',
                 receipt: 'Receipt',
-                payBryanShare: "Pay Bryan's Share",
+                payBryanShare: "Pay {p1}'s Share",
                 deleteReceiptButton: 'Delete Receipt',
+                
+                // Settings
+                settings: 'Settings',
+                partnerNames: 'Partner Names',
+                partner1Name: 'Partner 1 Name',
+                partner2Name: 'Partner 2 Name',
+                partner1Placeholder: 'e.g. Alex',
+                partner2Placeholder: 'e.g. Jordan',
+                saveSettings: 'Save',
+                settingsSaved: 'Names saved!',
                 
                 // Categories
                 groceries: '🥬 Groceries',
@@ -120,16 +131,16 @@ class I18n {
                 transactionHistory: '取引履歴',
                 
                 // Balance summary
-                bryanHasPaid: 'Bryanが支払った金額:',
-                ayakoHasPaid: 'Ayakoが支払った金額:',
+                bryanHasPaid: '{p1}が支払った金額:',
+                ayakoHasPaid: '{p2}が支払った金額:',
                 allSettledUp: '全て清算済み！ 🎉',
-                bryanOwes: 'BryanがAyakoに借りている金額:',
-                ayakoOwes: 'AyakoがBryanに借りている金額:',
+                bryanOwes: '{p1}が{p2}に借りている金額:',
+                ayakoOwes: '{p2}が{p1}に借りている金額:',
                 
                 // Form fields and buttons
                 whoPaid: '誰が支払いましたか？',
-                bryan: 'Bryan',
-                ayako: 'Ayako',
+                bryan: '{p1}',
+                ayako: '{p2}',
                 amount: '金額 ($)',
                 description: '説明（任意）',
                 descriptionPlaceholder: '何のための支出ですか？',
@@ -151,17 +162,18 @@ class I18n {
                 receiptItems: 'レシート項目',
                 whoPaidReceipt: 'このレシートは誰が支払いましたか？',
                 totalAllItems: '合計（全項目）:',
-                bryanPaysUnchecked: 'Bryanの支払い（未チェック項目）:',
-                bryanSplitPortion: 'Bryanの分割分:',
-                bryanTaxesFees: 'Bryanの税金・手数料:',
-                ayakoOwesIndividual: 'Ayakoの負担（個別項目）:',
-                ayakoSplitPortion: 'Ayakoの分割分:',
-                ayakoTaxesFees: 'Ayakoの税金・手数料:',
+                bryanPaysUnchecked: '{p1}の支払い（未チェック項目）:',
+                bryanSplitPortion: '{p1}の分割分:',
+                bryanTaxesFees: '{p1}の税金・手数料:',
+                ayakoOwesIndividual: '{p2}の負担（個別項目）:',
+                ayakoSplitPortion: '{p2}の分割分:',
+                ayakoTaxesFees: '{p2}の税金・手数料:',
                 splitItemsTotal: '分割項目合計:',
-                bryanTotal: 'Bryan合計（未チェック+分割+手数料）:',
-                ayakoTotal: 'Ayako合計（個別+分割+手数料）:',
+                bryanTotal: '{p1}合計（未チェック+分割+手数料）:',
+                ayakoTotal: '{p2}合計（個別+分割+手数料）:',
                 totalTaxesFees: '税金・手数料合計:',
-                ayakoOwesBryan: 'AyakoがBryanに借りている金額:',
+                ayakoOwesBryan: '{p2}が{p1}に借りている金額:',
+                ayakoPaidBryan: '{p2}が{p1}に支払った金額:',
                 storeLocation: '店舗・場所:',
                 storeLocationPlaceholder: '例：パブリックス、ターゲット、ホールフーズ...',
                 addSelectedItems: '選択した項目を追加',
@@ -172,8 +184,8 @@ class I18n {
                 whoPaidHeader: '支払者',
                 amountHeader: '金額',
                 descriptionHeader: '説明',
-                bryanOwesHeader: 'Bryanの負担',
-                ayakoOwesHeader: 'Ayakoの負担',
+                bryanOwesHeader: '{p1}の負担',
+                ayakoOwesHeader: '{p2}の負担',
                 settledDate: '清算日',
                 
                 // Transaction tabs
@@ -197,8 +209,18 @@ class I18n {
                 payIndividualItem: '💸 個別項目の支払い',
                 receiptBreakdown: 'レシート内訳',
                 receipt: 'レシート',
-                payBryanShare: 'Bryanの分を支払う',
+                payBryanShare: '{p1}の分を支払う',
                 deleteReceiptButton: 'レシートを削除',
+                
+                // Settings
+                settings: '設定',
+                partnerNames: 'パートナー名',
+                partner1Name: 'パートナー1の名前',
+                partner2Name: 'パートナー2の名前',
+                partner1Placeholder: '例：田中',
+                partner2Placeholder: '例：佐藤',
+                saveSettings: '保存',
+                settingsSaved: '名前を保存しました！',
                 
                 // Categories
                 groceries: '🥬 食料品',
@@ -223,7 +245,6 @@ class I18n {
     }
     
     init() {
-        // Wait for DOM to be ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
                 this.updateAllTexts();
@@ -239,24 +260,41 @@ class I18n {
         return localStorage.getItem('splitmate_language');
     }
     
+    getP1Name() {
+        return localStorage.getItem('splitmate_partner1_name') || 'Partner 1';
+    }
+    
+    getP2Name() {
+        return localStorage.getItem('splitmate_partner2_name') || 'Partner 2';
+    }
+    
+    setPartnerNames(p1, p2) {
+        const trimP1 = (p1 || '').trim();
+        const trimP2 = (p2 || '').trim();
+        localStorage.setItem('splitmate_partner1_name', trimP1 || 'Partner 1');
+        localStorage.setItem('splitmate_partner2_name', trimP2 || 'Partner 2');
+        this.updateAllTexts();
+        window.dispatchEvent(new CustomEvent('partnerNamesChanged', {
+            detail: { p1: this.getP1Name(), p2: this.getP2Name() }
+        }));
+    }
+    
     setLanguage(lang) {
         this.currentLanguage = lang;
         localStorage.setItem('splitmate_language', lang);
         this.updateAllTexts();
-        
-        // Update HTML lang attribute
         document.documentElement.lang = lang;
-        
-        // Dispatch custom event for other components to listen to
         window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: lang } }));
     }
     
     t(key) {
-        return this.translations[this.currentLanguage][key] || this.translations.en[key] || key;
+        const raw = this.translations[this.currentLanguage][key] || this.translations.en[key] || key;
+        return raw
+            .replace(/{p1}/g, this.getP1Name())
+            .replace(/{p2}/g, this.getP2Name());
     }
     
     updateAllTexts() {
-        // Update static text elements with data-i18n attributes
         document.querySelectorAll('[data-i18n]').forEach(element => {
             const key = element.getAttribute('data-i18n');
             if (element.tagName === 'INPUT' && (element.type === 'text' || element.type === 'number')) {
@@ -266,27 +304,21 @@ class I18n {
             }
         });
         
-        // Update placeholder texts
         document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
             const key = element.getAttribute('data-i18n-placeholder');
             element.placeholder = this.t(key);
         });
         
-        // Update alt texts
         document.querySelectorAll('[data-i18n-alt]').forEach(element => {
             const key = element.getAttribute('data-i18n-alt');
             element.alt = this.t(key);
         });
         
-        // Update title and subtitle specifically
         document.title = this.t('appTitle') + ' - ' + this.t('appSubtitle');
-        
-        // Update language toggle button text
         this.updateLanguageToggle();
     }
     
     setupLanguageToggle() {
-        // Create language toggle if it doesn't exist
         if (!document.getElementById('languageToggle')) {
             const header = document.querySelector('.header');
             if (header) {
@@ -298,13 +330,10 @@ class I18n {
                     </button>
                 `;
                 header.appendChild(languageToggle);
-                
-                // Add event listener
                 document.getElementById('languageToggle').addEventListener('click', () => {
                     this.toggleLanguage();
                 });
             } else {
-                // If header not found, try again later
                 setTimeout(() => this.setupLanguageToggle(), 100);
             }
         }
@@ -324,7 +353,6 @@ class I18n {
     }
     
     formatCurrency(amount) {
-        // Always use USD format for now, but could be extended for Japanese Yen
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'USD'
@@ -349,5 +377,4 @@ class I18n {
     }
 }
 
-// Initialize i18n system
 window.i18n = new I18n();

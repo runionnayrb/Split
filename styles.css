@@ -223,6 +223,53 @@ body {
   flex-shrink: 0;
 }
 
+/* ---- Settings toggle ---- */
+.settings-toggle {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+}
+
+.settings-btn {
+  background: var(--glass-bg-mid);
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border-hi);
+  border-radius: var(--radius-pill);
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.settings-btn:hover {
+  background: var(--glass-bg-hi);
+  border-color: rgba(139,92,246,0.45);
+}
+
+.settings-btn:active {
+  transform: scale(0.95);
+}
+
+/* Settings modal specific */
+.settings-modal-content {
+  max-width: 320px;
+}
+
+.settings-subtitle {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  margin-bottom: 20px;
+  margin-top: -6px;
+}
+
 /* ---- Language toggle ---- */
 .language-toggle {
   position: absolute;

@@ -72,6 +72,14 @@ class SplitMate {
         this.selectedReceiptItems = new Set();
         this.splitReceiptItems = new Map(); // Track which items are set to split (50/50)
         
+        // Settings modal elements
+        this.settingsModal = document.getElementById('settingsModal');
+        this.settingsToggleBtn = document.getElementById('settingsToggle');
+        this.saveSettingsBtn = document.getElementById('saveSettings');
+        this.cancelSettingsBtn = document.getElementById('cancelSettings');
+        this.partner1Input = document.getElementById('partner1Input');
+        this.partner2Input = document.getElementById('partner2Input');
+        
         // Initialize the app
         this.init();
     }
@@ -106,6 +114,9 @@ class SplitMate {
      */
     setupI18nListener() {
         window.addEventListener('languageChanged', () => {
+            this.updateDynamicTexts();
+        });
+        window.addEventListener('partnerNamesChanged', () => {
             this.updateDynamicTexts();
         });
     }
@@ -298,7 +309,9 @@ class SplitMate {
         // Escape key to close modal
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                if (this.deleteConfirmModal && this.deleteConfirmModal.style.display === 'block') {
+                if (this.settingsModal && this.settingsModal.style.display === 'block') {
+                    this.hideSettingsModal();
+                } else if (this.deleteConfirmModal && this.deleteConfirmModal.style.display === 'block') {
                     this.hideDeleteConfirmation();
                 } else if (this.confirmModal.style.display === 'block') {
                     this.hideConfirmModal();
@@ -336,6 +349,33 @@ class SplitMate {
             this.initTabPill(document.querySelector('.upload-tabs'));
             this.initTabPill(document.querySelector('.transaction-tabs'));
         });
+        
+        // Settings modal events
+        if (this.settingsToggleBtn) {
+            this.settingsToggleBtn.addEventListener('click', () => {
+                this.showSettingsModal();
+            });
+        }
+        
+        if (this.saveSettingsBtn) {
+            this.saveSettingsBtn.addEventListener('click', () => {
+                this.savePartnerNames();
+            });
+        }
+        
+        if (this.cancelSettingsBtn) {
+            this.cancelSettingsBtn.addEventListener('click', () => {
+                this.hideSettingsModal();
+            });
+        }
+        
+        if (this.settingsModal) {
+            this.settingsModal.addEventListener('click', (e) => {
+                if (e.target === this.settingsModal) {
+                    this.hideSettingsModal();
+                }
+            });
+        }
     }
     
     /**
@@ -1286,6 +1326,42 @@ class SplitMate {
     }
     
     /**
+     * Show the settings modal and pre-fill current names
+     */
+    showSettingsModal() {
+        if (window.i18n) {
+            this.partner1Input.value = window.i18n.getP1Name() !== 'Partner 1' ? window.i18n.getP1Name() : '';
+            this.partner2Input.value = window.i18n.getP2Name() !== 'Partner 2' ? window.i18n.getP2Name() : '';
+        }
+        this.settingsModal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => this.partner1Input.focus(), 50);
+    }
+    
+    /**
+     * Hide the settings modal
+     */
+    hideSettingsModal() {
+        this.settingsModal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+    
+    /**
+     * Save partner names and re-render the UI
+     */
+    savePartnerNames() {
+        const p1 = this.partner1Input.value.trim();
+        const p2 = this.partner2Input.value.trim();
+        
+        if (window.i18n) {
+            window.i18n.setPartnerNames(p1, p2);
+        }
+        
+        this.hideSettingsModal();
+        this.updateDisplay();
+    }
+
+    /**
      * Show the settle up confirmation modal
      */
     showConfirmModal() {
@@ -1494,7 +1570,7 @@ class SplitMate {
         // Show transaction info under the title
         const receiptTransactionInfo = document.getElementById('receiptTransactionInfo');
         const transactionDate = new Date(transaction.date).toLocaleDateString();
-        const whoPaidText = transaction.whoPaid === 'me' ? 'Bryan' : 'Ayako';
+        const whoPaidText = transaction.whoPaid === 'me' ? this.t('bryan', window.i18n.getP1Name()) : this.t('ayako', window.i18n.getP2Name());
         
         receiptTransactionInfo.innerHTML = `
             <div class="transaction-info-row">
@@ -1511,53 +1587,53 @@ class SplitMate {
         
         modalReceiptSummary.innerHTML = `
             <div class="summary-row">
-                <span class="label">Total (all items):</span>
+                <span class="label">${this.t('totalAllItems', 'Total (all items):')}</span>
                 <span class="amount">${this.formatCurrency(breakdown.grandTotal + breakdown.totalFees)}</span>
             </div>
             <div class="summary-divider"></div>
             <div class="summary-row">
-                <span class="label">Bryan pays (unchecked items):</span>
+                <span class="label">${this.t('bryanPaysUnchecked')}</span>
                 <span class="amount">${this.formatCurrency(breakdown.uncheckedTotal)}</span>
             </div>
             <div class="summary-row">
-                <span class="label">Bryan split portion:</span>
+                <span class="label">${this.t('bryanSplitPortion')}</span>
                 <span class="amount">${this.formatCurrency(breakdown.splitTotal / 2)}</span>
             </div>
             <div class="summary-row">
-                <span class="label">Bryan's taxes and fees:</span>
+                <span class="label">${this.t('bryanTaxesFees')}</span>
                 <span class="amount">${this.formatCurrency(breakdown.bryanFees)}</span>
             </div>
             <div class="summary-row">
-                <span class="label">Ayako owes (individual items):</span>
+                <span class="label">${this.t('ayakoOwesIndividual')}</span>
                 <span class="amount">${this.formatCurrency(breakdown.individualTotal)}</span>
             </div>
             <div class="summary-row">
-                <span class="label">Ayako split portion:</span>
+                <span class="label">${this.t('ayakoSplitPortion')}</span>
                 <span class="amount">${this.formatCurrency(breakdown.splitTotal / 2)}</span>
             </div>
             <div class="summary-row">
-                <span class="label">Ayako's taxes and fees:</span>
+                <span class="label">${this.t('ayakoTaxesFees')}</span>
                 <span class="amount">${this.formatCurrency(breakdown.ayakoFees)}</span>
             </div>
             <div class="summary-row">
-                <span class="label">Split items total:</span>
+                <span class="label">${this.t('splitItemsTotal', 'Split items total:')}</span>
                 <span class="amount">${this.formatCurrency(breakdown.splitTotal)}</span>
             </div>
             <div class="summary-divider"></div>
             <div class="summary-row">
-                <span class="label">Bryan total (unchecked + split + fees):</span>
+                <span class="label">${this.t('bryanTotal')}</span>
                 <span class="amount">${this.formatCurrency(breakdown.bryanTotal)}</span>
             </div>
             <div class="summary-row">
-                <span class="label">Ayako total (individual + split + fees):</span>
+                <span class="label">${this.t('ayakoTotal')}</span>
                 <span class="amount">${this.formatCurrency(breakdown.ayakoTotal)}</span>
             </div>
             <div class="summary-row">
-                <span class="label">Total taxes and fees:</span>
+                <span class="label">${this.t('totalTaxesFees', 'Total taxes and fees:')}</span>
                 <span class="amount">${this.formatCurrency(breakdown.totalFees)}</span>
             </div>
             <div class="summary-row total">
-                <span class="label">${breakdown.isSettled || transaction.settled ? 'Ayako paid Bryan:' : 'Ayako owes Bryan:'}</span>
+                <span class="label">${breakdown.isSettled || transaction.settled ? this.t('ayakoPaidBryan') : this.t('ayakoOwesBryan')}</span>
                 <span class="amount">${this.formatCurrency(breakdown.ayakoOwes)}</span>
             </div>
         `;

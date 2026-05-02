@@ -35,3 +35,7 @@ run = ["sh", "-c", "node server.js"]
 
 [agent]
 expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 60000

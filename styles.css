@@ -12,19 +12,22 @@
   --glass-border:  rgba(255,255,255,0.10);
   --glass-border-hi: rgba(255,255,255,0.18);
 
-  --violet:        #8b5cf6;
-  --violet-mid:    #7c3aed;
-  --violet-dark:   #5b21b6;
-  --indigo:        #6366f1;
+  --primary:       #38bdf8;
+  --primary-mid:   #0ea5e9;
+  --primary-dark:  #0284c7;
+  --accent:        #67e8f9;
   --cyan:          #22d3ee;
   --pink:          #ec4899;
   --green:         #34d399;
   --red:           #f87171;
   --amber:         #fbbf24;
 
-  --grad-primary:  linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #22d3ee 100%);
-  --grad-card:     linear-gradient(145deg, rgba(139,92,246,0.18) 0%, rgba(99,102,241,0.10) 100%);
-  --grad-btn:      linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  /* keep --violet as an alias so existing references still resolve */
+  --violet:        #38bdf8;
+
+  --grad-primary:  linear-gradient(135deg, #67e8f9 0%, #38bdf8 45%, #818cf8 100%);
+  --grad-card:     linear-gradient(145deg, rgba(56,189,248,0.14) 0%, rgba(129,140,248,0.07) 100%);
+  --grad-btn:      linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
   --grad-danger:   linear-gradient(135deg, #f87171 0%, #ec4899 100%);
   --grad-success:  linear-gradient(135deg, #34d399 0%, #22d3ee 100%);
 
@@ -38,9 +41,9 @@
   --radius-xl:  28px;
   --radius-pill:100px;
 
-  --shadow-glow:  0 0 40px rgba(139,92,246,0.20);
+  --shadow-glow:  0 0 48px rgba(14,165,233,0.22);
   --shadow-card:  0 8px 32px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.06) inset;
-  --shadow-btn:   0 4px 20px rgba(139,92,246,0.40);
+  --shadow-btn:   0 4px 20px rgba(14,165,233,0.40);
   --shadow-modal: 0 24px 60px rgba(0,0,0,0.70);
 
   --blur-card:  blur(24px);
@@ -68,9 +71,9 @@ body {
   line-height: 1.5;
   /* Mesh aurora background */
   background-image:
-    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(139,92,246,0.30) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 10%, rgba(99,102,241,0.22) 0%, transparent 55%),
-    radial-gradient(ellipse 70% 60% at 50% 100%, rgba(34,211,238,0.12) 0%, transparent 60%);
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(14,165,233,0.22) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 10%,  rgba(99,102,241,0.16) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 60% at 50% 100%, rgba(103,232,249,0.10) 0%, transparent 60%);
   background-attachment: fixed;
 }
 
@@ -312,9 +315,9 @@ body {
   left: 0;
   height: calc(100% - 8px);
   border-radius: var(--radius-pill);
-  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
   box-shadow:
-    0 2px 18px rgba(139,92,246,0.50),
+    0 2px 18px rgba(14,165,233,0.50),
     0 1px 0 rgba(255,255,255,0.18) inset,
     0 -1px 0 rgba(0,0,0,0.20) inset;
   transition:

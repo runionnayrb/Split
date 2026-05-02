@@ -92,6 +92,23 @@ The application now requires server-side configuration for receipt scanning, but
 - **File Processing**: Supports JPG, PNG, WebP, and PDF files up to 10MB for receipt scanning
 - **AI Integration**: Uses OpenAI GPT-4o Vision API for receipt text extraction and categorization
 
+## Recent Changes (May 2, 2026)
+
+✓ Complete premium SaaS redesign — dark glassmorphism UI
+✓ Deep aurora mesh gradient background (#07071a base with purple/indigo overlays)
+✓ Glassmorphism cards with backdrop-filter blur, glass borders, and subtle shimmer lines
+✓ Premium segmented control tabs (pill-shaped, gradient active state with glow)
+✓ Gradient logo text (violet → indigo → cyan) with custom brand icon
+✓ Premium balance summary cards with glass styling
+✓ Full CSS design token system (--violet, --grad-btn, --shadow-glow, etc.)
+✓ Premium SVG icon set throughout (upload, scan, add, history, settle, close, delete)
+✓ Glass form inputs with purple focus glow and custom dark select arrow
+✓ Premium buttons with gradient fills, shimmer overlays, and hover lift effects
+✓ iOS safe-area support via env(safe-area-inset-bottom)
+✓ Dark glassmorphism modals and bottom sheet with blur backdrop
+✓ Restructured HTML to protect SVG icons from i18n textContent replacement
+✓ Fixed language toggle to use onclick="window.i18n.toggleLanguage()"
+
 ## Recent Changes (July 25, 2025)
 
 ✓ Added receipt scanning functionality with OpenAI Vision API integration

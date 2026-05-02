@@ -4,129 +4,171 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SplitMate">
-    <meta name="theme-color" content="#667eea">
-    <title>SplitMate - Expense Splitter for Couples</title>
+    <meta name="theme-color" content="#07071a">
+    <title>SplitMate — Expense Splitter for Couples</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="i18n.js"></script>
 </head>
 <body>
     <div class="container">
-        <!-- Top Section: Title + Balance Summary -->
+
+        <!-- ── HEADER ─────────────────────────────────────── -->
         <header class="header">
-            <h1 data-i18n="appTitle">SplitMate</h1>
+
+            <!-- Language toggle -->
+            <div class="language-toggle">
+                <button class="language-btn" id="languageToggle" onclick="window.i18n && window.i18n.toggleLanguage()">EN</button>
+            </div>
+
+            <!-- Logo + Title -->
+            <div class="header-brand">
+                <svg class="brand-icon" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="28" height="28" rx="8" fill="url(#logoGrad)"/>
+                    <path d="M8 14h12M14 8l6 6-6 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <defs>
+                        <linearGradient id="logoGrad" x1="0" y1="0" x2="28" y2="28">
+                            <stop stop-color="#8b5cf6"/>
+                            <stop offset="1" stop-color="#22d3ee"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <h1 data-i18n="appTitle">SplitMate</h1>
+            </div>
             <p class="subtitle" data-i18n="appSubtitle">Expense Splitter for Couples</p>
-            
+
+            <!-- Balance summary -->
             <div class="balance-summary">
                 <div class="balance-item">
-                    <span class="label" data-i18n="bryanHasPaid">Bryan has paid:</span>
+                    <span class="label" data-i18n="bryanHasPaid">Bryan paid</span>
                     <span class="amount" id="myTotal">$0.00</span>
                 </div>
                 <div class="balance-item">
-                    <span class="label" data-i18n="ayakoHasPaid">Ayako has paid:</span>
+                    <span class="label" data-i18n="ayakoHasPaid">Ayako paid</span>
                     <span class="amount" id="spouseTotal">$0.00</span>
                 </div>
-                <div class="net-balance" id="netBalance">
-                    All settled up! 🎉
-                </div>
+                <div class="net-balance" id="netBalance">All settled up! 🎉</div>
             </div>
         </header>
 
-        <!-- Middle Section: Transaction Form -->
+        <!-- ── ADD EXPENSE ─────────────────────────────────── -->
         <section class="transaction-form">
-            <h2 data-i18n="addNewExpense">Add New Expense</h2>
-            
-            <!-- Receipt Upload Section -->
+            <h2 class="section-heading">
+                <svg class="section-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                <span data-i18n="addNewExpense">Add New Expense</span>
+            </h2>
+
+            <!-- Input mode tabs -->
             <div class="receipt-upload-section">
                 <div class="upload-tabs">
-                    <button type="button" id="manualTab" class="tab-button" data-i18n="manualEntry">Manual Entry</button>
-                    <button type="button" id="receiptTab" class="tab-button active" data-i18n="scanReceipt">Scan Receipt</button>
+                    <button type="button" id="manualTab" class="tab-button">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px;margin-right:5px;"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        <span data-i18n="manualEntry">Manual Entry</span>
+                    </button>
+                    <button type="button" id="receiptTab" class="tab-button active">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px;margin-right:5px;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        <span data-i18n="scanReceipt">Scan Receipt</span>
+                    </button>
                 </div>
-                
+
+                <!-- Scan Receipt panel -->
                 <div id="receiptUpload" class="receipt-upload">
                     <div class="upload-area" id="uploadArea">
                         <div class="upload-content">
-                            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="7,10 12,15 17,10"></polyline>
-                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="16 16 12 12 8 16"/>
+                                <line x1="12" y1="12" x2="12" y2="21"/>
+                                <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
                             </svg>
-                            <p class="upload-text"><span data-i18n="dropReceiptHere">Drop receipt file here or</span> <span class="upload-link" data-i18n="clickToUpload">click to upload</span></p>
-                            <p class="upload-hint" data-i18n="supportsFiles">Supports JPG, PNG, PDF files up to 10MB</p>
+                            <p class="upload-text">
+                                <span data-i18n="dropReceiptHere">Drop receipt here or</span>
+                                <span class="upload-link" data-i18n="clickToUpload"> tap to upload</span>
+                            </p>
+                            <p class="upload-hint" data-i18n="supportsFiles">JPG · PNG · PDF up to 10 MB</p>
                         </div>
                         <input type="file" id="receiptFile" accept="image/*,.pdf" hidden>
                     </div>
-                    
+
+                    <!-- Preview -->
                     <div id="receiptPreview" class="receipt-preview hidden">
                         <div id="previewContainer">
                             <img id="previewImage" data-i18n-alt="receiptPreview" alt="Receipt preview" class="hidden">
                             <div id="pdfPreview" class="pdf-preview hidden">
                                 <div class="pdf-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                        <polyline points="14,2 14,8 20,8"></polyline>
-                                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                                        <polyline points="10,9 9,9 8,9"></polyline>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                        <polyline points="14,2 14,8 20,8"/>
+                                        <line x1="16" y1="13" x2="8" y2="13"/>
+                                        <line x1="16" y1="17" x2="8" y2="17"/>
                                     </svg>
                                 </div>
                                 <p id="pdfFileName" class="pdf-filename"></p>
-                                <p class="pdf-info" data-i18n="pdfReadyForProcessing">PDF receipt ready for processing</p>
+                                <p class="pdf-info" data-i18n="pdfReadyForProcessing">PDF ready for processing</p>
                             </div>
                         </div>
                         <div class="preview-actions">
-                            <button type="button" id="processReceipt" class="btn-primary" data-i18n="processReceipt">Process Receipt</button>
-                            <button type="button" id="cancelUpload" class="btn-secondary" data-i18n="cancel">Cancel</button>
+                            <button type="button" id="processReceipt" class="btn-primary">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                <span data-i18n="processReceipt">Scan Receipt</span>
+                            </button>
+                            <button type="button" id="cancelUpload" class="btn-secondary">
+                                <span data-i18n="cancel">Cancel</span>
+                            </button>
                         </div>
                     </div>
-                    
+
+                    <!-- Processing -->
                     <div id="processingStatus" class="processing-status hidden">
                         <div class="spinner"></div>
-                        <p data-i18n="scanningReceipt">Scanning receipt...</p>
+                        <p data-i18n="scanningReceipt">Scanning receipt with AI…</p>
                     </div>
                 </div>
             </div>
 
             <form id="expenseForm">
+                <!-- Manual Entry panel -->
                 <div id="manualForm" class="manual-form hidden">
                     <div class="form-group">
                         <label for="whoPaid" data-i18n="whoPaid">Who paid?</label>
                         <select id="whoPaid" required>
-                            <option value="me" data-i18n="bryan">Bryan</option>
+                            <option value="me"     data-i18n="bryan">Bryan</option>
                             <option value="spouse" data-i18n="ayako">Ayako</option>
                         </select>
                     </div>
-
                     <div class="form-group">
                         <label for="amount" data-i18n="amount">Amount ($)</label>
                         <input type="number" id="amount" step="0.01" min="0" required placeholder="0.00">
                     </div>
-
                     <div class="form-group">
                         <label for="notes" data-i18n="description">Description (optional)</label>
                         <input type="text" id="notes" data-i18n-placeholder="descriptionPlaceholder" placeholder="What was this for?">
                     </div>
-
-                    <button type="submit" class="btn-primary" data-i18n="addExpense">Add Expense</button>
+                    <button type="submit" class="btn-primary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        <span data-i18n="addExpense">Add Expense</span>
+                    </button>
                 </div>
 
-                <!-- Receipt Processing Results -->
+                <!-- Receipt Results panel -->
                 <div id="receiptResults" class="receipt-results hidden">
-                    <h3 data-i18n="receiptItems">Receipt Items</h3>
+                    <h3 class="section-heading" style="font-size:0.95rem;margin-bottom:14px;">
+                        <svg class="section-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/></svg>
+                        <span data-i18n="receiptItems">Receipt Items</span>
+                    </h3>
                     <div class="results-header">
                         <div class="who-paid-selector">
                             <label for="receiptWhoPaid" data-i18n="whoPaidReceipt">Who paid for this receipt?</label>
                             <select id="receiptWhoPaid">
-                                <option value="me" data-i18n="bryan">Bryan</option>
+                                <option value="me"     data-i18n="bryan">Bryan</option>
                                 <option value="spouse" data-i18n="ayako">Ayako</option>
                             </select>
                         </div>
                     </div>
-                    
+
                     <div id="receiptItemsList" class="receipt-items"></div>
-                    
+
                     <div class="receipt-summary">
                         <div class="summary-row">
                             <span class="label" data-i18n="totalAllItems">Total (all items):</span>
@@ -134,7 +176,7 @@
                         </div>
                         <div class="summary-divider"></div>
                         <div class="summary-row">
-                            <span class="label" data-i18n="bryanPaysUnchecked">Bryan pays (unchecked items):</span>
+                            <span class="label" data-i18n="bryanPaysUnchecked">Bryan pays (unchecked):</span>
                             <span id="bryanUnchecked" class="amount">$0.00</span>
                         </div>
                         <div class="summary-row">
@@ -142,11 +184,11 @@
                             <span id="bryanSplit" class="amount">$0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="label" data-i18n="bryanTaxesFees">Bryan's taxes and fees:</span>
+                            <span class="label" data-i18n="bryanTaxesFees">Bryan's taxes &amp; fees:</span>
                             <span id="bryanFees" class="amount">$0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="label" data-i18n="ayakoOwesIndividual">Ayako owes (individual items):</span>
+                            <span class="label" data-i18n="ayakoOwesIndividual">Ayako owes (individual):</span>
                             <span id="ayakoIndividual" class="amount">$0.00</span>
                         </div>
                         <div class="summary-row">
@@ -154,7 +196,7 @@
                             <span id="ayakoSplit" class="amount">$0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="label" data-i18n="ayakoTaxesFees">Ayako's taxes and fees:</span>
+                            <span class="label" data-i18n="ayakoTaxesFees">Ayako's taxes &amp; fees:</span>
                             <span id="ayakoFees" class="amount">$0.00</span>
                         </div>
                         <div class="summary-row">
@@ -163,59 +205,71 @@
                         </div>
                         <div class="summary-divider"></div>
                         <div class="summary-row">
-                            <span class="label" data-i18n="bryanTotal">Bryan total (unchecked + split + fees):</span>
+                            <span class="label" data-i18n="bryanTotal">Bryan total:</span>
                             <span id="bryanTotal" class="amount">$0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="label" data-i18n="ayakoTotal">Ayako total (individual + split + fees):</span>
+                            <span class="label" data-i18n="ayakoTotal">Ayako total:</span>
                             <span id="ayakoTotal" class="amount">$0.00</span>
                         </div>
                         <div class="summary-row">
-                            <span class="label" data-i18n="totalTaxesFees">Total taxes and fees:</span>
+                            <span class="label" data-i18n="totalTaxesFees">Total taxes &amp; fees:</span>
                             <span id="receiptFees" class="amount">$0.00</span>
                         </div>
                         <div class="summary-row total">
-                            <span class="label" data-i18n="ayakoOwesBryan">Ayako owes Bryan:</span>
+                            <span class="label" data-i18n="ayakoOwesBryan">Amount owed:</span>
                             <span id="receiptNetAmount" class="amount">$0.00</span>
                         </div>
                     </div>
-                    
-                    <!-- Store/Location Description Field -->
-                    <div class="form-group">
-                        <label for="receiptDescription" data-i18n="storeLocation">Store/Location:</label>
-                        <input type="text" id="receiptDescription" data-i18n-placeholder="storeLocationPlaceholder" placeholder="e.g., Publix, Target, Whole Foods..." maxlength="100">
+
+                    <!-- Store / Location -->
+                    <div class="form-group" style="margin-top:14px;">
+                        <label for="receiptDescription" data-i18n="storeLocation">Store / Location</label>
+                        <input type="text" id="receiptDescription" data-i18n-placeholder="storeLocationPlaceholder" placeholder="e.g. Publix, Target, Whole Foods…" maxlength="100">
                     </div>
-                    
+
                     <div class="receipt-actions">
-                        <button type="button" id="addReceiptItems" class="btn-primary" data-i18n="addSelectedItems">Add Selected Items</button>
-                        <button type="button" id="clearReceipt" class="btn-secondary" data-i18n="clearReceipt">Clear Receipt</button>
+                        <button type="button" id="addReceiptItems" class="btn-primary">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span data-i18n="addSelectedItems">Add Selected Items</span>
+                        </button>
+                        <button type="button" id="clearReceipt" class="btn-secondary">
+                            <span data-i18n="clearReceipt">Clear Receipt</span>
+                        </button>
                     </div>
                 </div>
             </form>
         </section>
 
-        <!-- Bottom Section: Transaction History -->
+        <!-- ── TRANSACTION HISTORY ──────────────────────────── -->
         <section class="transaction-history">
-            <h2 data-i18n="transactionHistory">Transaction History</h2>
-            
-            <!-- Transaction Tabs -->
+            <h2 class="section-heading">
+                <svg class="section-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                <span data-i18n="transactionHistory">Transaction History</span>
+            </h2>
+
+            <!-- Tabs: Unpaid / Paid -->
             <div class="transaction-tabs">
-                <button id="unpaidTab" class="tab-button active" data-i18n="unpaid">Unpaid</button>
-                <button id="paidTab" class="tab-button" data-i18n="paid">Paid</button>
+                <button id="unpaidTab" class="tab-button active">
+                    <span data-i18n="unpaid">Unpaid</span>
+                </button>
+                <button id="paidTab" class="tab-button">
+                    <span data-i18n="paid">Paid</span>
+                </button>
             </div>
-            
-            <!-- Unpaid Transactions Table -->
+
+            <!-- Unpaid -->
             <div id="unpaidTransactions" class="tab-content active">
                 <div class="table-container">
                     <table id="unpaidTransactionsTable">
                         <thead>
                             <tr>
                                 <th data-i18n="date">Date</th>
-                                <th data-i18n="whoPaidHeader">Who Paid</th>
+                                <th data-i18n="whoPaidHeader">Paid by</th>
                                 <th data-i18n="amountHeader">Amount</th>
                                 <th data-i18n="descriptionHeader">Description</th>
-                                <th data-i18n="bryanOwesHeader">Bryan Owes</th>
-                                <th data-i18n="ayakoOwesHeader">Ayako Owes</th>
+                                <th data-i18n="bryanOwesHeader">Bryan</th>
+                                <th data-i18n="ayakoOwesHeader">Ayako</th>
                             </tr>
                         </thead>
                         <tbody id="unpaidTransactionsBody">
@@ -226,18 +280,18 @@
                     </table>
                 </div>
             </div>
-            
-            <!-- Paid Transactions Table -->
+
+            <!-- Paid -->
             <div id="paidTransactions" class="tab-content">
                 <div class="table-container">
                     <table id="paidTransactionsTable">
                         <thead>
                             <tr>
                                 <th data-i18n="date">Date</th>
-                                <th data-i18n="whoPaidHeader">Who Paid</th>
+                                <th data-i18n="whoPaidHeader">Paid by</th>
                                 <th data-i18n="amountHeader">Amount</th>
                                 <th data-i18n="descriptionHeader">Description</th>
-                                <th data-i18n="settledDate">Settled Date</th>
+                                <th data-i18n="settledDate">Settled</th>
                             </tr>
                         </thead>
                         <tbody id="paidTransactionsBody">
@@ -250,78 +304,95 @@
             </div>
         </section>
 
-        <!-- Footer: Pay All Button -->
+        <!-- ── FOOTER ─────────────────────────────────────── -->
         <footer class="footer">
-            <button id="payAllBtn" class="btn-settle" disabled data-i18n="payAllOutstanding">
-                Pay All Outstanding
+            <button id="payAllBtn" class="btn-settle" disabled>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px;margin-right:6px;"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                <span data-i18n="payAllOutstanding">Settle Up</span>
             </button>
         </footer>
     </div>
 
-    <!-- Confirmation Modal -->
+    <!-- ── MODALS ──────────────────────────────────────────── -->
+
+    <!-- Confirm Pay All -->
     <div id="confirmModal" class="modal">
         <div class="modal-content">
-            <h3 data-i18n="confirmPayAll">💸 Confirm Pay All</h3>
-            <p data-i18n="confirmPayAllMessage">This will settle all outstanding transactions and move them to the Paid tab. Your running balances will be adjusted accordingly.</p>
+            <h3 data-i18n="confirmPayAll">💸 Settle Up</h3>
+            <p data-i18n="confirmPayAllMessage">This will settle all outstanding transactions and move them to the Paid tab.</p>
             <div class="modal-buttons">
-                <button id="confirmPayAll" class="btn-danger" data-i18n="yesPayAll">Yes, Pay All</button>
-                <button id="cancelPayAll" class="btn-secondary" data-i18n="cancel">Cancel</button>
+                <button id="confirmPayAll"  class="btn-primary">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span data-i18n="yesPayAll">Yes, Settle Up</span>
+                </button>
+                <button id="cancelPayAll"   class="btn-secondary">
+                    <span data-i18n="cancel">Cancel</span>
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- Delete Confirmation -->
     <div id="deleteConfirmModal" class="modal">
         <div class="modal-content">
-            <h3 data-i18n="deleteReceipt">🗑️ Delete Receipt</h3>
-            <p id="deleteConfirmMessage" data-i18n="deleteReceiptMessage">Are you sure you want to delete this receipt transaction? This action cannot be undone.</p>
+            <h3 data-i18n="deleteReceipt">🗑️ Delete Transaction</h3>
+            <p id="deleteConfirmMessage" data-i18n="deleteReceiptMessage">Are you sure you want to delete this transaction? This cannot be undone.</p>
             <div class="modal-buttons">
-                <button id="confirmDeleteTransaction" class="btn-danger" data-i18n="delete">Delete</button>
-                <button id="cancelDeleteTransaction" class="btn-secondary" data-i18n="cancel">Cancel</button>
+                <button id="confirmDeleteTransaction" class="btn-danger">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                    <span data-i18n="delete">Delete</span>
+                </button>
+                <button id="cancelDeleteTransaction" class="btn-secondary">
+                    <span data-i18n="cancel">Cancel</span>
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- iOS Style Bottom Sheet Modal -->
+    <!-- iOS Bottom Sheet -->
     <div id="payTransactionModal" class="bottom-sheet-modal">
         <div class="bottom-sheet-backdrop"></div>
         <div class="bottom-sheet-content">
             <div class="bottom-sheet-handle"></div>
             <div class="bottom-sheet-header">
-                <h3 data-i18n="payIndividualItem">💸 Pay Individual Item</h3>
-                <button id="closeBottomSheet" class="close-button">×</button>
+                <h3>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px;margin-right:6px;color:#8b5cf6"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                    <span data-i18n="payIndividualItem">Transaction Detail</span>
+                </h3>
+                <button id="closeBottomSheet" class="close-button" aria-label="Close">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
             </div>
             <div class="bottom-sheet-body">
-                <!-- Receipt breakdown section (hidden by default) -->
                 <div id="receiptBreakdownSection" class="receipt-breakdown-section">
                     <h4 data-i18n="receiptBreakdown">Receipt Breakdown</h4>
-                    <div id="receiptTransactionInfo" class="receipt-transaction-info">
-                        <!-- Date and who paid will be populated here -->
-                    </div>
-                    <div id="modalReceiptSummary" class="receipt-summary">
-                        <!-- Receipt breakdown will be populated here -->
-                    </div>
+                    <div id="receiptTransactionInfo" class="receipt-transaction-info"></div>
+                    <div id="modalReceiptSummary"    class="receipt-summary"></div>
                 </div>
-                
-                <div id="payTransactionDetails" class="hidden">
-                    <!-- Transaction details will be inserted here (hidden for receipt transactions) -->
-                </div>
-                
+                <div id="payTransactionDetails" class="hidden"></div>
                 <div id="receiptImageContainer" class="receipt-image-container hidden">
-                    <h4 data-i18n="receipt">Receipt</h4>
+                    <h4 data-i18n="receipt">Receipt Image</h4>
                     <img id="receiptImage" class="receipt-image" data-i18n-alt="receiptPreview" alt="Receipt">
                 </div>
                 <p id="payTransactionMessage"></p>
             </div>
             <div class="bottom-sheet-actions">
-                <button id="confirmPayTransaction" class="btn-primary" data-i18n="payBryanShare">Pay Bryan's Share</button>
-                <button id="cancelPayTransaction" class="btn-secondary" data-i18n="cancel">Cancel</button>
-                <button id="deleteTransaction" class="btn-danger hidden" data-i18n="deleteReceiptButton">Delete Receipt</button>
+                <button id="confirmPayTransaction" class="btn-primary">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span data-i18n="payBryanShare">Mark as Paid</span>
+                </button>
+                <button id="cancelPayTransaction"  class="btn-secondary">
+                    <span data-i18n="cancel">Cancel</span>
+                </button>
+                <button id="deleteTransaction" class="btn-danger hidden">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                    <span data-i18n="deleteReceiptButton">Delete</span>
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Confetti Container -->
+    <!-- Confetti -->
     <div id="confettiContainer" class="confetti-container"></div>
 
     <script src="receipt-processor.js"></script>

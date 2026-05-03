@@ -88,6 +88,9 @@ class SplitMate {
         this.currentReceiptData = null;
         this.selectedReceiptItems = new Set();
         this.splitReceiptItems = new Map(); // Track which items are set to split (50/50)
+
+        // Translation cache — persisted to localStorage
+        this.translationCache = this.loadTranslationCache();
         
         // Settings modal elements
         this.settingsModal = document.getElementById('settingsModal');
@@ -187,14 +190,13 @@ class SplitMate {
      * Update dynamic texts when language changes
      */
     updateDynamicTexts() {
-        // Update balance display
         this.updateBalanceDisplay();
-        
-        // Update table content if there are transactions
         this.updateTransactionTable();
-        
-        // Update category mapping
         this.updateCategoryMappings();
+        const currentLang = window.i18n ? window.i18n.currentLanguage : 'en';
+        if (currentLang === 'en') {
+            this.translateVisibleDescriptions();
+        }
     }
     
     /**
@@ -202,6 +204,79 @@ class SplitMate {
      */
     updateCategoryMappings() {
         // Category emoji mapping will be updated by getCategoryDisplay method automatically
+    }
+
+    /**
+     * Returns true if text contains Japanese characters
+     */
+    containsJapanese(text) {
+        return /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/.test(text || '');
+    }
+
+    /**
+     * Load persisted translation cache from localStorage
+     */
+    loadTranslationCache() {
+        try {
+            const raw = localStorage.getItem('splitmate_translations');
+            if (raw) return new Map(Object.entries(JSON.parse(raw)));
+        } catch (e) {}
+        return new Map();
+    }
+
+    /**
+     * Save translation cache to localStorage
+     */
+    saveTranslationCache() {
+        try {
+            const obj = {};
+            this.translationCache.forEach((v, k) => { obj[k] = v; });
+            localStorage.setItem('splitmate_translations', JSON.stringify(obj));
+        } catch (e) {}
+    }
+
+    /**
+     * Find all transaction cards marked for translation, fetch+cache, then update the DOM in place
+     */
+    async translateVisibleDescriptions() {
+        const elements = Array.from(document.querySelectorAll('[data-translate-text]'));
+        if (elements.length === 0) return;
+
+        const uniqueTexts = [...new Set(elements.map(el => el.dataset.translateText))];
+        const toFetch = uniqueTexts.filter(t => !this.translationCache.has(t));
+
+        if (toFetch.length > 0) {
+            await Promise.all(toFetch.map(async (text) => {
+                try {
+                    const res = await fetch('/api/translate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text })
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.translation) this.translationCache.set(text, data.translation);
+                    }
+                } catch (e) {
+                    console.warn('Translation failed for:', text);
+                }
+            }));
+            this.saveTranslationCache();
+        }
+
+        elements.forEach(wrap => {
+            const original = wrap.dataset.translateText;
+            const translation = this.translationCache.get(original);
+            if (!translation) return;
+            let transEl = wrap.querySelector('.tx-translation');
+            if (!transEl) {
+                transEl = document.createElement('span');
+                transEl.className = 'tx-translation';
+                wrap.appendChild(transEl);
+            }
+            transEl.textContent = translation;
+            delete wrap.dataset.translateText;
+        });
     }
     
     /**
@@ -1499,6 +1574,16 @@ class SplitMate {
         const rawLabel = this.getCategoryDisplay(transaction.category);
         const desc = transaction.notes || rawLabel.replace(/^\S+\s*/, '');
 
+        // Build description HTML — show cached English translation when in EN mode
+        const currentLang = window.i18n ? window.i18n.currentLanguage : 'en';
+        const hasJP = this.containsJapanese(desc);
+        const cached = hasJP ? this.translationCache.get(desc) : null;
+        const needsFetch = hasJP && currentLang === 'en' && !cached;
+        const safeDesc = desc.replace(/"/g, '&quot;');
+        const descHTML = hasJP
+            ? `<div class="tx-desc-wrap"${needsFetch ? ` data-translate-text="${safeDesc}"` : ''}><span class="tx-card-desc">${desc}</span>${(cached && currentLang === 'en') ? `<span class="tx-translation">${cached}</span>` : ''}</div>`
+            : `<span class="tx-card-desc">${desc}</span>`;
+
         if (isUnpaid) {
             let owedLabel = '';
             let owedAmount = '';
@@ -1548,7 +1633,7 @@ class SplitMate {
                 <div class="tx-card-emoji">${emoji}</div>
                 <div class="tx-card-body">
                     <div class="tx-card-row1">
-                        <span class="tx-card-desc">${desc}</span>
+                        ${descHTML}
                         <span class="tx-card-amount">${this.formatCurrency(transaction.amount)}</span>
                     </div>
                     <div class="tx-card-meta">${date} · ${whoPaidDisplay} paid</div>
@@ -1571,7 +1656,7 @@ class SplitMate {
                 <div class="tx-card-emoji">${emoji}</div>
                 <div class="tx-card-body">
                     <div class="tx-card-row1">
-                        <span class="tx-card-desc">${desc}</span>
+                        ${descHTML}
                         <span class="tx-card-amount">${this.formatCurrency(transaction.amount)}</span>
                     </div>
                     <div class="tx-card-meta">${date} · ${whoPaidDisplay} paid</div>

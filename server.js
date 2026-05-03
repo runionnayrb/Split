@@ -713,6 +713,35 @@ const server = http.createServer(async (req, res) => {
             return;
         }
 
+        // ── Translate text to English ─────────────────────────────────────────
+        if (pathname === '/api/translate' && req.method === 'POST') {
+            if (!OPENAI_API_KEY) { json(res, 503, { error: 'Translation not available' }); return; }
+            const body = JSON.parse((await readBody(req)).toString());
+            const { text } = body;
+            if (!text || !text.trim()) { json(res, 400, { error: 'text is required' }); return; }
+            try {
+                const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_API_KEY}` },
+                    body: JSON.stringify({
+                        model: 'gpt-4o-mini',
+                        messages: [{
+                            role: 'user',
+                            content: `Translate this expense description to natural English. Reply with only the translation, nothing else: "${text}"`
+                        }],
+                        max_tokens: 80
+                    })
+                });
+                if (!openaiRes.ok) { json(res, 502, { error: 'Translation API error' }); return; }
+                const data = await openaiRes.json();
+                json(res, 200, { translation: data.choices[0].message.content.trim() });
+            } catch (e) {
+                console.error('Translation error:', e.message);
+                json(res, 500, { error: 'Translation failed' });
+            }
+            return;
+        }
+
         // Serve static files
         let filePath = pathname === '/'    ? '/landing.html'
                      : pathname === '/app' ? '/index.html'

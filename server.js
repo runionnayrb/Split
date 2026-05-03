@@ -719,7 +719,8 @@ const server = http.createServer(async (req, res) => {
             const body = JSON.parse((await readBody(req)).toString());
             const { text, targetLanguage } = body;
             if (!text || !text.trim()) { json(res, 400, { error: 'text is required' }); return; }
-            const langLabel = (targetLanguage === 'ja') ? 'Japanese' : 'English';
+            const langNames = { en: 'English', ja: 'Japanese', zh: 'Chinese', ko: 'Korean', fr: 'French', es: 'Spanish', de: 'German', it: 'Italian', pt: 'Portuguese', ru: 'Russian', ar: 'Arabic', hi: 'Hindi' };
+            const langLabel = langNames[targetLanguage] || targetLanguage || 'English';
             try {
                 const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
                     method: 'POST',

@@ -1601,19 +1601,18 @@ class SplitMate {
         const rawLabel = this.getCategoryDisplay(transaction.category);
         const desc = transaction.notes || rawLabel.replace(/^\S+\s*/, '');
 
-        // Build description HTML — auto-translate non-Latin text on language toggle
+        // Build description HTML — auto-translate any description on language toggle
         const currentLang = window.i18n ? window.i18n.currentLanguage : 'en';
-        const hasNonLatin = this.containsNonLatinScript(desc);
         const cacheKey = `${desc}::${currentLang}`;
-        const cached = hasNonLatin ? this.translationCache.get(cacheKey) : null;
-        const needsFetch = hasNonLatin && !cached;
+        const cached = desc ? this.translationCache.get(cacheKey) : null;
+        const needsFetch = !!desc && !cached;
         const safeDesc = desc.replace(/"/g, '&quot;');
         // Only pre-render loading pill once availability is confirmed true;
         // if still null, translateVisibleDescriptions() will inject it after confirming.
         const showLoadingPill = needsFetch && this.openAIAvailable === true;
         // Cached translation is set via textContent after innerHTML to prevent XSS.
         const hasCachedTranslation = !!cached;
-        const descHTML = hasNonLatin
+        const descHTML = desc
             ? `<div class="tx-desc-wrap"${needsFetch ? ` data-translate-text="${safeDesc}"` : ''}><span class="tx-card-desc">${desc}</span>${hasCachedTranslation ? '<span class="tx-translation"></span>' : (showLoadingPill ? '<span class="tx-translation tx-translation-loading">···</span>' : '')}</div>`
             : `<span class="tx-card-desc">${desc}</span>`;
 

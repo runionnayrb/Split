@@ -92,7 +92,7 @@ The application now requires server-side configuration for receipt scanning, but
 - **File Processing**: Supports JPG, PNG, WebP, and PDF files up to 10MB for receipt scanning
 - **AI Integration**: Uses OpenAI GPT-4o Vision API for receipt text extraction and categorization
 
-## Recent Changes (May 3, 2026) — Zelle QR Integration
+## Recent Changes (May 3, 2026) — Zelle QR Integration & Mobile UX Overhaul
 
 ✓ Added Zelle QR code (zelle-qr.png) served as a static asset from the root
 ✓ Transaction detail bottom sheet now shows Zelle QR code on every transaction — Ayako can scan directly from the app to pay Bryan
@@ -100,7 +100,7 @@ The application now requires server-side configuration for receipt scanning, but
 ✓ QR image pre-loaded asynchronously before canvas drawing; graceful fallback if image fails to load
 ✓ Zelle section cleaned up on modal close along with friend split info
 
-## Recent Changes (May 3, 2026) — Mobile UX Overhaul
+## Recent Changes (May 3, 2026) — Mobile UX Overhaul & Virtual Cards
 
 ✓ Replaced transaction tables with mobile-native card list — emoji category icon, description, who paid, amount, and owed row all on one tappable card
 ✓ Added getCategoryEmoji() helper; cards use 🥬🍽️✈️🛍️📋💳 icons per category
@@ -110,6 +110,25 @@ The application now requires server-side configuration for receipt scanning, but
 ✓ Settings modal now always pre-fills the currently saved names (Partner 1/2 or custom names) — names persist via localStorage keys splitmate_partner1_name / splitmate_partner2_name
 ✓ Removed all dead .modal / .modal-content / table CSS — file is now ~60 lines shorter
 ✓ Configurable partner names feature merged: gear icon in header opens Settings sheet; names saved to localStorage and propagated app-wide via partnerNamesChanged event
+✓ Added Virtual Cards section between header and Add Expense (two credit card widgets, one per partner)
+✓ Realistic credit card UI — chip, masked card number (•••• •••• •••• XXXX), expiry, CVV, gradient design
+✓ Blue gradient card for Partner 1, pink/purple gradient for Partner 2
+✓ Tap card to reveal full card number and CVV (auto-hides after 10 seconds for security)
+✓ Copy card number button in card actions row
+✓ "Set Up Card" button per partner — opens modal to create a Stripe Issuing cardholder + virtual card
+✓ "Link Real Card" button — opens Stripe Elements form (SetupIntent flow) to store real payment method
+✓ Adjustable split ratio slider (0–100%) — 50/50 default, persisted server-side
+✓ Added stripe npm package (direct Stripe API, no stripe-replit-sync since this is Issuing not subscriptions)
+✓ File-based partner data store at data/partners.json (name, cardholder ID, card ID, customer ID, PM ID)
+✓ Server endpoints: /api/vc/status, /api/vc/cards, /api/vc/setup-cardholder, /api/vc/create-setup-intent, /api/vc/confirm-payment-method, /api/vc/split-ratio, /api/vc/transactions, /api/vc/publishable-key, /api/vc/reset-partner
+✓ Stripe webhook at /webhook/stripe — handles issuing_authorization.request (auto-approves) and issuing_transaction.created (splits and charges each partner's real card)
+✓ Server-Sent Events at /api/notifications for real-time in-app push notifications
+✓ In-app toast notification slides in from top when a charge is processed (auto-dismisses after 6s)
+✓ Auto-records VC transactions into SplitMate transaction history on webhook receipt
+✓ Recent card charges list at bottom of Virtual Cards section (last 5 charges with merchant, amount, split, date)
+✓ Graceful degradation: shows amber "Stripe not configured" notice when STRIPE_SECRET_KEY not set
+✓ Requires STRIPE_SECRET_KEY and STRIPE_PUBLISHABLE_KEY env vars; STRIPE_WEBHOOK_SECRET for verified webhooks
+✓ Stripe Issuing must be enabled on the Stripe account (application process required)
 
 ## Recent Changes (May 2, 2026) — Friend Split Feature
 

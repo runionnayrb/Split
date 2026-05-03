@@ -100,6 +100,10 @@ class SplitMate {
         
         // Set up i18n language change listener
         this.setupI18nListener();
+
+        // Initialize virtual card feature
+        this.virtualCard = new VirtualCard(this);
+        this.virtualCard.init();
     }
     
     /**
@@ -2335,6 +2339,759 @@ class SplitMate {
         } catch (error) {
             console.error('Failed to load data from localStorage:', error);
             // Continue with empty data
+        }
+    }
+}
+
+// ============================================================
+// VIRTUAL CARD FEATURE
+// ============================================================
+class VirtualCard {
+    constructor(app) {
+        this.app = app;
+        this.status = null;
+        this.cards = { me: null, spouse: null };
+        this.revealedCards = new Set();
+        this.activeSetupPartner = null;
+        this.activeLinkPartner = null;
+        this.stripeJs = null;
+        this.stripeElements = null;
+        this.stripeCardElement = null;
+        this.splitRatio = 0.5;
+        this.sseSource = null;
+        this.toastTimer = null;
+    }
+
+    async init() {
+        await this.loadStatus();
+        this.setupEventListeners();
+        this.connectSSE();
+        await this.loadVCTransactions();
+        this.updateSplitSliderBackground();
+    }
+
+    // ── Status & Card Loading ─────────────────────────────────────────────────
+
+    async loadStatus() {
+        try {
+            const res = await fetch('/api/vc/status');
+            if (!res.ok) return;
+            this.status = await res.json();
+            this.splitRatio = this.status.splitRatio || 0.5;
+            this.renderStatus();
+
+            if (this.status.stripeConfigured) {
+                await this.loadCardDetails();
+            }
+        } catch (e) {
+            console.error('VirtualCard: failed to load status:', e);
+            this.renderStatus();
+        }
+    }
+
+    async loadCardDetails() {
+        try {
+            const res = await fetch('/api/vc/cards');
+            if (!res.ok) return;
+            const data = await res.json();
+            this.cards = data.cards || { me: null, spouse: null };
+            this.renderCards();
+        } catch (e) {
+            console.error('VirtualCard: failed to load card details:', e);
+        }
+    }
+
+    renderStatus() {
+        const stripe = this.status?.stripeConfigured;
+        const notice = document.getElementById('vcStripeNotice');
+        const grid = document.getElementById('vcCardsGrid');
+        const splitRow = document.getElementById('vcSplitRow');
+        const badge = document.getElementById('vcBadge');
+
+        if (!stripe) {
+            if (notice) notice.classList.remove('hidden');
+            if (grid) grid.style.opacity = '0.5';
+            if (splitRow) splitRow.style.opacity = '0.4';
+            return;
+        }
+
+        if (notice) notice.classList.add('hidden');
+        if (grid) grid.style.opacity = '1';
+        if (splitRow) splitRow.style.opacity = '1';
+
+        // Update split slider
+        const slider = document.getElementById('vcSplitSlider');
+        if (slider) slider.value = Math.round(this.splitRatio * 100);
+        this.updateSplitDisplay();
+
+        // Update partner names from i18n
+        const p1 = window.i18n?.getP1Name() || 'Me';
+        const p2 = window.i18n?.getP2Name() || 'Partner';
+        const splitNameMe = document.getElementById('vcSplitNameMe');
+        const splitNameSpouse = document.getElementById('vcSplitNameSpouse');
+        if (splitNameMe) splitNameMe.textContent = p1;
+        if (splitNameSpouse) splitNameSpouse.textContent = p2;
+
+        // Update badge
+        const hasCards = this.status?.me?.hasCard || this.status?.spouse?.hasCard;
+        if (badge) badge.textContent = hasCards ? 'Active' : '';
+    }
+
+    renderCards() {
+        for (const partnerKey of ['me', 'spouse']) {
+            const card = this.cards[partnerKey];
+            const partnerStatus = this.status?.[partnerKey];
+            const suffix = partnerKey === 'me' ? 'Me' : 'Spouse';
+
+            const cardEl = document.getElementById(`vcCard${suffix}Inner`);
+            const setupEl = document.getElementById(`vcSetup${suffix}`);
+            const actionsEl = document.getElementById(`vcActions${suffix}`);
+
+            if (!card && !partnerStatus?.hasCard) {
+                // No card — show setup prompt
+                if (cardEl) cardEl.style.display = 'none';
+                if (setupEl) setupEl.classList.add('visible');
+                if (actionsEl) actionsEl.classList.add('hidden');
+                continue;
+            }
+
+            // Has card — show card
+            if (cardEl) cardEl.style.display = '';
+            if (setupEl) setupEl.classList.remove('visible');
+            if (actionsEl) actionsEl.classList.remove('hidden');
+
+            // Populate card fields
+            const name = card?.name || partnerStatus?.name || (partnerKey === 'me' ? 'Partner 1' : 'Partner 2');
+            const last4 = card?.last4 || '????';
+            const expMonth = card?.expMonth ? String(card.expMonth).padStart(2, '0') : '••';
+            const expYear = card?.expYear ? String(card.expYear).slice(-2) : '••';
+
+            const nameEl = document.getElementById(`vcName${suffix}`);
+            const last4El = document.getElementById(`vcLast4${suffix}`);
+            const expiryEl = document.getElementById(`vcExpiry${suffix}`);
+
+            if (nameEl) nameEl.textContent = name.toUpperCase();
+            if (last4El) last4El.textContent = last4;
+            if (expiryEl) expiryEl.textContent = `${expMonth}/${expYear}`;
+
+            // CVV — show ••• if not revealed
+            const cvcEl = document.getElementById(`vcCvc${suffix}`);
+            if (cvcEl) {
+                if (this.revealedCards.has(partnerKey) && card?.cvc) {
+                    cvcEl.textContent = card.cvc;
+                } else {
+                    cvcEl.textContent = '•••';
+                }
+            }
+
+            // Link real card button state
+            const linkBtn = document.getElementById(`vcLink${suffix}`);
+            if (linkBtn && partnerStatus?.hasRealCard) {
+                linkBtn.textContent = '✓ Card Linked';
+                linkBtn.style.color = 'var(--green)';
+                linkBtn.disabled = true;
+            }
+        }
+    }
+
+    // ── Event Listeners ───────────────────────────────────────────────────────
+
+    setupEventListeners() {
+        // Card tap to reveal
+        for (const partnerKey of ['me', 'spouse']) {
+            const suffix = partnerKey === 'me' ? 'Me' : 'Spouse';
+            const cardEl = document.getElementById(`vcCard${suffix}Inner`);
+            if (cardEl) {
+                cardEl.addEventListener('click', () => this.toggleReveal(partnerKey));
+            }
+
+            const copyBtn = document.getElementById(`vcCopy${suffix}`);
+            if (copyBtn) {
+                copyBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.copyCardNumber(partnerKey);
+                });
+            }
+        }
+
+        // Split ratio slider
+        const slider = document.getElementById('vcSplitSlider');
+        if (slider) {
+            slider.addEventListener('input', () => {
+                this.splitRatio = slider.value / 100;
+                this.updateSplitDisplay();
+                this.updateSplitSliderBackground();
+            });
+            slider.addEventListener('change', () => {
+                this.saveSplitRatio(this.splitRatio);
+            });
+        }
+
+        // Setup modal
+        const setupSubmit = document.getElementById('vcSetupSubmit');
+        const setupCancel = document.getElementById('vcSetupCancel');
+        const vcSetupModal = document.getElementById('vcSetupModal');
+        if (setupSubmit) setupSubmit.addEventListener('click', () => this.submitSetup());
+        if (setupCancel) setupCancel.addEventListener('click', () => this.closeSetupModal());
+        if (vcSetupModal) {
+            vcSetupModal.addEventListener('click', (e) => {
+                if (e.target === vcSetupModal) this.closeSetupModal();
+            });
+        }
+
+        // Link card modal
+        const linkCancel = document.getElementById('vcLinkCancel');
+        const vcLinkModal = document.getElementById('vcLinkModal');
+        const linkSubmit = document.getElementById('vcLinkSubmit');
+        if (linkCancel) linkCancel.addEventListener('click', () => this.closeLinkModal());
+        if (vcLinkModal) {
+            vcLinkModal.addEventListener('click', (e) => {
+                if (e.target === vcLinkModal) this.closeLinkModal();
+            });
+        }
+        if (linkSubmit) linkSubmit.addEventListener('click', () => this.submitLinkCard());
+
+        // Toast close
+        const toastClose = document.getElementById('vcToastClose');
+        if (toastClose) toastClose.addEventListener('click', () => this.dismissToast());
+
+        // Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.closeSetupModal();
+                this.closeLinkModal();
+                this.dismissToast();
+            }
+        });
+    }
+
+    // ── Reveal / Copy ─────────────────────────────────────────────────────────
+
+    toggleReveal(partnerKey) {
+        const suffix = partnerKey === 'me' ? 'Me' : 'Spouse';
+        const card = this.cards[partnerKey];
+        if (!card) return;
+
+        const cardEl = document.getElementById(`vcCard${suffix}Inner`);
+        if (!cardEl) return;
+
+        if (this.revealedCards.has(partnerKey)) {
+            // Hide
+            this.revealedCards.delete(partnerKey);
+            cardEl.classList.remove('revealed');
+            const numberEl = document.getElementById(`vcNumber${suffix}`);
+            const cvcEl = document.getElementById(`vcCvc${suffix}`);
+            if (numberEl) {
+                const groups = numberEl.querySelectorAll('.vc-number-group:not(.vc-number-last)');
+                groups.forEach(g => { g.textContent = '••••'; });
+            }
+            if (cvcEl) cvcEl.textContent = '•••';
+        } else {
+            // Reveal
+            this.revealedCards.add(partnerKey);
+            cardEl.classList.add('revealed');
+
+            const numberEl = document.getElementById(`vcNumber${suffix}`);
+            const cvcEl = document.getElementById(`vcCvc${suffix}`);
+
+            if (numberEl && card.number) {
+                const groups = numberEl.querySelectorAll('.vc-number-group:not(.vc-number-last)');
+                const cleaned = card.number.replace(/\s/g, '');
+                const parts = [cleaned.slice(0,4), cleaned.slice(4,8), cleaned.slice(8,12)];
+                groups.forEach((g, i) => { g.textContent = parts[i] || '••••'; });
+            } else if (numberEl) {
+                const groups = numberEl.querySelectorAll('.vc-number-group:not(.vc-number-last)');
+                groups.forEach(g => { g.textContent = '••••'; });
+            }
+
+            if (cvcEl) {
+                cvcEl.textContent = card.cvc || '•••';
+            }
+
+            // Auto-hide after 10 seconds for security
+            setTimeout(() => {
+                if (this.revealedCards.has(partnerKey)) {
+                    this.toggleReveal(partnerKey);
+                }
+            }, 10000);
+        }
+    }
+
+    async copyCardNumber(partnerKey) {
+        const suffix = partnerKey === 'me' ? 'Me' : 'Spouse';
+        const card = this.cards[partnerKey];
+        if (!card) return;
+
+        // Need to reveal first if not revealed
+        const numberToCopy = card.number || card.last4;
+        if (!numberToCopy) return;
+
+        try {
+            await navigator.clipboard.writeText(numberToCopy);
+            const copyBtn = document.getElementById(`vcCopy${suffix}`);
+            if (copyBtn) {
+                const oldText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+                copyBtn.style.color = 'var(--green)';
+                setTimeout(() => {
+                    copyBtn.innerHTML = oldText;
+                    copyBtn.style.color = '';
+                }, 2000);
+            }
+        } catch (e) {
+            console.warn('Copy failed:', e);
+        }
+    }
+
+    // ── Split Ratio ───────────────────────────────────────────────────────────
+
+    updateSplitDisplay() {
+        const myPct = Math.round(this.splitRatio * 100);
+        const spousePct = 100 - myPct;
+        const pctEl = document.getElementById('vcSplitPct');
+        if (pctEl) pctEl.textContent = `${myPct}% / ${spousePct}%`;
+    }
+
+    updateSplitSliderBackground() {
+        const slider = document.getElementById('vcSplitSlider');
+        if (!slider) return;
+        const val = slider.value;
+        slider.style.background = `linear-gradient(to right, var(--primary) ${val}%, var(--glass-border-hi) ${val}%)`;
+    }
+
+    async saveSplitRatio(ratio) {
+        try {
+            await fetch('/api/vc/split-ratio', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ splitRatio: ratio })
+            });
+        } catch (e) {
+            console.error('Failed to save split ratio:', e);
+        }
+    }
+
+    // ── Partner Card Setup Modal ──────────────────────────────────────────────
+
+    openSetupModal(partnerKey) {
+        if (!this.status?.stripeConfigured) {
+            alert('Stripe is not configured. Please add STRIPE_SECRET_KEY to your environment variables to enable virtual cards.');
+            return;
+        }
+        this.activeSetupPartner = partnerKey;
+        const modal = document.getElementById('vcSetupModal');
+        const title = document.getElementById('vcSetupModalTitle');
+        const nameInput = document.getElementById('vcSetupName');
+        const emailInput = document.getElementById('vcSetupEmail');
+        const errorEl = document.getElementById('vcSetupError');
+        const form = document.getElementById('vcSetupForm');
+        const loading = document.getElementById('vcSetupLoading');
+
+        // Pre-fill name from i18n
+        const partnerName = partnerKey === 'me'
+            ? (window.i18n?.getP1Name() || '')
+            : (window.i18n?.getP2Name() || '');
+
+        if (title) {
+            const pName = partnerName && partnerName !== 'Partner 1' && partnerName !== 'Partner 2' ? partnerName : (partnerKey === 'me' ? 'Partner 1' : 'Partner 2');
+            title.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px;margin-right:8px;"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Set Up Card — ${pName}`;
+        }
+        if (nameInput && partnerName) nameInput.value = partnerName !== 'Partner 1' && partnerName !== 'Partner 2' ? partnerName : '';
+        if (emailInput) emailInput.value = this.status?.[partnerKey]?.email || '';
+        if (errorEl) { errorEl.classList.add('hidden'); errorEl.textContent = ''; }
+        if (form) form.style.display = '';
+        if (loading) loading.classList.add('hidden');
+        if (modal) {
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => nameInput?.focus(), 60);
+        }
+    }
+
+    closeSetupModal() {
+        const modal = document.getElementById('vcSetupModal');
+        if (modal) modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        this.activeSetupPartner = null;
+    }
+
+    async submitSetup() {
+        const name = document.getElementById('vcSetupName')?.value.trim();
+        const email = document.getElementById('vcSetupEmail')?.value.trim();
+        const errorEl = document.getElementById('vcSetupError');
+        const form = document.getElementById('vcSetupForm');
+        const loading = document.getElementById('vcSetupLoading');
+
+        if (!name) {
+            this.showSetupError('Please enter a name for the cardholder.');
+            return;
+        }
+        if (!email || !email.includes('@')) {
+            this.showSetupError('Please enter a valid email address.');
+            return;
+        }
+
+        if (errorEl) { errorEl.classList.add('hidden'); errorEl.textContent = ''; }
+        if (form) form.style.display = 'none';
+        if (loading) loading.classList.remove('hidden');
+
+        try {
+            const res = await fetch('/api/vc/setup-cardholder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    partnerKey: this.activeSetupPartner,
+                    name,
+                    email
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to create card');
+
+            // Success — reload status and close
+            await this.loadStatus();
+            await this.loadCardDetails();
+            this.closeSetupModal();
+            this.showToast('Virtual card issued!', `${name}'s card ending in ${data.card.last4} is ready.`);
+        } catch (e) {
+            if (form) form.style.display = '';
+            if (loading) loading.classList.add('hidden');
+            this.showSetupError(e.message);
+        }
+    }
+
+    showSetupError(msg) {
+        const errorEl = document.getElementById('vcSetupError');
+        if (errorEl) {
+            errorEl.textContent = msg;
+            errorEl.classList.remove('hidden');
+        }
+    }
+
+    // ── Link Real Card Modal ──────────────────────────────────────────────────
+
+    async openLinkCardModal(partnerKey) {
+        if (!this.status?.stripeConfigured) {
+            alert('Stripe is not configured.');
+            return;
+        }
+        if (!this.status?.[partnerKey]?.hasCard) {
+            alert('Please set up a virtual card first before linking a real card.');
+            return;
+        }
+
+        this.activeLinkPartner = partnerKey;
+        const modal = document.getElementById('vcLinkModal');
+        const form = document.getElementById('vcLinkForm');
+        const loading = document.getElementById('vcLinkLoading');
+        const errorEl = document.getElementById('vcLinkError');
+
+        if (errorEl) { errorEl.classList.add('hidden'); errorEl.textContent = ''; }
+        if (form) form.style.display = '';
+        if (loading) loading.classList.add('hidden');
+        if (modal) {
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Load Stripe.js and mount card element
+        await this.initStripeElements();
+    }
+
+    async initStripeElements() {
+        try {
+            // We need the publishable key — derive from status or ask user to set it
+            // Use STRIPE_PUBLISHABLE_KEY if available, otherwise attempt to fetch from server
+            if (!window.Stripe) {
+                console.warn('Stripe.js not loaded');
+                this.showLinkError('Stripe.js not available. Please check your internet connection.');
+                return;
+            }
+
+            // Get publishable key from a server endpoint
+            const pkRes = await fetch('/api/vc/publishable-key');
+            if (!pkRes.ok) {
+                this.showLinkError('Stripe publishable key not configured. Add STRIPE_PUBLISHABLE_KEY to environment variables.');
+                return;
+            }
+            const { publishableKey } = await pkRes.json();
+
+            if (!this.stripeJs || this.stripeJs._pk !== publishableKey) {
+                this.stripeJs = window.Stripe(publishableKey);
+                this.stripeJs._pk = publishableKey;
+                this.stripeElements = this.stripeJs.elements();
+            }
+
+            // Unmount existing element if any
+            if (this.stripeCardElement) {
+                try { this.stripeCardElement.unmount(); } catch(e) {}
+                this.stripeCardElement = null;
+            }
+
+            const style = {
+                base: {
+                    color: 'rgba(255,255,255,0.9)',
+                    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+                    fontSize: '15px',
+                    '::placeholder': { color: 'rgba(255,255,255,0.3)' },
+                    backgroundColor: 'transparent'
+                },
+                invalid: { color: '#f87171' }
+            };
+
+            this.stripeCardElement = this.stripeElements.create('card', { style });
+            this.stripeCardElement.mount('#vcCardElement');
+            this.stripeCardElement.on('change', (e) => {
+                const errEl = document.getElementById('vcCardErrors');
+                if (errEl) errEl.textContent = e.error ? e.error.message : '';
+            });
+        } catch (e) {
+            console.error('Failed to init Stripe Elements:', e);
+            this.showLinkError('Failed to initialize card input: ' + e.message);
+        }
+    }
+
+    closeLinkModal() {
+        const modal = document.getElementById('vcLinkModal');
+        if (modal) modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        if (this.stripeCardElement) {
+            try { this.stripeCardElement.unmount(); } catch(e) {}
+            this.stripeCardElement = null;
+        }
+        this.activeLinkPartner = null;
+    }
+
+    async submitLinkCard() {
+        if (!this.stripeJs || !this.stripeCardElement) {
+            this.showLinkError('Card input not ready. Please try again.');
+            return;
+        }
+
+        const form = document.getElementById('vcLinkForm');
+        const loading = document.getElementById('vcLinkLoading');
+        if (form) form.style.display = 'none';
+        if (loading) loading.classList.remove('hidden');
+
+        try {
+            // Create SetupIntent on server
+            const siRes = await fetch('/api/vc/create-setup-intent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ partnerKey: this.activeLinkPartner })
+            });
+            const siData = await siRes.json();
+            if (!siRes.ok) throw new Error(siData.error || 'Failed to create setup intent');
+
+            // Confirm the SetupIntent with Stripe.js
+            const result = await this.stripeJs.confirmCardSetup(siData.clientSecret, {
+                payment_method: { card: this.stripeCardElement }
+            });
+
+            if (result.error) throw new Error(result.error.message);
+
+            // Send payment method to server
+            const confirmRes = await fetch('/api/vc/confirm-payment-method', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    partnerKey: this.activeLinkPartner,
+                    paymentMethodId: result.setupIntent.payment_method
+                })
+            });
+            const confirmData = await confirmRes.json();
+            if (!confirmRes.ok) throw new Error(confirmData.error || 'Failed to confirm payment method');
+
+            // Success
+            await this.loadStatus();
+            this.renderCards();
+            this.closeLinkModal();
+            const partnerName = this.activeLinkPartner === 'me'
+                ? (window.i18n?.getP1Name() || 'Partner 1')
+                : (window.i18n?.getP2Name() || 'Partner 2');
+            this.showToast('Real card linked!', `${partnerName}'s card is now linked for automatic billing.`);
+        } catch (e) {
+            if (form) form.style.display = '';
+            if (loading) loading.classList.add('hidden');
+            this.showLinkError(e.message);
+        }
+    }
+
+    showLinkError(msg) {
+        const errorEl = document.getElementById('vcLinkError');
+        if (errorEl) {
+            errorEl.textContent = msg;
+            errorEl.classList.remove('hidden');
+        }
+    }
+
+    // ── VC Transactions ───────────────────────────────────────────────────────
+
+    async loadVCTransactions() {
+        try {
+            const res = await fetch('/api/vc/transactions');
+            if (!res.ok) return;
+            const data = await res.json();
+            const txs = data.transactions || [];
+            this.renderVCTransactions(txs);
+        } catch (e) {
+            console.error('Failed to load VC transactions:', e);
+        }
+    }
+
+    renderVCTransactions(txs) {
+        const container = document.getElementById('vcTransactions');
+        const list = document.getElementById('vcTxList');
+        if (!container || !list) return;
+
+        if (txs.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = '';
+        list.innerHTML = '';
+
+        const recent = txs.slice(0, 5);
+        recent.forEach(tx => {
+            const item = document.createElement('div');
+            item.className = 'vc-tx-item';
+            const date = new Date(tx.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const myPct = Math.round((tx.splitRatio || 0.5) * 100);
+            const spPct = 100 - myPct;
+            item.innerHTML = `
+                <span class="vc-tx-merchant">${this.escapeHtml(tx.merchant)}</span>
+                <span class="vc-tx-split">${myPct}/${spPct}</span>
+                <span class="vc-tx-amount">$${(tx.totalAmount || 0).toFixed(2)}</span>
+                <span class="vc-tx-date">${date}</span>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // ── Auto-add VC transactions to SplitMate ─────────────────────────────────
+
+    addVCTransactionToSplitMate(vcTx) {
+        const p1Name = window.i18n?.getP1Name() || 'Me';
+        const p2Name = window.i18n?.getP2Name() || 'Partner';
+        const splitRatio = vcTx.splitRatio || 0.5;
+
+        // Add a transaction for the shared charge
+        const transaction = {
+            id: `vc_${vcTx.stripeTransactionId || Date.now()}`,
+            date: vcTx.date,
+            whoPaid: 'me',
+            amount: vcTx.totalAmount,
+            category: 'other',
+            notes: `[Virtual Card] ${vcTx.merchant}`,
+            youOwe: -(vcTx.totalAmount * (1 - splitRatio)),
+            isFromVirtualCard: true,
+            vcData: {
+                merchant: vcTx.merchant,
+                myShare: vcTx.myShare,
+                spouseShare: vcTx.spouseShare,
+                splitRatio: vcTx.splitRatio
+            }
+        };
+
+        // Add to app if not already there
+        const exists = this.app.transactions.some(t => t.id === transaction.id);
+        if (!exists) {
+            this.app.transactions.unshift(transaction);
+            this.app.totals.me += vcTx.totalAmount;
+            this.app.saveToStorage();
+            this.app.updateDisplay();
+        }
+    }
+
+    // ── SSE Notifications ─────────────────────────────────────────────────────
+
+    connectSSE() {
+        if (this.sseSource) {
+            this.sseSource.close();
+        }
+        try {
+            this.sseSource = new EventSource('/api/notifications');
+            this.sseSource.onmessage = (e) => {
+                try {
+                    const event = JSON.parse(e.data);
+                    this.handleNotification(event);
+                } catch (err) {
+                    console.error('SSE parse error:', err);
+                }
+            };
+            this.sseSource.onerror = () => {
+                // Silently reconnect after 10s
+                this.sseSource.close();
+                setTimeout(() => this.connectSSE(), 10000);
+            };
+        } catch (e) {
+            console.error('SSE connection failed:', e);
+        }
+    }
+
+    handleNotification(event) {
+        if (event.type === 'connected') return;
+
+        if (event.type === 'vc_charge') {
+            const { merchant, totalAmount, myShare, spouseShare, splitRatio } = event;
+            const p1 = window.i18n?.getP1Name() || 'Me';
+            const p2 = window.i18n?.getP2Name() || 'Partner';
+            const myPct = Math.round((splitRatio || 0.5) * 100);
+            const spPct = 100 - myPct;
+
+            this.showToast(
+                `Card charged at ${merchant}`,
+                `$${totalAmount.toFixed(2)} total — ${p1}: $${myShare.toFixed(2)} · ${p2}: $${spouseShare.toFixed(2)} (${myPct}/${spPct} split)`
+            );
+
+            // Add to SplitMate transaction list
+            this.addVCTransactionToSplitMate(event.transaction);
+
+            // Refresh VC transaction list
+            this.loadVCTransactions();
+        }
+    }
+
+    // ── Toast Notification ────────────────────────────────────────────────────
+
+    showToast(title, message) {
+        const toast = document.getElementById('vcNotificationToast');
+        const titleEl = document.getElementById('vcToastTitle');
+        const msgEl = document.getElementById('vcToastMsg');
+        if (!toast) return;
+
+        if (titleEl) titleEl.textContent = title;
+        if (msgEl) msgEl.textContent = message;
+
+        toast.classList.remove('hidden');
+        toast.classList.remove('visible');
+
+        // Force reflow then animate in
+        void toast.offsetWidth;
+        toast.classList.add('visible');
+
+        // Auto-dismiss after 6 seconds
+        if (this.toastTimer) clearTimeout(this.toastTimer);
+        this.toastTimer = setTimeout(() => this.dismissToast(), 6000);
+    }
+
+    dismissToast() {
+        const toast = document.getElementById('vcNotificationToast');
+        if (!toast) return;
+        toast.classList.remove('visible');
+        setTimeout(() => {
+            toast.classList.add('hidden');
+        }, 380);
+        if (this.toastTimer) {
+            clearTimeout(this.toastTimer);
+            this.toastTimer = null;
         }
     }
 }

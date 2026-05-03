@@ -104,8 +104,40 @@ class SplitMate {
         // Initialize virtual card feature
         this.virtualCard = new VirtualCard(this);
         this.virtualCard.init();
+
+        // Bottom nav
+        this.setupBottomNav();
+        this.switchNavTab('split');
     }
     
+    /**
+     * Set up the fixed bottom navigation bar
+     */
+    setupBottomNav() {
+        document.querySelectorAll('.nav-item[data-tab]').forEach(btn => {
+            btn.addEventListener('click', () => this.switchNavTab(btn.dataset.tab));
+        });
+    }
+
+    /**
+     * Switch the active tab panel and highlight the nav button
+     */
+    switchNavTab(tab) {
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        const panel = document.getElementById('tab-' + tab);
+        if (panel) panel.classList.add('active');
+
+        document.querySelectorAll('.nav-item[data-tab]').forEach(b => b.classList.remove('active'));
+        const navBtn = document.querySelector(`.nav-item[data-tab="${tab}"]`);
+        if (navBtn) navBtn.classList.add('active');
+
+        // Pre-fill settings fields when switching to settings tab
+        if (tab === 'settings' && window.i18n) {
+            this.partner1Input.value = window.i18n.getP1Name();
+            this.partner2Input.value = window.i18n.getP2Name();
+        }
+    }
+
     /**
      * Helper method to get translations with fallback
      */
@@ -1173,6 +1205,13 @@ class SplitMate {
         this.updateBalanceDisplay();
         this.updateTransactionTable();
         this.updatePayAllButton();
+        // Update history tab badge with unpaid count
+        const badge = document.getElementById('historyBadge');
+        if (badge) {
+            const n = this.transactions.filter(t => !t.settled).length;
+            badge.textContent = n > 0 ? n : '';
+            badge.style.display = n > 0 ? 'flex' : 'none';
+        }
     }
     
     /**
@@ -1452,23 +1491,14 @@ class SplitMate {
             this.partner1Input.value = window.i18n.getP1Name();
             this.partner2Input.value = window.i18n.getP2Name();
         }
-        this.settingsModal.style.display = 'block';
-        document.body.style.overflow = 'hidden';
-        requestAnimationFrame(() => {
-            this.settingsModal.classList.add('show');
-            setTimeout(() => this.partner1Input.focus(), 50);
-        });
+        this.switchNavTab('settings');
     }
     
     /**
      * Hide the settings modal
      */
     hideSettingsModal() {
-        this.settingsModal.classList.remove('show');
-        setTimeout(() => {
-            this.settingsModal.style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }, 320);
+        // Settings is now a permanent tab — nothing to hide
     }
     
     /**
@@ -1477,13 +1507,17 @@ class SplitMate {
     savePartnerNames() {
         const p1 = this.partner1Input.value.trim();
         const p2 = this.partner2Input.value.trim();
-        
         if (window.i18n) {
             window.i18n.setPartnerNames(p1, p2);
         }
-        
-        this.hideSettingsModal();
         this.updateDisplay();
+        const btn = this.saveSettingsBtn;
+        if (btn) {
+            const span = btn.querySelector('span');
+            const orig = span ? span.textContent : '';
+            if (span) span.textContent = 'Saved ✓';
+            setTimeout(() => { if (span) span.textContent = orig; }, 1500);
+        }
     }
 
     /**

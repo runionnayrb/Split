@@ -92,6 +92,22 @@ The application now requires server-side configuration for receipt scanning, but
 - **File Processing**: Supports JPG, PNG, WebP, and PDF files up to 10MB for receipt scanning
 - **AI Integration**: Uses OpenAI GPT-4o Vision API for receipt text extraction and categorization
 
+## Recent Changes (May 3, 2026) — Mobile Bottom Navigation
+
+✓ Added fixed glassmorphism bottom nav bar with 4 tabs: Split, Cards, History, Settings
+✓ Split tab → Add New Expense section (default active tab on load)
+✓ Cards tab → Virtual Cards section
+✓ History tab → Transaction history (Unpaid/Paid) with live badge showing unpaid count
+✓ Settings tab → Inline partner names form + Settle Up button (replaces gear-icon bottom sheet)
+✓ Removed gear icon from header (Settings is now a nav tab)
+✓ `switchNavTab(tab)` method handles panel show/hide and active state
+✓ `setupBottomNav()` wires click listeners on all `.nav-item[data-tab]` buttons
+✓ `updateDisplay()` updates History badge count on every data change
+✓ `showSettingsModal()` repurposed to call `switchNavTab('settings')` — no more bottom sheet
+✓ `savePartnerNames()` shows inline "Saved ✓" feedback and stays on Settings tab
+✓ Container padding-bottom extended to `calc(90px + env(safe-area-inset-bottom))` for nav clearance
+✓ iOS safe-area aware — nav height accounts for home indicator via `env(safe-area-inset-bottom)`
+
 ## Recent Changes (May 3, 2026) — Zelle QR Integration & Mobile UX Overhaul
 
 ✓ Added Zelle QR code (zelle-qr.png) served as a static asset from the root

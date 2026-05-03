@@ -18,12 +18,6 @@
         <!-- ── HEADER ─────────────────────────────────────── -->
         <header class="header">
 
-            <!-- Settings button -->
-            <div class="settings-toggle">
-                <button class="settings-btn" id="settingsToggle" aria-label="Settings">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                </button>
-            </div>
 
             <!-- Language toggle -->
             <div class="language-toggle">
@@ -51,7 +45,7 @@
         </header>
 
         <!-- ── VIRTUAL CARDS ──────────────────────────────────── -->
-        <section class="virtual-cards-section" id="virtualCardsSection">
+        <section class="virtual-cards-section tab-panel" id="tab-cards">
             <h2 class="section-heading">
                 <svg class="section-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
                 <span>Virtual Cards</span>
@@ -212,7 +206,7 @@
         </section>
 
         <!-- ── ADD EXPENSE ─────────────────────────────────── -->
-        <section class="transaction-form">
+        <section class="transaction-form tab-panel active" id="tab-split">
             <h2 class="section-heading">
                 <svg class="section-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                 <span data-i18n="addNewExpense">Add New Expense</span>
@@ -460,7 +454,7 @@
         </section>
 
         <!-- ── TRANSACTION HISTORY ──────────────────────────── -->
-        <section class="transaction-history">
+        <section class="transaction-history tab-panel" id="tab-history">
             <h2 class="section-heading">
                 <svg class="section-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
                 <span data-i18n="transactionHistory">Transaction History</span>
@@ -491,14 +485,67 @@
             </div>
         </section>
 
-        <!-- ── FOOTER ─────────────────────────────────────── -->
-        <footer class="footer">
-            <button id="payAllBtn" class="btn-settle" disabled>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px;margin-right:6px;"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                <span data-i18n="payAllOutstanding">Settle Up</span>
-            </button>
-        </footer>
+        <!-- ── SETTINGS TAB ───────────────────────────────── -->
+        <section class="tab-panel" id="tab-settings">
+            <div class="settings-panel-wrap">
+
+                <!-- Partner Names -->
+                <div class="settings-card">
+                    <h3 class="settings-card-title">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        Partner Names
+                    </h3>
+                    <div class="form-group">
+                        <label for="partner1Input" data-i18n="partner1Name">Partner 1 Name</label>
+                        <input type="text" id="partner1Input" maxlength="30" data-i18n-placeholder="partner1Placeholder" placeholder="e.g. Bryan">
+                    </div>
+                    <div class="form-group">
+                        <label for="partner2Input" data-i18n="partner2Name">Partner 2 Name</label>
+                        <input type="text" id="partner2Input" maxlength="30" data-i18n-placeholder="partner2Placeholder" placeholder="e.g. Ayako">
+                    </div>
+                    <button id="saveSettings" class="btn-primary">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span data-i18n="saveSettings">Save Names</span>
+                    </button>
+                </div>
+
+                <!-- Balance / Settle Up -->
+                <div class="settings-card">
+                    <h3 class="settings-card-title">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        Balance
+                    </h3>
+                    <p class="settings-card-desc">Mark all outstanding transactions as settled and move them to Paid.</p>
+                    <button id="payAllBtn" class="btn-settle" disabled>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px;margin-right:6px;"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        <span data-i18n="payAllOutstanding">Settle Up</span>
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
     </div>
+
+    <!-- ── BOTTOM NAV ─────────────────────────────────────── -->
+    <nav class="bottom-nav" id="bottomNav">
+        <button class="nav-item active" data-tab="split" aria-label="Split">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            <span>Split</span>
+        </button>
+        <button class="nav-item" data-tab="cards" aria-label="Cards">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            <span>Cards</span>
+        </button>
+        <button class="nav-item" data-tab="history" aria-label="History">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            <span class="nav-label-wrap">History<span class="nav-badge" id="historyBadge"></span></span>
+        </button>
+        <button class="nav-item" data-tab="settings" aria-label="Settings">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span>Settings</span>
+        </button>
+    </nav>
 
     <!-- ── MODALS ──────────────────────────────────────────── -->
 
@@ -595,35 +642,6 @@
         </div>
     </div>
 
-    <!-- Settings — bottom sheet -->
-    <div id="settingsModal" class="bottom-sheet-modal">
-        <div class="bottom-sheet-backdrop"></div>
-        <div class="bottom-sheet-content">
-            <div class="bottom-sheet-handle"></div>
-            <div class="bottom-sheet-header">
-                <h3 data-i18n="partnerNames">Partner Names</h3>
-            </div>
-            <div class="bottom-sheet-body">
-                <div class="form-group">
-                    <label for="partner1Input" data-i18n="partner1Name">Partner 1 Name</label>
-                    <input type="text" id="partner1Input" maxlength="30" data-i18n-placeholder="partner1Placeholder" placeholder="e.g. Bryan">
-                </div>
-                <div class="form-group">
-                    <label for="partner2Input" data-i18n="partner2Name">Partner 2 Name</label>
-                    <input type="text" id="partner2Input" maxlength="30" data-i18n-placeholder="partner2Placeholder" placeholder="e.g. Ayako">
-                </div>
-            </div>
-            <div class="bottom-sheet-actions">
-                <button id="saveSettings" class="btn-primary">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                    <span data-i18n="saveSettings">Save</span>
-                </button>
-                <button id="cancelSettings" class="btn-secondary">
-                    <span data-i18n="cancel">Cancel</span>
-                </button>
-            </div>
-        </div>
-    </div>
 
     <!-- Confetti -->
     <div id="confettiContainer" class="confetti-container"></div>

@@ -92,6 +92,23 @@ The application now requires server-side configuration for receipt scanning, but
 - **File Processing**: Supports JPG, PNG, WebP, and PDF files up to 10MB for receipt scanning
 - **AI Integration**: Uses OpenAI GPT-4o Vision API for receipt text extraction and categorization
 
+## Recent Changes (May 2, 2026) — Friend Split Feature
+
+✓ Added "Split with a friend" optional toggle in both manual entry and receipt scan forms
+✓ iOS-style toggle switch that reveals friend name + share amount/percentage fields
+✓ Share type toggle ($ amount vs % of total) with green active state
+✓ Extended transaction data model with optional `friendSplit: { name, amount, shareType, shareInput }` field
+✓ Backward-compatible with existing transactions (field is optional/null)
+✓ Friend split badge displayed in transaction history table (green pill with friend name + amount)
+✓ Friend split info panel shown in bottom sheet transaction detail modal
+✓ "Share with Friend" green gradient button appears in bottom sheet for friend-split transactions
+✓ Canvas API receipt image generation: branded PNG with app logo, merchant details, friend's share, and payment prompt
+✓ Web Share API integration for native share sheet (iMessage, WhatsApp, email, etc.)
+✓ Download fallback for browsers that don't support file sharing via Web Share API
+✓ Friend split tracked independently — does NOT affect partner balance totals
+✓ Forms reset cleanly after transaction is saved (toggle, name, share amount all cleared)
+✓ Rounded rect canvas polyfill for broader browser compatibility
+
 ## Recent Changes (May 2, 2026)
 
 ✓ Complete premium SaaS redesign — dark glassmorphism UI

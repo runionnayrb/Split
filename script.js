@@ -80,6 +80,9 @@ class SplitMate {
         this.partner1Input = document.getElementById('partner1Input');
         this.partner2Input = document.getElementById('partner2Input');
         
+        // Friend split elements
+        this.shareWithFriendBtn = document.getElementById('shareWithFriendBtn');
+        
         // Initialize the app
         this.init();
     }
@@ -376,6 +379,100 @@ class SplitMate {
                 }
             });
         }
+        
+        // Friend split listeners
+        this.setupFriendSplitListeners();
+        
+        // Share with friend button
+        if (this.shareWithFriendBtn) {
+            this.shareWithFriendBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.shareWithFriend(this.currentPaymentTransaction);
+            });
+        }
+    }
+    
+    /**
+     * Set up friend split toggle and share type button listeners
+     */
+    setupFriendSplitListeners() {
+        const setupToggle = (toggleId, detailsId) => {
+            const toggle = document.getElementById(toggleId);
+            const details = document.getElementById(detailsId);
+            if (toggle && details) {
+                toggle.addEventListener('change', () => {
+                    if (toggle.checked) {
+                        details.classList.remove('hidden');
+                    } else {
+                        details.classList.add('hidden');
+                    }
+                });
+            }
+        };
+        
+        const setupShareTypeBtns = (containerID) => {
+            const container = document.getElementById(containerID);
+            if (!container) return;
+            container.querySelectorAll('.share-type-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    container.querySelectorAll('.share-type-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+            });
+        };
+        
+        setupToggle('manualFriendToggle', 'manualFriendDetails');
+        setupToggle('receiptFriendToggle', 'receiptFriendDetails');
+        setupShareTypeBtns('manualShareTypeBtns');
+        setupShareTypeBtns('receiptShareTypeBtns');
+    }
+    
+    /**
+     * Get friend split data from the form with a given prefix ('manual' or 'receipt')
+     * Returns null if toggle is off or name is empty
+     */
+    getFriendSplitData(prefix, totalAmount) {
+        const toggle = document.getElementById(`${prefix}FriendToggle`);
+        if (!toggle || !toggle.checked) return null;
+        
+        const name = (document.getElementById(`${prefix}FriendName`)?.value || '').trim();
+        if (!name) return null;
+        
+        const shareInput = parseFloat(document.getElementById(`${prefix}FriendShare`)?.value) || 0;
+        const activeTypeBtn = document.getElementById(`${prefix}ShareTypeBtns`)?.querySelector('.share-type-btn.active');
+        const shareType = activeTypeBtn ? activeTypeBtn.dataset.type : 'amount';
+        
+        let amount = shareInput;
+        if (shareType === 'percent' && totalAmount > 0) {
+            amount = (shareInput / 100) * totalAmount;
+        }
+        
+        if (amount <= 0) return null;
+        
+        return { name, amount: Math.round(amount * 100) / 100, shareType, shareInput };
+    }
+    
+    /**
+     * Reset friend split UI fields
+     */
+    clearFriendSplitForms() {
+        ['manual', 'receipt'].forEach(prefix => {
+            const toggle = document.getElementById(`${prefix}FriendToggle`);
+            const details = document.getElementById(`${prefix}FriendDetails`);
+            const nameInput = document.getElementById(`${prefix}FriendName`);
+            const shareInput = document.getElementById(`${prefix}FriendShare`);
+            const typeBtns = document.getElementById(`${prefix}ShareTypeBtns`);
+            
+            if (toggle) toggle.checked = false;
+            if (details) details.classList.add('hidden');
+            if (nameInput) nameInput.value = '';
+            if (shareInput) shareInput.value = '';
+            if (typeBtns) {
+                typeBtns.querySelectorAll('.share-type-btn').forEach((b, i) => {
+                    b.classList.toggle('active', i === 0);
+                });
+            }
+        });
     }
     
     /**
@@ -826,6 +923,9 @@ class SplitMate {
         
         console.log('=== End Debug ===');
         
+        // Get friend split data (based on total receipt amount)
+        const friendSplit = this.getFriendSplitData('receipt', totalReceiptAmount);
+        
         // Create a single combined transaction for the entire receipt
         const receiptTransaction = {
             id: timestamp,
@@ -837,6 +937,7 @@ class SplitMate {
             youOwe: whoPaid === 'me' ? netAmount : -netAmount, // Positive when non-payer owes payer
             receiptImage: this.getReceiptImageData(),
             isFromReceipt: true,
+            friendSplit: friendSplit || null,
             // Store receipt breakdown data for modal display
             receiptBreakdown: {
                 grandTotal: grandTotal,
@@ -860,8 +961,9 @@ class SplitMate {
         this.saveToStorage();
         this.updateDisplay();
         
-        // Clear receipt data
+        // Clear receipt data and friend split forms
         this.clearReceiptResults();
+        this.clearFriendSplitForms();
         
         // Switch back to manual tab
         this.switchTab('manual');
@@ -1024,6 +1126,9 @@ class SplitMate {
             return;
         }
         
+        // Get friend split data
+        const friendSplit = this.getFriendSplitData('manual', amount);
+        
         // Create transaction object
         const transaction = {
             id: Date.now(), // Simple ID using timestamp
@@ -1033,7 +1138,8 @@ class SplitMate {
             category: 'other', // Default category since it's hidden
             notes: notes || '',
             // For 50/50 split, each person owes half of what the other paid
-            youOwe: whoPaid === 'spouse' ? amount / 2 : -(amount / 2)
+            youOwe: whoPaid === 'spouse' ? amount / 2 : -(amount / 2),
+            friendSplit: friendSplit || null
         };
         
         // Add to transactions array (newest first)
@@ -1048,8 +1154,9 @@ class SplitMate {
         // Update display
         this.updateDisplay();
         
-        // Reset form
+        // Reset form and friend split UI
         this.form.reset();
+        this.clearFriendSplitForms();
         
         // Focus back to amount field for quick entry
         document.getElementById('amount').focus();
@@ -1239,11 +1346,15 @@ class SplitMate {
                 }
             }
             
+            const friendBadge = transaction.friendSplit 
+                ? `<span class="friend-split-badge">👤 ${transaction.friendSplit.name}: ${this.formatCurrency(transaction.friendSplit.amount)}</span>`
+                : '';
+            
             row.innerHTML = `
                 <td>${date}</td>
                 <td><strong>${whoPaidDisplay}</strong></td>
                 <td class="amount-cell">${this.formatCurrency(transaction.amount)}</td>
-                <td>${notes}</td>
+                <td>${notes}${friendBadge}</td>
                 <td class="${bryanOwesClass}">${bryanOwesDisplay}</td>
                 <td class="${ayakoOwesClass}">${ayakoOwesDisplay}</td>
             `;
@@ -1485,6 +1596,44 @@ class SplitMate {
             this.confirmPayTransactionBtn.textContent = `Mark as Settled`;
         }
         
+        // Show/hide the Share with Friend button
+        const shareBtn = this.shareWithFriendBtn;
+        if (shareBtn) {
+            if (transaction.friendSplit) {
+                shareBtn.classList.remove('hidden');
+                const fs = transaction.friendSplit;
+                shareBtn.querySelector('span').textContent = `Share with ${fs.name} (${this.formatCurrency(fs.amount)})`;
+            } else {
+                shareBtn.classList.add('hidden');
+            }
+        }
+        
+        // Show friend split info in body if present
+        const existingFriendInfo = document.getElementById('friendSplitModalInfo');
+        if (existingFriendInfo) existingFriendInfo.remove();
+        
+        if (transaction.friendSplit) {
+            const fs = transaction.friendSplit;
+            const friendInfoDiv = document.createElement('div');
+            friendInfoDiv.id = 'friendSplitModalInfo';
+            friendInfoDiv.className = 'friend-split-info';
+            friendInfoDiv.innerHTML = `
+                <h4>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                    Friend Split
+                </h4>
+                <div class="friend-split-row">
+                    <span class="label">Friend</span>
+                    <span class="value">${fs.name}</span>
+                </div>
+                <div class="friend-split-row total-row">
+                    <span class="label">Their share</span>
+                    <span class="value">${this.formatCurrency(fs.amount)}</span>
+                </div>
+            `;
+            document.getElementById('payTransactionMessage').before(friendInfoDiv);
+        }
+        
         // Show modal with iOS-style animation
         this.payTransactionModal.style.display = 'block';
         document.body.style.overflow = 'hidden';
@@ -1507,7 +1656,217 @@ class SplitMate {
             this.payTransactionModal.style.display = 'none';
             document.body.style.overflow = 'auto';
             this.currentPaymentTransaction = null;
+            // Clean up friend split info
+            const existingFriendInfo = document.getElementById('friendSplitModalInfo');
+            if (existingFriendInfo) existingFriendInfo.remove();
         }, 300); // Match the CSS transition duration
+    }
+    
+    /**
+     * Generate a PNG receipt image for sharing with a friend using Canvas API
+     */
+    async generateFriendReceiptImage(transaction) {
+        const fs = transaction.friendSplit;
+        if (!fs) throw new Error('No friend split data on this transaction');
+        
+        const p1Name = window.i18n ? window.i18n.getP1Name() : 'Partner 1';
+        const whoPaidDisplay = transaction.whoPaid === 'me' ? p1Name : (window.i18n ? window.i18n.getP2Name() : 'Partner 2');
+        const merchant = transaction.notes || 'Expense';
+        const date = new Date(transaction.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        
+        const W = 800, H = 560;
+        const canvas = document.createElement('canvas');
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext('2d');
+        
+        // Helper: draw rounded rect path (polyfill for older browsers)
+        const rrect = (x, y, w, h, r) => {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+        };
+        
+        // Background gradient (dark, on-brand)
+        const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+        bgGrad.addColorStop(0, '#07071a');
+        bgGrad.addColorStop(1, '#0e0e2a');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, W, H);
+        
+        // Top accent stripe
+        const accentGrad = ctx.createLinearGradient(0, 0, W, 0);
+        accentGrad.addColorStop(0, '#67e8f9');
+        accentGrad.addColorStop(0.5, '#38bdf8');
+        accentGrad.addColorStop(1, '#818cf8');
+        ctx.fillStyle = accentGrad;
+        ctx.fillRect(0, 0, W, 6);
+        
+        // App logo area
+        ctx.fillStyle = 'rgba(255,255,255,0.08)';
+        rrect(40, 28, W - 80, 80, 14);
+        ctx.fill();
+        
+        // App name
+        ctx.font = 'bold 32px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        const appGrad = ctx.createLinearGradient(50, 0, 350, 0);
+        appGrad.addColorStop(0, '#67e8f9');
+        appGrad.addColorStop(0.5, '#38bdf8');
+        appGrad.addColorStop(1, '#818cf8');
+        ctx.fillStyle = appGrad;
+        ctx.fillText('SplitMate', 60, 76);
+        
+        // Subtitle
+        ctx.font = '500 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.45)';
+        ctx.fillText('Expense Split Receipt', 60, 96);
+        
+        // "Please send me" header
+        ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.90)';
+        ctx.fillText(`Hey ${fs.name} \u2014 please send me`, 60, 155);
+        
+        // Big amount
+        ctx.font = 'bold 64px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        const amtGrad = ctx.createLinearGradient(60, 170, 400, 240);
+        amtGrad.addColorStop(0, '#34d399');
+        amtGrad.addColorStop(1, '#22d3ee');
+        ctx.fillStyle = amtGrad;
+        ctx.fillText(this.formatCurrency(fs.amount), 60, 230);
+        
+        // Divider
+        ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(40, 252);
+        ctx.lineTo(W - 40, 252);
+        ctx.stroke();
+        
+        // Details section
+        const drawDetailRow = (label, value, y, valueColor = 'rgba(255,255,255,0.80)') => {
+            ctx.font = '500 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.45)';
+            ctx.fillText(label, 60, y);
+            ctx.font = '600 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillStyle = valueColor;
+            ctx.textAlign = 'right';
+            ctx.fillText(value, W - 60, y);
+            ctx.textAlign = 'left';
+        };
+        
+        drawDetailRow('For', merchant, 285);
+        drawDetailRow('Paid by', whoPaidDisplay, 315);
+        drawDetailRow('Total bill', this.formatCurrency(transaction.amount), 345);
+        drawDetailRow('Your share', this.formatCurrency(fs.amount), 375, '#6ee7b7');
+        drawDetailRow('Date', date, 405);
+        
+        // Bottom card
+        ctx.fillStyle = 'rgba(52,211,153,0.08)';
+        rrect(40, 428, W - 80, 96, 14);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(52,211,153,0.25)';
+        ctx.lineWidth = 1;
+        rrect(40, 428, W - 80, 96, 14);
+        ctx.stroke();
+        
+        // Payment prompt
+        ctx.font = 'bold 17px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.fillStyle = '#6ee7b7';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Send ${this.formatCurrency(fs.amount)} to settle up!`, W / 2, 465);
+        ctx.font = '500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.38)';
+        ctx.fillText('Venmo \u00b7 PayPal \u00b7 Zelle \u00b7 Cash App \u00b7 or however works!', W / 2, 492);
+        ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.22)';
+        ctx.fillText('Generated with SplitMate \u2022 Expense Splitter for Couples', W / 2, 516);
+        ctx.textAlign = 'left';
+        
+        return new Promise((resolve, reject) => {
+            canvas.toBlob(blob => {
+                if (blob) resolve(blob);
+                else reject(new Error('Canvas toBlob failed'));
+            }, 'image/png');
+        });
+    }
+    
+    /**
+     * Share a friend receipt image using the Web Share API (with download fallback)
+     */
+    async shareWithFriend(transaction) {
+        if (!transaction || !transaction.friendSplit) return;
+        
+        const fs = transaction.friendSplit;
+        const shareBtn = this.shareWithFriendBtn;
+        
+        // Show loading state
+        const originalText = shareBtn ? shareBtn.querySelector('span').textContent : '';
+        if (shareBtn) {
+            shareBtn.disabled = true;
+            shareBtn.querySelector('span').textContent = 'Generating…';
+        }
+        
+        try {
+            const blob = await this.generateFriendReceiptImage(transaction);
+            const fileName = `splitmate-${fs.name.toLowerCase().replace(/\s+/g, '-')}.png`;
+            const file = new File([blob], fileName, { type: 'image/png' });
+            const shareText = `Hey ${fs.name}! You owe me ${this.formatCurrency(fs.amount)} for ${transaction.notes || 'an expense'}. Here's the receipt breakdown!`;
+            
+            const downloadImage = () => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            };
+            
+            // Case 1: Full file share via Web Share API
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    title: `${fs.name} owes ${this.formatCurrency(fs.amount)} – SplitMate`,
+                    text: shareText,
+                    files: [file]
+                });
+            } else {
+                // Case 2: Share API exists but no file support, OR no Share API at all
+                // Always download the PNG so the user gets the receipt image
+                downloadImage();
+                // Also try text-only share as a bonus (non-blocking)
+                if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: `${fs.name} owes ${this.formatCurrency(fs.amount)} – SplitMate`,
+                            text: shareText
+                        });
+                    } catch (_) {
+                        // Text share dismissed or failed — the download already happened, so that's fine
+                    }
+                } else {
+                    alert(`Receipt image saved! Share it with ${fs.name} to request ${this.formatCurrency(fs.amount)}.`);
+                }
+            }
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.error('Share failed:', err);
+                alert('Could not share the receipt. Please try again.');
+            }
+        } finally {
+            if (shareBtn) {
+                shareBtn.disabled = false;
+                shareBtn.querySelector('span').textContent = originalText;
+            }
+        }
     }
 
     /**

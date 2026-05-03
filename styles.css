@@ -998,6 +998,266 @@ body {
 }
 
 /* ============================================================
+   FRIEND SPLIT SECTION
+   ============================================================ */
+.friend-split-section {
+  margin-bottom: 16px;
+  background: rgba(52,211,153,0.05);
+  border: 1px solid rgba(52,211,153,0.18);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.friend-split-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.friend-split-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex: 1;
+}
+
+.friend-split-label svg {
+  color: var(--green);
+  flex-shrink: 0;
+}
+
+/* iOS-style toggle switch */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background 0.22s ease, border-color 0.22s ease;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  left: 2px;
+  top: 2px;
+  background: rgba(255,255,255,0.70);
+  border-radius: 50%;
+  transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.30);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background: var(--green);
+  border-color: transparent;
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(18px);
+  background: #fff;
+}
+
+.friend-split-details {
+  padding: 0 14px 14px;
+  border-top: 1px solid rgba(52,211,153,0.12);
+  background: rgba(0,0,0,0.15);
+}
+
+.friend-split-details .form-group {
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
+.share-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.share-input-row input {
+  flex: 1;
+  background: rgba(0,0,0,0.30);
+  border: 1px solid var(--glass-border-hi);
+  border-radius: var(--radius-md);
+  padding: 13px 14px;
+  font-size: 16px;
+  color: var(--text-primary);
+  outline: none;
+  transition: var(--transition);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.share-input-row input:focus {
+  border-color: rgba(52,211,153,0.60);
+  background: rgba(52,211,153,0.06);
+  box-shadow: 0 0 0 3px rgba(52,211,153,0.12);
+}
+
+.share-type-btns {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.share-type-btn {
+  background: rgba(0,0,0,0.30);
+  border: 1px solid var(--glass-border-hi);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+  line-height: 1;
+}
+
+.share-type-btn.active {
+  background: var(--green);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(52,211,153,0.35);
+}
+
+.share-type-btn:not(.active):hover {
+  color: var(--text-secondary);
+  border-color: rgba(52,211,153,0.35);
+}
+
+/* Friend split badge in transaction rows */
+.friend-split-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(52,211,153,0.14);
+  border: 1px solid rgba(52,211,153,0.28);
+  border-radius: var(--radius-pill);
+  padding: 2px 7px;
+  font-size: 0.70rem;
+  font-weight: 700;
+  color: #6ee7b7;
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: block;
+}
+
+/* Friend split info in bottom sheet */
+.friend-split-info {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: rgba(52,211,153,0.07);
+  border: 1px solid rgba(52,211,153,0.20);
+  border-radius: var(--radius-md);
+}
+
+.friend-split-info h4 {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #6ee7b7;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.friend-split-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  font-size: 0.84rem;
+  border-bottom: 1px solid rgba(52,211,153,0.08);
+}
+
+.friend-split-row:last-child {
+  border-bottom: none;
+}
+
+.friend-split-row .label {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.friend-split-row .value {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.friend-split-row.total-row .value {
+  color: #6ee7b7;
+  font-size: 1rem;
+}
+
+/* Share with friend button */
+.btn-friend-share {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  background: linear-gradient(135deg, #34d399 0%, #0ea5e9 100%);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 14px 24px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 4px 20px rgba(52,211,153,0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-friend-share::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.12), transparent);
+  border-radius: inherit;
+}
+
+.btn-friend-share:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(52,211,153,0.50);
+}
+
+.btn-friend-share:active {
+  transform: scale(0.97) translateY(0);
+}
+
+/* ============================================================
    TRANSACTION HISTORY  — Card List (not table)
    ============================================================ */
 .table-container {

@@ -142,6 +142,36 @@
                         <label for="notes" data-i18n="description">Description (optional)</label>
                         <input type="text" id="notes" data-i18n-placeholder="descriptionPlaceholder" placeholder="What was this for?">
                     </div>
+                    <!-- Friend Split Section (Manual) -->
+                    <div class="friend-split-section" id="manualFriendSplitSection">
+                        <div class="friend-split-toggle-row">
+                            <label class="friend-split-label" for="manualFriendToggle">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                                <span>Split with a friend</span>
+                            </label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="manualFriendToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div id="manualFriendDetails" class="friend-split-details hidden">
+                            <div class="form-group">
+                                <label for="manualFriendName">Friend's Name</label>
+                                <input type="text" id="manualFriendName" placeholder="e.g. Alex" maxlength="30">
+                            </div>
+                            <div class="form-group">
+                                <label>Friend's Share</label>
+                                <div class="share-input-row">
+                                    <input type="number" id="manualFriendShare" step="0.01" min="0" placeholder="0.00">
+                                    <div class="share-type-btns" id="manualShareTypeBtns">
+                                        <button type="button" class="share-type-btn active" data-type="amount">$</button>
+                                        <button type="button" class="share-type-btn" data-type="percent">%</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <button type="submit" class="btn-primary">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         <span data-i18n="addExpense">Add Expense</span>
@@ -223,6 +253,36 @@
                     <div class="form-group" style="margin-top:14px;">
                         <label for="receiptDescription" data-i18n="storeLocation">Store / Location</label>
                         <input type="text" id="receiptDescription" data-i18n-placeholder="storeLocationPlaceholder" placeholder="e.g. Publix, Target, Whole Foods…" maxlength="100">
+                    </div>
+
+                    <!-- Friend Split Section (Receipt) -->
+                    <div class="friend-split-section" id="receiptFriendSplitSection">
+                        <div class="friend-split-toggle-row">
+                            <label class="friend-split-label" for="receiptFriendToggle">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                                <span>Split with a friend</span>
+                            </label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="receiptFriendToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div id="receiptFriendDetails" class="friend-split-details hidden">
+                            <div class="form-group">
+                                <label for="receiptFriendName">Friend's Name</label>
+                                <input type="text" id="receiptFriendName" placeholder="e.g. Alex" maxlength="30">
+                            </div>
+                            <div class="form-group">
+                                <label>Friend's Share</label>
+                                <div class="share-input-row">
+                                    <input type="number" id="receiptFriendShare" step="0.01" min="0" placeholder="0.00">
+                                    <div class="share-type-btns" id="receiptShareTypeBtns">
+                                        <button type="button" class="share-type-btn active" data-type="amount">$</button>
+                                        <button type="button" class="share-type-btn" data-type="percent">%</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="receipt-actions">
@@ -377,6 +437,10 @@
                 <button id="confirmPayTransaction" class="btn-primary">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                     <span data-i18n="payBryanShare">Mark as Paid</span>
+                </button>
+                <button id="shareWithFriendBtn" class="btn-friend-share hidden">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                    <span>Share with Friend</span>
                 </button>
                 <button id="cancelPayTransaction"  class="btn-secondary">
                     <span data-i18n="cancel">Cancel</span>

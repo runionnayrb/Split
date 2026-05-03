@@ -2757,12 +2757,19 @@ class SplitMate {
 
     showAuthOverlay() {
         const overlay = document.getElementById('authOverlay');
-        if (overlay) overlay.classList.add('visible');
+        if (!overlay) return;
+        // Re-enable inputs so the user can type and iOS autofill can assist
+        overlay.querySelectorAll('input').forEach(el => el.removeAttribute('disabled'));
+        overlay.classList.add('visible');
     }
 
     hideAuthOverlay() {
         const overlay = document.getElementById('authOverlay');
-        if (overlay) overlay.classList.remove('visible');
+        if (!overlay) return;
+        overlay.classList.remove('visible');
+        // Disable all inputs so iOS does NOT scan for password fields and
+        // trigger Face ID / keyboard when the overlay is out of view
+        overlay.querySelectorAll('input').forEach(el => el.setAttribute('disabled', ''));
     }
 
     showGuestBanner() {

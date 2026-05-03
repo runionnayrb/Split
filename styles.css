@@ -1616,6 +1616,11 @@ body {
   opacity: 0.75;
 }
 
+.tx-translation-loading {
+  opacity: 0.35;
+  letter-spacing: 0.1em;
+}
+
 .tx-card-amount {
   font-size: 0.95rem;
   font-weight: 700;

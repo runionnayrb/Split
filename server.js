@@ -713,12 +713,13 @@ const server = http.createServer(async (req, res) => {
             return;
         }
 
-        // ── Translate text to English ─────────────────────────────────────────
+        // ── Translate expense description ─────────────────────────────────────
         if (pathname === '/api/translate' && req.method === 'POST') {
             if (!OPENAI_API_KEY) { json(res, 503, { error: 'Translation not available' }); return; }
             const body = JSON.parse((await readBody(req)).toString());
-            const { text } = body;
+            const { text, targetLanguage } = body;
             if (!text || !text.trim()) { json(res, 400, { error: 'text is required' }); return; }
+            const langLabel = (targetLanguage === 'ja') ? 'Japanese' : 'English';
             try {
                 const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
                     method: 'POST',
@@ -727,7 +728,7 @@ const server = http.createServer(async (req, res) => {
                         model: 'gpt-4o-mini',
                         messages: [{
                             role: 'user',
-                            content: `Translate this expense description to natural English. Reply with only the translation, nothing else: "${text}"`
+                            content: `Translate this expense description to natural ${langLabel}. Reply with only the translation, nothing else: "${text}"`
                         }],
                         max_tokens: 80
                     })

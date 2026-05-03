@@ -89,8 +89,9 @@ class SplitMate {
         this.selectedReceiptItems = new Set();
         this.splitReceiptItems = new Map(); // Track which items are set to split (50/50)
 
-        // Translation cache — persisted to localStorage
-        this.translationCache = this.loadTranslationCache();
+        // In-memory translation cache (session only)
+        this.translationCache = new Map();
+        this.openAIAvailable = null; // null = unchecked, true/false after first check
         
         // Settings modal elements
         this.settingsModal = document.getElementById('settingsModal');
@@ -214,34 +215,36 @@ class SplitMate {
     }
 
     /**
-     * Load persisted translation cache from localStorage
+     * Check once whether the server has an OpenAI key available
      */
-    loadTranslationCache() {
+    async checkOpenAIAvailable() {
+        if (this.openAIAvailable !== null) return this.openAIAvailable;
         try {
-            const raw = localStorage.getItem('splitmate_translations');
-            if (raw) return new Map(Object.entries(JSON.parse(raw)));
-        } catch (e) {}
-        return new Map();
+            const res = await fetch('/api/openai-available');
+            if (res.ok) {
+                const data = await res.json();
+                this.openAIAvailable = !!data.available;
+            } else {
+                this.openAIAvailable = false;
+            }
+        } catch (e) {
+            this.openAIAvailable = false;
+        }
+        return this.openAIAvailable;
     }
 
     /**
-     * Save translation cache to localStorage
-     */
-    saveTranslationCache() {
-        try {
-            const obj = {};
-            this.translationCache.forEach((v, k) => { obj[k] = v; });
-            localStorage.setItem('splitmate_translations', JSON.stringify(obj));
-        } catch (e) {}
-    }
-
-    /**
-     * Find all transaction cards marked for translation, fetch+cache, then update the DOM in place
+     * Find all transaction cards marked for translation, fetch+cache (in-memory),
+     * then update the DOM in place — shows a "..." loading pill while fetching
      */
     async translateVisibleDescriptions() {
+        const available = await this.checkOpenAIAvailable();
+        if (!available) return;
+
         const elements = Array.from(document.querySelectorAll('[data-translate-text]'));
         if (elements.length === 0) return;
 
+        const currentLang = window.i18n ? window.i18n.currentLanguage : 'en';
         const uniqueTexts = [...new Set(elements.map(el => el.dataset.translateText))];
         const toFetch = uniqueTexts.filter(t => !this.translationCache.has(t));
 
@@ -251,7 +254,7 @@ class SplitMate {
                     const res = await fetch('/api/translate', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ text })
+                        body: JSON.stringify({ text, targetLanguage: currentLang })
                     });
                     if (res.ok) {
                         const data = await res.json();
@@ -261,20 +264,18 @@ class SplitMate {
                     console.warn('Translation failed for:', text);
                 }
             }));
-            this.saveTranslationCache();
         }
 
         elements.forEach(wrap => {
             const original = wrap.dataset.translateText;
             const translation = this.translationCache.get(original);
-            if (!translation) return;
-            let transEl = wrap.querySelector('.tx-translation');
-            if (!transEl) {
-                transEl = document.createElement('span');
-                transEl.className = 'tx-translation';
-                wrap.appendChild(transEl);
+            const transEl = wrap.querySelector('.tx-translation');
+            if (translation && transEl) {
+                transEl.textContent = translation;
+                transEl.classList.remove('tx-translation-loading');
+            } else if (!translation && transEl) {
+                transEl.remove();
             }
-            transEl.textContent = translation;
             delete wrap.dataset.translateText;
         });
     }
@@ -1574,14 +1575,22 @@ class SplitMate {
         const rawLabel = this.getCategoryDisplay(transaction.category);
         const desc = transaction.notes || rawLabel.replace(/^\S+\s*/, '');
 
-        // Build description HTML — show cached English translation when in EN mode
+        // Build description HTML — auto-translate Japanese when in EN mode
         const currentLang = window.i18n ? window.i18n.currentLanguage : 'en';
         const hasJP = this.containsJapanese(desc);
         const cached = hasJP ? this.translationCache.get(desc) : null;
         const needsFetch = hasJP && currentLang === 'en' && !cached;
         const safeDesc = desc.replace(/"/g, '&quot;');
+        let translationLineHTML = '';
+        if (hasJP && currentLang === 'en') {
+            if (cached) {
+                translationLineHTML = `<span class="tx-translation">${cached}</span>`;
+            } else if (this.openAIAvailable !== false) {
+                translationLineHTML = `<span class="tx-translation tx-translation-loading">···</span>`;
+            }
+        }
         const descHTML = hasJP
-            ? `<div class="tx-desc-wrap"${needsFetch ? ` data-translate-text="${safeDesc}"` : ''}><span class="tx-card-desc">${desc}</span>${(cached && currentLang === 'en') ? `<span class="tx-translation">${cached}</span>` : ''}</div>`
+            ? `<div class="tx-desc-wrap"${needsFetch ? ` data-translate-text="${safeDesc}"` : ''}><span class="tx-card-desc">${desc}</span>${translationLineHTML}</div>`
             : `<span class="tx-card-desc">${desc}</span>`;
 
         if (isUnpaid) {

@@ -58,7 +58,30 @@ class SplitMate {
         this.deleteConfirmMessage = document.getElementById('deleteConfirmMessage');
         this.receiptImageContainer = document.getElementById('receiptImageContainer');
         this.receiptImage = document.getElementById('receiptImage');
+        this.receiptLightbox = document.getElementById('receiptLightbox');
+        this.receiptLightboxImg = document.getElementById('receiptLightboxImg');
         this.currentPaymentTransaction = null;
+
+        // Receipt lightbox — tap thumbnail to open, tap backdrop or X to close
+        const thumbWrap = document.querySelector('.receipt-thumb-wrap');
+        if (thumbWrap) {
+            thumbWrap.addEventListener('click', () => {
+                if (this.receiptImage.src && !this.receiptImage.src.endsWith(window.location.href)) {
+                    this.receiptLightboxImg.src = this.receiptImage.src;
+                    this.receiptLightbox.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden';
+                }
+            });
+        }
+        const closeLightbox = () => {
+            this.receiptLightbox.classList.add('hidden');
+            document.body.style.overflow = '';
+            this.receiptLightboxImg.src = '';
+        };
+        document.getElementById('receiptLightboxClose')?.addEventListener('click', closeLightbox);
+        this.receiptLightbox?.addEventListener('click', e => {
+            if (e.target === this.receiptLightbox) closeLightbox();
+        });
 
         // Auth state
         this.authToken = null;

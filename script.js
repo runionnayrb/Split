@@ -1622,18 +1622,19 @@ class SplitMate {
             let owedAmount = '';
             let owedClass = '';
 
+            const friendName = transaction.friendSplit ? transaction.friendSplit.name : null;
             if (transaction.isFromReceipt && transaction.receiptBreakdown) {
                 const bd = transaction.receiptBreakdown;
                 if (transaction.whoPaid === 'me') {
                     if (bd.ayakoOwes >= 0.01) {
-                        const p2 = window.i18n ? window.i18n.getP2Name() : 'Partner 2';
+                        const p2 = friendName || (window.i18n ? window.i18n.getP2Name() : 'Partner 2');
                         owedLabel  = `${p2} owes`;
                         owedAmount = this.formatCurrency(bd.ayakoOwes);
                         owedClass  = 'tx-owed-positive';
                     }
                 } else {
                     if (bd.bryanTotal >= 0.01) {
-                        const p1 = window.i18n ? window.i18n.getP1Name() : 'Partner 1';
+                        const p1 = friendName || (window.i18n ? window.i18n.getP1Name() : 'Partner 1');
                         owedLabel  = `${p1} owes`;
                         owedAmount = this.formatCurrency(bd.bryanTotal);
                         owedClass  = 'tx-owed-positive';
@@ -1643,10 +1644,10 @@ class SplitMate {
                 const half = transaction.amount / 2;
                 if (half >= 0.01) {
                     if (transaction.whoPaid === 'me') {
-                        const p2 = window.i18n ? window.i18n.getP2Name() : 'Partner 2';
+                        const p2 = friendName || (window.i18n ? window.i18n.getP2Name() : 'Partner 2');
                         owedLabel = `${p2} owes`;
                     } else {
-                        const p1 = window.i18n ? window.i18n.getP1Name() : 'Partner 1';
+                        const p1 = friendName || (window.i18n ? window.i18n.getP1Name() : 'Partner 1');
                         owedLabel = `${p1} owes`;
                     }
                     owedAmount = this.formatCurrency(half);

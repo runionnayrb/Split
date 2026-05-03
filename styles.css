@@ -1218,6 +1218,75 @@ body {
   font-size: 1rem;
 }
 
+/* Zelle info card in transaction detail sheet */
+.zelle-info-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(139, 92, 246, 0.10);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-top: 14px;
+  gap: 10px;
+}
+
+.zelle-info-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zelle-logo-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #6b21a8;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(139, 92, 246, 0.6);
+}
+
+.zelle-info-label {
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.65);
+}
+
+.zelle-info-label strong {
+  color: #c084fc;
+  font-weight: 700;
+}
+
+.zelle-info-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.zelle-phone {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #e9d5ff;
+  letter-spacing: 0.01em;
+}
+
+.zelle-copy-btn {
+  background: rgba(139, 92, 246, 0.22);
+  border: 1px solid rgba(139, 92, 246, 0.40);
+  color: #c084fc;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  white-space: nowrap;
+}
+
+.zelle-copy-btn:active {
+  background: rgba(139, 92, 246, 0.45);
+  color: #fff;
+}
+
 /* Share with friend button */
 .btn-friend-share {
   display: flex;

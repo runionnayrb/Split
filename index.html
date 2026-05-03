@@ -621,6 +621,16 @@
                     <img id="receiptImage" class="receipt-image" data-i18n-alt="receiptPreview" alt="Receipt">
                 </div>
                 <p id="payTransactionMessage"></p>
+                <div class="zelle-info-card">
+                    <div class="zelle-info-left">
+                        <span class="zelle-logo-dot"></span>
+                        <span class="zelle-info-label">Pay via <strong>Zelle</strong></span>
+                    </div>
+                    <div class="zelle-info-right">
+                        <span class="zelle-phone">(501) 282-5870</span>
+                        <button class="zelle-copy-btn" onclick="navigator.clipboard.writeText('5012825870').then(()=>{this.textContent='Copied!';setTimeout(()=>{this.textContent='Copy'},1800)})">Copy</button>
+                    </div>
+                </div>
             </div>
             <div class="bottom-sheet-actions">
                 <button id="confirmPayTransaction" class="btn-primary">

@@ -126,8 +126,7 @@ class SplitMate {
         this.setupBottomNav();
         this.switchNavTab('split');
 
-        // Scope toggle + partner listeners
-        this.setupScopeToggle();
+        // Partner listeners
         this.setupPartnerListeners();
 
         // Auth — async, runs after initial render
@@ -1011,6 +1010,9 @@ class SplitMate {
         
         // Get friend split data (based on total receipt amount)
         const friendSplit = this.getFriendSplitData('receipt', totalReceiptAmount);
+
+        // Automatically personal if splitting with a friend, shared otherwise
+        const scope = friendSplit ? 'personal' : 'shared';
         
         // Create a single combined transaction for the entire receipt
         const receiptTransaction = {
@@ -1024,6 +1026,7 @@ class SplitMate {
             receiptImage: this.getReceiptImageData(),
             isFromReceipt: true,
             friendSplit: friendSplit || null,
+            scope: scope,
             // Store receipt breakdown data for modal display
             receiptBreakdown: {
                 grandTotal: grandTotal,
@@ -1215,18 +1218,17 @@ class SplitMate {
         // Get friend split data
         const friendSplit = this.getFriendSplitData('manual', amount);
 
-        // Get scope from toggle (default shared)
-        const scope = this.currentScope || 'shared';
+        // Automatically personal if splitting with a friend, shared otherwise
+        const scope = friendSplit ? 'personal' : 'shared';
         
         // Create transaction object
         const transaction = {
-            id: Date.now(), // Simple ID using timestamp
+            id: Date.now(),
             date: new Date().toISOString(),
             whoPaid: whoPaid,
             amount: amount,
-            category: 'other', // Default category since it's hidden
+            category: 'other',
             notes: notes || '',
-            // For 50/50 split, each person owes half of what the other paid
             youOwe: whoPaid === 'spouse' ? amount / 2 : -(amount / 2),
             friendSplit: friendSplit || null,
             scope: scope
@@ -2956,23 +2958,6 @@ class SplitMate {
         } catch(e) {
             alert(e.message);
         }
-    }
-
-    setupScopeToggle() {
-        this.currentScope = 'shared';
-        const sharedBtn   = document.getElementById('scopeSharedBtn');
-        const personalBtn = document.getElementById('scopePersonalBtn');
-        if (!sharedBtn || !personalBtn) return;
-        sharedBtn.addEventListener('click', () => {
-            this.currentScope = 'shared';
-            sharedBtn.classList.add('scope-btn-active');
-            personalBtn.classList.remove('scope-btn-active');
-        });
-        personalBtn.addEventListener('click', () => {
-            this.currentScope = 'personal';
-            personalBtn.classList.add('scope-btn-active');
-            sharedBtn.classList.remove('scope-btn-active');
-        });
     }
 
     setupPartnerListeners() {

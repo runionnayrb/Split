@@ -1258,189 +1258,138 @@ body {
 }
 
 /* ============================================================
-   TRANSACTION HISTORY  — Card List (not table)
+   TRANSACTION CARDS — mobile-native list
    ============================================================ */
-.table-container {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+.transaction-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0;
 }
 
-/* Override table to look premium on mobile */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
+.tx-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: var(--transition);
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  gap: 0 12px;
+  align-items: start;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
-#unpaidTransactionsTable,
-#paidTransactionsTable {
-  table-layout: fixed;
-  width: 100%;
+.tx-card:hover {
+  background: var(--glass-bg-mid);
+  border-color: var(--glass-border-hi);
+}
+
+.tx-card:active {
+  transform: scale(0.985);
+  background: var(--glass-bg-hi);
+}
+
+.tx-card.settled-card {
+  opacity: 0.50;
+}
+
+.tx-card-emoji {
+  font-size: 1.5rem;
+  line-height: 1;
+  margin-top: 1px;
+  text-align: center;
+}
+
+.tx-card-body {
   min-width: 0;
 }
 
-/* Column widths */
-#unpaidTransactionsTable th:nth-child(1),
-#unpaidTransactionsTable td:nth-child(1),
-#paidTransactionsTable th:nth-child(1),
-#paidTransactionsTable td:nth-child(1) { width: 14%; }
-
-#unpaidTransactionsTable th:nth-child(2),
-#unpaidTransactionsTable td:nth-child(2),
-#paidTransactionsTable th:nth-child(2),
-#paidTransactionsTable td:nth-child(2) { width: 15%; }
-
-#unpaidTransactionsTable th:nth-child(3),
-#unpaidTransactionsTable td:nth-child(3),
-#paidTransactionsTable th:nth-child(3),
-#paidTransactionsTable td:nth-child(3) { width: 15%; }
-
-#unpaidTransactionsTable th:nth-child(4),
-#unpaidTransactionsTable td:nth-child(4),
-#paidTransactionsTable th:nth-child(4),
-#paidTransactionsTable td:nth-child(4) { width: 28%; }
-
-#unpaidTransactionsTable th:nth-child(5),
-#unpaidTransactionsTable td:nth-child(5),
-#paidTransactionsTable th:nth-child(5),
-#paidTransactionsTable td:nth-child(5) { width: 14%; }
-
-#unpaidTransactionsTable th:nth-child(6),
-#unpaidTransactionsTable td:nth-child(6) { width: 14%; }
-
-table th {
-  background: transparent;
-  padding: 10px 8px;
-  text-align: left;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+.tx-card-row1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 3px;
 }
 
-table td {
-  padding: 12px 8px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  word-wrap: break-word;
+.tx-card-desc {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
   overflow: hidden;
-  vertical-align: middle;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
 }
 
-#unpaidTransactionsTable td,
-#paidTransactionsTable td {
-  text-align: left;
+.tx-card-amount {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  flex-shrink: 0;
 }
 
-.transaction-row {
-  transition: var(--transition);
-  cursor: pointer;
+.tx-card-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 6px;
 }
 
-.transaction-row:hover {
-  background: rgba(139,92,246,0.07) !important;
+.tx-card-owed {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255,255,255,0.045);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius-sm);
+  padding: 5px 9px;
+  margin-top: 4px;
 }
 
-.transaction-row:active {
-  background: rgba(139,92,246,0.12) !important;
+.tx-owed-label {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
-.transaction-row.settled {
-  opacity: 0.45;
+.tx-owed-amount {
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
-.transaction-row.settled:hover {
-  background: transparent !important;
+.tx-owed-positive { color: #fca5a5; }
+.tx-owed-negative { color: #6ee7b7; }
+
+.tx-card-settled-info {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  padding-top: 4px;
 }
 
-.no-transactions td {
+.tx-friend-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #34d399;
+  background: rgba(52,211,153,0.10);
+  border: 1px solid rgba(52,211,153,0.22);
+  border-radius: var(--radius-pill);
+  padding: 3px 9px;
+  margin-top: 5px;
+}
+
+.no-transactions {
   text-align: center;
   color: var(--text-muted);
   font-size: 0.88rem;
   padding: 40px 8px;
   font-style: italic;
-}
-
-/* Amount cells */
-.amount-cell {
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.you-owe-cell {
-  font-weight: 700;
-}
-
-.you-owe-positive {
-  color: #fca5a5;
-}
-
-.you-owe-negative {
-  color: #6ee7b7;
-}
-
-/* ============================================================
-   MODAL — Centered Dialog
-   ============================================================ */
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 1000;
-  inset: 0;
-  background: rgba(0,0,0,0.60);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-#deleteConfirmModal {
-  z-index: 3000;
-}
-
-.modal-content {
-  background: rgba(14,14,42,0.92);
-  backdrop-filter: var(--blur-modal);
-  -webkit-backdrop-filter: var(--blur-modal);
-  border: 1px solid var(--glass-border-hi);
-  margin: 18% auto;
-  padding: 28px 24px;
-  border-radius: var(--radius-xl);
-  width: 92%;
-  max-width: 360px;
-  text-align: center;
-  box-shadow: var(--shadow-modal);
-  position: relative;
-  overflow: hidden;
-}
-
-.modal-content::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 15%; right: 15%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
-}
-
-.modal-content h3 {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 12px;
-}
-
-.modal-content p {
-  font-size: 0.88rem;
-  color: var(--text-secondary);
-  line-height: 1.6;
-  margin-bottom: 22px;
-}
-
-.modal-buttons {
-  display: flex;
-  gap: 10px;
-  flex-direction: column;
 }
 
 /* ============================================================
@@ -1838,21 +1787,6 @@ table td {
   .item-name    { font-size: 0.84rem; }
   .item-price   { font-size: 0.88rem; }
 
-  table { min-width: 500px; }
-
-  table th,
-  table td {
-    padding: 9px 5px;
-    font-size: 0.76rem;
-  }
-
-  .modal-content {
-    margin: 8% auto;
-    width: 97%;
-    padding: 18px 14px;
-    border-radius: var(--radius-lg);
-  }
-
   .btn-settle {
     padding: 13px 28px;
     font-size: 0.90rem;
@@ -1905,9 +1839,4 @@ table td {
     grid-column: auto;
   }
 
-  .modal-content {
-    margin: 4% auto;
-    max-height: 92vh;
-    overflow-y: auto;
-  }
 }

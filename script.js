@@ -288,15 +288,15 @@ class SplitMate {
         
         // Click outside modal to close
         this.confirmModal.addEventListener('click', (e) => {
-            if (e.target === this.confirmModal) {
+            if (e.target.classList.contains('bottom-sheet-backdrop')) {
                 this.hideConfirmModal();
             }
         });
         
-        // Close delete modal when clicking outside
+        // Close delete modal when clicking backdrop
         if (this.deleteConfirmModal) {
             this.deleteConfirmModal.addEventListener('click', (e) => {
-                if (e.target === this.deleteConfirmModal) {
+                if (e.target.classList.contains('bottom-sheet-backdrop')) {
                     this.hideDeleteConfirmation();
                 }
             });
@@ -312,13 +312,13 @@ class SplitMate {
         // Escape key to close modal
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                if (this.settingsModal && this.settingsModal.style.display === 'block') {
+                if (this.settingsModal && this.settingsModal.classList.contains('show')) {
                     this.hideSettingsModal();
-                } else if (this.deleteConfirmModal && this.deleteConfirmModal.style.display === 'block') {
+                } else if (this.deleteConfirmModal && this.deleteConfirmModal.classList.contains('show')) {
                     this.hideDeleteConfirmation();
-                } else if (this.confirmModal.style.display === 'block') {
+                } else if (this.confirmModal.classList.contains('show')) {
                     this.hideConfirmModal();
-                } else if (this.payTransactionModal.style.display === 'block') {
+                } else if (this.payTransactionModal.classList.contains('show')) {
                     this.hidePayTransactionModal();
                 }
             }
@@ -374,7 +374,7 @@ class SplitMate {
         
         if (this.settingsModal) {
             this.settingsModal.addEventListener('click', (e) => {
-                if (e.target === this.settingsModal) {
+                if (e.target.classList.contains('bottom-sheet-backdrop')) {
                     this.hideSettingsModal();
                 }
             });
@@ -1252,152 +1252,156 @@ class SplitMate {
     }
     
     /**
-     * Update unpaid transactions table
+     * Update unpaid transactions list
      */
     updateUnpaidTransactionsTable(unpaidTransactions) {
         this.unpaidTransactionsBody.innerHTML = '';
         
         if (unpaidTransactions.length === 0) {
-            const row = document.createElement('tr');
-            row.className = 'no-transactions';
-            row.innerHTML = `<td colspan="6">${this.t('noUnpaidTransactions', 'No unpaid transactions! 🎉')}</td>`;
-            this.unpaidTransactionsBody.appendChild(row);
+            const empty = document.createElement('div');
+            empty.className = 'no-transactions';
+            empty.textContent = this.t('noUnpaidTransactions', 'No unpaid transactions! 🎉');
+            this.unpaidTransactionsBody.appendChild(empty);
             return;
         }
         
         unpaidTransactions.forEach(transaction => {
-            const row = this.createTransactionRow(transaction, true);
-            this.unpaidTransactionsBody.appendChild(row);
+            const card = this.createTransactionRow(transaction, true);
+            this.unpaidTransactionsBody.appendChild(card);
         });
     }
     
     /**
-     * Update paid transactions table
+     * Update paid transactions list
      */
     updatePaidTransactionsTable(paidTransactions) {
         this.paidTransactionsBody.innerHTML = '';
         
         if (paidTransactions.length === 0) {
-            const row = document.createElement('tr');
-            row.className = 'no-transactions';
-            row.innerHTML = `<td colspan="5">${this.t('noSettledTransactions', 'No settled transactions yet.')}</td>`;
-            this.paidTransactionsBody.appendChild(row);
+            const empty = document.createElement('div');
+            empty.className = 'no-transactions';
+            empty.textContent = this.t('noSettledTransactions', 'No settled transactions yet.');
+            this.paidTransactionsBody.appendChild(empty);
             return;
         }
         
         paidTransactions.forEach(transaction => {
-            const row = this.createTransactionRow(transaction, false);
-            this.paidTransactionsBody.appendChild(row);
+            const card = this.createTransactionRow(transaction, false);
+            this.paidTransactionsBody.appendChild(card);
         });
+    }
+
+    /**
+     * Return a category emoji for use in transaction cards
+     */
+    getCategoryEmoji(category) {
+        const map = {
+            'groceries': '🥬',
+            'dining':    '🍽️',
+            'travel':    '✈️',
+            'shopping':  '🛍️',
+            'other':     '📋'
+        };
+        return map[category] || '💳';
     }
     
     /**
-     * Create a transaction row element
+     * Create a mobile-native transaction card element
      */
     createTransactionRow(transaction, isUnpaid) {
-        const row = document.createElement('tr');
-        row.className = 'transaction-row';
-        
+        const card = document.createElement('div');
+        card.className = 'tx-card' + (isUnpaid ? '' : ' settled-card');
+
         const date = window.i18n ? window.i18n.formatDate(transaction.date) : new Date(transaction.date).toLocaleDateString();
-        const whoPaidDisplay = transaction.whoPaid === 'me' ? this.t('bryan', 'Bryan') : this.t('ayako', 'Ayako');
-        const category = this.getCategoryDisplay(transaction.category);
-        const notes = transaction.notes || '-';
-        
+        const whoPaidDisplay = transaction.whoPaid === 'me' ? this.t('bryan', 'P1') : this.t('ayako', 'P2');
+        const emoji = this.getCategoryEmoji(transaction.category);
+        const rawLabel = this.getCategoryDisplay(transaction.category);
+        const desc = transaction.notes || rawLabel.replace(/^\S+\s*/, '');
+
         if (isUnpaid) {
-            // Calculate what each person owes based on transaction type
-            let bryanOwesDisplay = '-';
-            let ayakoOwesDisplay = '-';
-            let bryanOwesClass = 'you-owe-cell';
-            let ayakoOwesClass = 'you-owe-cell';
-            
+            let owedLabel = '';
+            let owedAmount = '';
+            let owedClass = '';
+
             if (transaction.isFromReceipt && transaction.receiptBreakdown) {
-                // Receipt transaction - use breakdown calculations
-                const breakdown = transaction.receiptBreakdown;
-                
+                const bd = transaction.receiptBreakdown;
                 if (transaction.whoPaid === 'me') {
-                    // Bryan paid, Ayako owes the calculated amount
-                    if (breakdown.ayakoOwes >= 0.01) {
-                        ayakoOwesDisplay = this.formatCurrency(breakdown.ayakoOwes);
-                        ayakoOwesClass += ' you-owe-positive';
+                    if (bd.ayakoOwes >= 0.01) {
+                        const p2 = window.i18n ? window.i18n.getP2Name() : 'Partner 2';
+                        owedLabel  = `${p2} owes`;
+                        owedAmount = this.formatCurrency(bd.ayakoOwes);
+                        owedClass  = 'tx-owed-positive';
                     }
                 } else {
-                    // Ayako paid, Bryan owes the calculated amount
-                    if (breakdown.bryanTotal >= 0.01) {
-                        bryanOwesDisplay = this.formatCurrency(breakdown.bryanTotal);
-                        bryanOwesClass += ' you-owe-positive';
+                    if (bd.bryanTotal >= 0.01) {
+                        const p1 = window.i18n ? window.i18n.getP1Name() : 'Partner 1';
+                        owedLabel  = `${p1} owes`;
+                        owedAmount = this.formatCurrency(bd.bryanTotal);
+                        owedClass  = 'tx-owed-positive';
                     }
                 }
             } else {
-                // Manual transaction - simple 50/50 split
-                const halfAmount = transaction.amount / 2;
-                
-                if (transaction.whoPaid === 'me') {
-                    // Bryan paid, so Ayako owes half
-                    if (halfAmount >= 0.01) {
-                        ayakoOwesDisplay = this.formatCurrency(halfAmount);
-                        ayakoOwesClass += ' you-owe-positive';
+                const half = transaction.amount / 2;
+                if (half >= 0.01) {
+                    if (transaction.whoPaid === 'me') {
+                        const p2 = window.i18n ? window.i18n.getP2Name() : 'Partner 2';
+                        owedLabel = `${p2} owes`;
+                    } else {
+                        const p1 = window.i18n ? window.i18n.getP1Name() : 'Partner 1';
+                        owedLabel = `${p1} owes`;
                     }
-                } else {
-                    // Ayako paid, so Bryan owes half
-                    if (halfAmount >= 0.01) {
-                        bryanOwesDisplay = this.formatCurrency(halfAmount);
-                        bryanOwesClass += ' you-owe-positive';
-                    }
+                    owedAmount = this.formatCurrency(half);
+                    owedClass  = 'tx-owed-positive';
                 }
             }
-            
-            const friendBadge = transaction.friendSplit 
-                ? `<span class="friend-split-badge">👤 ${transaction.friendSplit.name}: ${this.formatCurrency(transaction.friendSplit.amount)}</span>`
+
+            const owedRow = owedAmount
+                ? `<div class="tx-card-owed"><span class="tx-owed-label">${owedLabel}</span><span class="tx-owed-amount ${owedClass}">${owedAmount}</span></div>`
                 : '';
-            
-            row.innerHTML = `
-                <td>${date}</td>
-                <td><strong>${whoPaidDisplay}</strong></td>
-                <td class="amount-cell">${this.formatCurrency(transaction.amount)}</td>
-                <td>${notes}${friendBadge}</td>
-                <td class="${bryanOwesClass}">${bryanOwesDisplay}</td>
-                <td class="${ayakoOwesClass}">${ayakoOwesDisplay}</td>
+
+            const friendBadge = transaction.friendSplit
+                ? `<div class="tx-friend-badge">👤 ${transaction.friendSplit.name}: ${this.formatCurrency(transaction.friendSplit.amount)}</div>`
+                : '';
+
+            card.innerHTML = `
+                <div class="tx-card-emoji">${emoji}</div>
+                <div class="tx-card-body">
+                    <div class="tx-card-row1">
+                        <span class="tx-card-desc">${desc}</span>
+                        <span class="tx-card-amount">${this.formatCurrency(transaction.amount)}</span>
+                    </div>
+                    <div class="tx-card-meta">${date} · ${whoPaidDisplay} paid</div>
+                    ${owedRow}
+                    ${friendBadge}
+                </div>
             `;
-            
-            // Add click handler for individual transaction payment
-            const hasDebt = bryanOwesDisplay !== '-' || ayakoOwesDisplay !== '-';
-            if (hasDebt) {
-                row.style.cursor = 'pointer';
-                row.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this.showPayTransactionModal(transaction);
-                });
-                row.title = 'Tap to pay this item individually';
+
+            if (owedAmount) {
+                card.addEventListener('click', () => this.showPayTransactionModal(transaction));
+            } else {
+                card.style.cursor = 'default';
             }
         } else {
-            // Paid transaction - show "Settled Date" column
-            const settledDate = transaction.settledDate ? 
-                (window.i18n ? window.i18n.formatDate(transaction.settledDate) : new Date(transaction.settledDate).toLocaleDateString()) : 
-                '-';
-            
-            row.innerHTML = `
-                <td>${date}</td>
-                <td><strong>${whoPaidDisplay}</strong></td>
-                <td class="amount-cell">${this.formatCurrency(transaction.amount)}</td>
-                <td>${notes}</td>
-                <td>${settledDate}</td>
+            const settledDate = transaction.settledDate
+                ? (window.i18n ? window.i18n.formatDate(transaction.settledDate) : new Date(transaction.settledDate).toLocaleDateString())
+                : '-';
+
+            card.innerHTML = `
+                <div class="tx-card-emoji">${emoji}</div>
+                <div class="tx-card-body">
+                    <div class="tx-card-row1">
+                        <span class="tx-card-desc">${desc}</span>
+                        <span class="tx-card-amount">${this.formatCurrency(transaction.amount)}</span>
+                    </div>
+                    <div class="tx-card-meta">${date} · ${whoPaidDisplay} paid</div>
+                    <div class="tx-card-settled-info">Settled ${settledDate}</div>
+                </div>
             `;
-            
-            // Add click handler for all paid transactions
-            row.style.cursor = 'pointer';
-            row.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.showPayTransactionModal(transaction);
-            });
-            row.title = transaction.isFromReceipt ? 'Tap to view receipt breakdown' : 'Tap to view transaction details';
-            if (transaction.isFromReceipt) {
-                row.classList.add('clickable-receipt');
-            }
+
+            card.addEventListener('click', () => this.showPayTransactionModal(transaction));
         }
-        
-        return row;
+
+        return card;
     }
     
     /**
@@ -1441,20 +1445,26 @@ class SplitMate {
      */
     showSettingsModal() {
         if (window.i18n) {
-            this.partner1Input.value = window.i18n.getP1Name() !== 'Partner 1' ? window.i18n.getP1Name() : '';
-            this.partner2Input.value = window.i18n.getP2Name() !== 'Partner 2' ? window.i18n.getP2Name() : '';
+            this.partner1Input.value = window.i18n.getP1Name();
+            this.partner2Input.value = window.i18n.getP2Name();
         }
         this.settingsModal.style.display = 'block';
         document.body.style.overflow = 'hidden';
-        setTimeout(() => this.partner1Input.focus(), 50);
+        requestAnimationFrame(() => {
+            this.settingsModal.classList.add('show');
+            setTimeout(() => this.partner1Input.focus(), 50);
+        });
     }
     
     /**
      * Hide the settings modal
      */
     hideSettingsModal() {
-        this.settingsModal.style.display = 'none';
-        document.body.style.overflow = 'auto';
+        this.settingsModal.classList.remove('show');
+        setTimeout(() => {
+            this.settingsModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }, 320);
     }
     
     /**
@@ -1477,15 +1487,19 @@ class SplitMate {
      */
     showConfirmModal() {
         this.confirmModal.style.display = 'block';
-        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        document.body.style.overflow = 'hidden';
+        requestAnimationFrame(() => this.confirmModal.classList.add('show'));
     }
     
     /**
      * Hide the settle up confirmation modal
      */
     hideConfirmModal() {
-        this.confirmModal.style.display = 'none';
-        document.body.style.overflow = 'auto'; // Restore scrolling
+        this.confirmModal.classList.remove('show');
+        setTimeout(() => {
+            this.confirmModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }, 320);
     }
 
     /**
@@ -2011,14 +2025,18 @@ class SplitMate {
         this.deleteConfirmMessage.textContent = `Are you sure you want to delete "${itemName}" (${amount})? This action cannot be undone.`;
         this.deleteConfirmModal.style.display = 'block';
         document.body.style.overflow = 'hidden';
+        requestAnimationFrame(() => this.deleteConfirmModal.classList.add('show'));
     }
     
     /**
      * Hide delete confirmation modal
      */
     hideDeleteConfirmation() {
-        this.deleteConfirmModal.style.display = 'none';
-        document.body.style.overflow = 'auto';
+        this.deleteConfirmModal.classList.remove('show');
+        setTimeout(() => {
+            this.deleteConfirmModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }, 320);
     }
     
     /**

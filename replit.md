@@ -92,6 +92,17 @@ The application now requires server-side configuration for receipt scanning, but
 - **File Processing**: Supports JPG, PNG, WebP, and PDF files up to 10MB for receipt scanning
 - **AI Integration**: Uses OpenAI GPT-4o Vision API for receipt text extraction and categorization
 
+## Recent Changes (May 3, 2026) — Mobile UX Overhaul
+
+✓ Replaced transaction tables with mobile-native card list — emoji category icon, description, who paid, amount, and owed row all on one tappable card
+✓ Added getCategoryEmoji() helper; cards use 🥬🍽️✈️🛍️📋💳 icons per category
+✓ All three remaining center-dialogs converted to bottom sheets: Settle Up, Delete, and Settings all slide up natively
+✓ Bottom sheet show/hide uses requestAnimationFrame + .show class for smooth iOS-feel animation on all sheets
+✓ Backdrop-click and Escape key updated to use classList.contains('show') throughout
+✓ Settings modal now always pre-fills the currently saved names (Partner 1/2 or custom names) — names persist via localStorage keys splitmate_partner1_name / splitmate_partner2_name
+✓ Removed all dead .modal / .modal-content / table CSS — file is now ~60 lines shorter
+✓ Configurable partner names feature merged: gear icon in header opens Settings sheet; names saved to localStorage and propagated app-wide via partnerNamesChanged event
+
 ## Recent Changes (May 2, 2026) — Friend Split Feature
 
 ✓ Added "Split with a friend" optional toggle in both manual entry and receipt scan forms

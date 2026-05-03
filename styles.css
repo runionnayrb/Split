@@ -2198,85 +2198,62 @@ body {
   margin-bottom: 10px;
 }
 
-.receipt-thumb-wrap {
-  position: relative;
-  display: inline-block;
-  cursor: pointer;
-}
-
 .receipt-tap-hint {
   position: absolute;
   bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0,0,0,0.62);
-  color: rgba(255,255,255,0.88);
+  background: rgba(0,0,0,0.65);
+  color: rgba(255,255,255,0.92);
   font-size: 0.74rem;
   font-weight: 600;
   letter-spacing: 0.03em;
-  padding: 4px 12px;
+  padding: 5px 14px;
   border-radius: 20px;
   white-space: nowrap;
   pointer-events: none;
+  transition: opacity 0.2s;
 }
 
 .receipt-image {
   max-width: 100%;
-  max-height: 280px;
+  max-height: 220px;
   border-radius: var(--radius-md);
   border: 1px solid var(--glass-border-hi);
   box-shadow: 0 8px 24px rgba(0,0,0,0.50);
   display: block;
+  width: 100%;
+  object-fit: cover;
+  transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1), border-radius 0.35s;
 }
 
-/* Receipt lightbox */
-.receipt-lightbox {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: rgba(0,0,0,0.92);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  animation: rlb-in 0.18s ease;
-}
-.receipt-lightbox.hidden { display: none; }
-
-@keyframes rlb-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-.rlb-img {
-  max-width: 100%;
-  max-height: 90dvh;
-  border-radius: 12px;
-  box-shadow: 0 24px 80px rgba(0,0,0,0.80);
+/* Expanded state — full image, no clipping */
+.receipt-image-container.expanded .receipt-image {
+  max-height: 9999px;
   object-fit: contain;
-  touch-action: pinch-zoom;
+  border-radius: 0;
+}
+.receipt-image-container.expanded {
+  margin-left: calc(-1 * var(--modal-padding, 20px));
+  margin-right: calc(-1 * var(--modal-padding, 20px));
+}
+.receipt-image-container.expanded .receipt-image {
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
 }
 
-.rlb-close {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.18);
-  color: #fff;
-  font-size: 1.1rem;
+/* Receipt inline expand button */
+.receipt-expand-btn {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
   -webkit-tap-highlight-color: transparent;
 }
-.rlb-close:active { background: rgba(255,255,255,0.22); }
 
 /* ============================================================
    CONFETTI

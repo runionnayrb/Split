@@ -58,29 +58,15 @@ class SplitMate {
         this.deleteConfirmMessage = document.getElementById('deleteConfirmMessage');
         this.receiptImageContainer = document.getElementById('receiptImageContainer');
         this.receiptImage = document.getElementById('receiptImage');
-        this.receiptLightbox = document.getElementById('receiptLightbox');
-        this.receiptLightboxImg = document.getElementById('receiptLightboxImg');
         this.currentPaymentTransaction = null;
+        this.currentReceiptImageData = null; // compressed data URL, persists with transaction
 
-        // Receipt lightbox — tap thumbnail to open, tap backdrop or X to close
-        const thumbWrap = document.querySelector('.receipt-thumb-wrap');
-        if (thumbWrap) {
-            thumbWrap.addEventListener('click', () => {
-                if (this.receiptImage.src && !this.receiptImage.src.endsWith(window.location.href)) {
-                    this.receiptLightboxImg.src = this.receiptImage.src;
-                    this.receiptLightbox.classList.remove('hidden');
-                    document.body.style.overflow = 'hidden';
-                }
-            });
-        }
-        const closeLightbox = () => {
-            this.receiptLightbox.classList.add('hidden');
-            document.body.style.overflow = '';
-            this.receiptLightboxImg.src = '';
-        };
-        document.getElementById('receiptLightboxClose')?.addEventListener('click', closeLightbox);
-        this.receiptLightbox?.addEventListener('click', e => {
-            if (e.target === this.receiptLightbox) closeLightbox();
+        // Inline receipt expand/collapse inside bottom sheet
+        document.getElementById('receiptExpandBtn')?.addEventListener('click', () => {
+            const container = this.receiptImageContainer;
+            const hint = document.getElementById('receiptTapHint');
+            const expanded = container.classList.toggle('expanded');
+            if (hint) hint.textContent = expanded ? 'Tap to collapse' : 'Tap to expand';
         });
 
         // Auth state
@@ -820,8 +806,13 @@ class SplitMate {
                 // Show image preview
                 document.getElementById('pdfPreview').classList.add('hidden');
                 this.previewImage.classList.remove('hidden');
+                // Use blob URL for fast UI preview, compress+cache separately for persistence
                 const imageUrl = URL.createObjectURL(file);
                 this.previewImage.src = imageUrl;
+                this.currentReceiptImageData = null; // clear while compressing
+                this.compressReceiptImage(file).then(data => {
+                    this.currentReceiptImageData = data;
+                });
             }
             
             // Store file for processing
@@ -1245,49 +1236,54 @@ class SplitMate {
     }
     
     /**
-     * Get receipt image data for storage
+     * Compress a receipt image file to a JPEG data URL (~1400px max, 0.72 quality).
+     * Returns a Promise that resolves to the compressed data URL (or null on error).
+     */
+    compressReceiptImage(file) {
+        return new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = new Image();
+                img.onload = () => {
+                    const MAX = 1400;
+                    let w = img.width, h = img.height;
+                    if (w > MAX || h > MAX) {
+                        const r = Math.min(MAX / w, MAX / h);
+                        w = Math.round(w * r);
+                        h = Math.round(h * r);
+                    }
+                    const cv = document.createElement('canvas');
+                    cv.width = w; cv.height = h;
+                    cv.getContext('2d').drawImage(img, 0, 0, w, h);
+                    resolve(cv.toDataURL('image/jpeg', 0.72));
+                };
+                img.onerror = () => resolve(e.target.result); // fallback: store original
+                img.src = e.target.result;
+            };
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    /**
+     * Get receipt image data for storage — returns the pre-compressed data URL.
      */
     getReceiptImageData() {
-        if (!this.currentReceiptFile) {
-            console.log('No current receipt file');
-            return null;
-        }
-        
-        console.log('Getting receipt image data for file type:', this.currentReceiptFile.type);
-        
-        // For images, return the data URL
+        if (!this.currentReceiptFile) return null;
+
+        // For image files, return the pre-compressed data URL cached at upload time
         if (this.currentReceiptFile.type.startsWith('image/')) {
-            const img = document.getElementById('previewImage');
-            console.log('Image preview element:', img);
-            console.log('Image src:', img?.src);
-            return img?.src || null;
+            return this.currentReceiptImageData || null;
         }
-        
-        // For PDFs, we need to get the converted image from canvas or preview
+
+        // For PDFs, try canvas (from PDF.js conversion) or fallback marker
         const canvas = document.querySelector('#previewContainer canvas');
-        console.log('Canvas element found:', !!canvas);
-        if (canvas) {
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-            console.log('Canvas data URL length:', dataUrl.length);
-            return dataUrl;
-        }
-        
-        // Fallback: try to get from the preview image that might have been set by PDF conversion
+        if (canvas) return canvas.toDataURL('image/jpeg', 0.72);
+
         const img = document.getElementById('previewImage');
-        console.log('Checking preview image fallback:', img, img?.src, img?.classList.contains('hidden'));
-        if (img && img.src && !img.classList.contains('hidden')) {
-            console.log('Using preview image as fallback for PDF');
-            return img.src;
-        }
-        
-        // For PDFs without canvas, try to store the file reference for later display
-        if (this.currentReceiptFile && this.currentReceiptFile.type === 'application/pdf') {
-            console.log('PDF file detected, storing file for later processing');
-            return 'PDF_FILE_REFERENCE'; // Special marker for PDF files
-        }
-        
-        console.log('No image data found');
-        return null;
+        if (img && img.src && img.src.startsWith('data:')) return img.src;
+
+        return 'PDF_FILE_REFERENCE';
     }
     
     /**
@@ -1296,6 +1292,7 @@ class SplitMate {
     clearReceiptUpload() {
         this.receiptFile.value = '';
         this.currentReceiptFile = null;
+        this.currentReceiptImageData = null;
         this.receiptPreview.classList.add('hidden');
         this.processingStatus.classList.add('hidden');
         this.uploadArea.style.display = 'block';
@@ -1833,38 +1830,26 @@ class SplitMate {
      */
     showPayTransactionModal(transaction) {
         this.currentPaymentTransaction = transaction;
-        
+
+        // Reset receipt viewer to collapsed state
+        this.receiptImageContainer.classList.remove('expanded');
+        const hint = document.getElementById('receiptTapHint');
+        if (hint) hint.textContent = 'Tap to expand';
+
         // Show receipt image if available
-        console.log('Transaction has receipt image:', !!transaction.receiptImage);
         if (transaction.receiptImage && transaction.receiptImage !== 'PDF_FILE_REFERENCE') {
-            console.log('Showing receipt image');
             this.receiptImageContainer.classList.remove('hidden');
             this.receiptImage.src = transaction.receiptImage;
-        } else if (transaction.receiptImage === 'PDF_FILE_REFERENCE') {
-            // For PDF files, show a placeholder or message
-            console.log('Transaction from PDF receipt - showing placeholder');
-            this.receiptImageContainer.classList.remove('hidden');
-            this.receiptImage.src = 'data:image/svg+xml;base64,' + btoa(`
-                <svg width="200" height="150" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="200" height="150" fill="#f3f4f6" stroke="#d1d5db" stroke-width="2"/>
-                    <text x="100" y="75" text-anchor="middle" font-family="Arial" font-size="14" fill="#6b7280">
-                        PDF Receipt
-                    </text>
-                    <text x="100" y="95" text-anchor="middle" font-family="Arial" font-size="12" fill="#9ca3af">
-                        (Original file)
-                    </text>
-                </svg>
-            `);
         } else {
-            console.log('No receipt image to show');
             this.receiptImageContainer.classList.add('hidden');
+            this.receiptImage.src = '';
         }
-        
+
         // Format transaction details
         const youOweAmount = Math.abs(transaction.youOwe);
         const whoPaidDisplay = transaction.whoPaid === 'me' ? 'You' : 'Your spouse';
         const categoryDisplay = this.getCategoryDisplay(transaction.category);
-        
+
         this.payTransactionDetails.innerHTML = `
             <div class="payment-transaction-details">
                 <p><strong>Item:</strong> ${transaction.notes || categoryDisplay}</p>
@@ -1874,14 +1859,6 @@ class SplitMate {
                 <p><strong>Date:</strong> ${new Date(transaction.date).toLocaleDateString()}</p>
             </div>
         `;
-        
-        // Show receipt if available
-        if (transaction.receiptImage) {
-            this.receiptImage.src = transaction.receiptImage;
-            this.receiptImageContainer.classList.remove('hidden');
-        } else {
-            this.receiptImageContainer.classList.add('hidden');
-        }
         
         // Show receipt breakdown if available
         const receiptBreakdownSection = document.getElementById('receiptBreakdownSection');

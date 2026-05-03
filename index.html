@@ -661,12 +661,6 @@
         </button>
     </nav>
 
-    <!-- ── RECEIPT LIGHTBOX ────────────────────────────────── -->
-    <div id="receiptLightbox" class="receipt-lightbox hidden" role="dialog" aria-modal="true">
-        <button id="receiptLightboxClose" class="rlb-close" aria-label="Close">✕</button>
-        <img id="receiptLightboxImg" class="rlb-img" alt="Receipt full view">
-    </div>
-
     <!-- ── MODALS ──────────────────────────────────────────── -->
 
     <!-- Confirm Pay All — bottom sheet -->
@@ -737,11 +731,10 @@
                 </div>
                 <div id="payTransactionDetails" class="hidden"></div>
                 <div id="receiptImageContainer" class="receipt-image-container hidden">
-                    <h4 data-i18n="receipt">Receipt Image</h4>
-                    <div class="receipt-thumb-wrap">
-                        <img id="receiptImage" class="receipt-image" data-i18n-alt="receiptPreview" alt="Receipt">
-                        <div class="receipt-tap-hint">Tap to view full size</div>
-                    </div>
+                    <button id="receiptExpandBtn" class="receipt-expand-btn" aria-label="Expand receipt">
+                        <img id="receiptImage" class="receipt-image" alt="Receipt">
+                        <span id="receiptTapHint" class="receipt-tap-hint">Tap to expand</span>
+                    </button>
                 </div>
                 <p id="payTransactionMessage"></p>
                 <div id="payNowSection"></div>

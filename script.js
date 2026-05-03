@@ -30,6 +30,8 @@ class SplitMate {
         this.paidTransactions = document.getElementById('paidTransactions');
         this.unpaidTransactionsBody = document.getElementById('unpaidTransactionsBody');
         this.paidTransactionsBody = document.getElementById('paidTransactionsBody');
+        this.historySearch = document.getElementById('historySearch');
+        this.historyMonthFilter = document.getElementById('historyMonthFilter');
         
         // Individual payment modal elements (iOS style bottom sheet)
         this.payTransactionModal = document.getElementById('payTransactionModal');
@@ -379,6 +381,14 @@ class SplitMate {
         this.paidTab.addEventListener('click', () => {
             this.switchTransactionTab('paid');
         });
+
+        // History search + month filter
+        if (this.historySearch) {
+            this.historySearch.addEventListener('input', () => this.updateTransactionTable());
+        }
+        if (this.historyMonthFilter) {
+            this.historyMonthFilter.addEventListener('change', () => this.updateTransactionTable());
+        }
         
         // Receipt upload events
         this.setupReceiptUploadListeners();
@@ -1280,58 +1290,140 @@ class SplitMate {
     }
 
     /**
+     * Return a human-readable month group label for a date string.
+     * "This Month" | "January" | "December 2025"
+     */
+    getMonthGroupLabel(dateStr) {
+        const now = new Date();
+        const d = new Date(dateStr);
+        if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
+            return 'This Month';
+        }
+        if (d.getFullYear() === now.getFullYear()) {
+            return d.toLocaleDateString('en-US', { month: 'long' });
+        }
+        return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
+
+    /**
+     * Populate the month/year filter dropdown from all transactions.
+     * Preserves current selection if still valid.
+     */
+    populateMonthFilter() {
+        if (!this.historyMonthFilter) return;
+        const current = this.historyMonthFilter.value;
+
+        // Collect unique YYYY-MM keys, sorted newest first
+        const keys = [...new Set(
+            this.transactions.map(t => {
+                const d = new Date(t.date);
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            })
+        )].sort().reverse();
+
+        this.historyMonthFilter.innerHTML = '<option value="">All time</option>';
+        keys.forEach(key => {
+            const [y, m] = key.split('-');
+            const label = new Date(+y, +m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            const opt = document.createElement('option');
+            opt.value = key;
+            opt.textContent = label;
+            if (key === current) opt.selected = true;
+            this.historyMonthFilter.appendChild(opt);
+        });
+    }
+
+    /**
+     * Filter and sort a transaction array, then group by month into the container.
+     */
+    renderGroupedTransactions(container, transactions, isUnpaid, emptyMsg) {
+        container.innerHTML = '';
+
+        const query = this.historySearch ? this.historySearch.value.trim().toLowerCase() : '';
+        const monthKey = this.historyMonthFilter ? this.historyMonthFilter.value : '';
+
+        // Sort newest first
+        let filtered = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        // Month filter
+        if (monthKey) {
+            filtered = filtered.filter(t => {
+                const d = new Date(t.date);
+                const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                return k === monthKey;
+            });
+        }
+
+        // Search filter
+        if (query) {
+            filtered = filtered.filter(t => {
+                const desc = (t.notes || t.category || '').toLowerCase();
+                const cat = (t.category || '').toLowerCase();
+                const amt = String(t.amount);
+                return desc.includes(query) || cat.includes(query) || amt.includes(query);
+            });
+        }
+
+        if (filtered.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'no-transactions';
+            empty.textContent = emptyMsg;
+            container.appendChild(empty);
+            return;
+        }
+
+        // Group by month
+        let lastLabel = null;
+        filtered.forEach(transaction => {
+            const label = this.getMonthGroupLabel(transaction.date);
+            if (label !== lastLabel) {
+                lastLabel = label;
+                const group = document.createElement('div');
+                group.className = 'tx-month-group';
+                group.innerHTML = `<span class="tx-month-group-label">${label}</span><span class="tx-month-group-line"></span>`;
+                container.appendChild(group);
+            }
+            container.appendChild(this.createTransactionRow(transaction, isUnpaid));
+        });
+    }
+
+    /**
      * Update the transaction history tables (both unpaid and paid)
      */
     updateTransactionTable() {
-        // Separate transactions into unpaid and paid
-        const unpaidTransactions = this.transactions.filter(t => !t.settled);
-        const paidTransactions = this.transactions.filter(t => t.settled);
-        
-        // Update unpaid transactions table
-        this.updateUnpaidTransactionsTable(unpaidTransactions);
-        
-        // Update paid transactions table
-        this.updatePaidTransactionsTable(paidTransactions);
+        this.populateMonthFilter();
+
+        const unpaid = this.transactions.filter(t => !t.settled);
+        const paid   = this.transactions.filter(t => t.settled);
+
+        this.renderGroupedTransactions(
+            this.unpaidTransactionsBody, unpaid, true,
+            this.t('noUnpaidTransactions', 'No unpaid transactions! 🎉')
+        );
+        this.renderGroupedTransactions(
+            this.paidTransactionsBody, paid, false,
+            this.t('noSettledTransactions', 'No settled transactions yet.')
+        );
     }
-    
+
     /**
-     * Update unpaid transactions list
+     * Update unpaid transactions list (legacy compat)
      */
     updateUnpaidTransactionsTable(unpaidTransactions) {
-        this.unpaidTransactionsBody.innerHTML = '';
-        
-        if (unpaidTransactions.length === 0) {
-            const empty = document.createElement('div');
-            empty.className = 'no-transactions';
-            empty.textContent = this.t('noUnpaidTransactions', 'No unpaid transactions! 🎉');
-            this.unpaidTransactionsBody.appendChild(empty);
-            return;
-        }
-        
-        unpaidTransactions.forEach(transaction => {
-            const card = this.createTransactionRow(transaction, true);
-            this.unpaidTransactionsBody.appendChild(card);
-        });
+        this.renderGroupedTransactions(
+            this.unpaidTransactionsBody, unpaidTransactions, true,
+            this.t('noUnpaidTransactions', 'No unpaid transactions! 🎉')
+        );
     }
     
     /**
-     * Update paid transactions list
+     * Update paid transactions list (legacy compat)
      */
     updatePaidTransactionsTable(paidTransactions) {
-        this.paidTransactionsBody.innerHTML = '';
-        
-        if (paidTransactions.length === 0) {
-            const empty = document.createElement('div');
-            empty.className = 'no-transactions';
-            empty.textContent = this.t('noSettledTransactions', 'No settled transactions yet.');
-            this.paidTransactionsBody.appendChild(empty);
-            return;
-        }
-        
-        paidTransactions.forEach(transaction => {
-            const card = this.createTransactionRow(transaction, false);
-            this.paidTransactionsBody.appendChild(card);
-        });
+        this.renderGroupedTransactions(
+            this.paidTransactionsBody, paidTransactions, false,
+            this.t('noSettledTransactions', 'No settled transactions yet.')
+        );
     }
 
     /**
@@ -1648,15 +1740,15 @@ class SplitMate {
             this.confirmPayTransactionBtn.textContent = `Mark as Settled`;
         }
         
-        // Show/hide the Share with Friend button
+        // Always show the Share button — label adapts to friend split or plain receipt
         const shareBtn = this.shareWithFriendBtn;
         if (shareBtn) {
+            shareBtn.classList.remove('hidden');
             if (transaction.friendSplit) {
-                shareBtn.classList.remove('hidden');
                 const fs = transaction.friendSplit;
                 shareBtn.querySelector('span').textContent = `Share with ${fs.name} (${this.formatCurrency(fs.amount)})`;
             } else {
-                shareBtn.classList.add('hidden');
+                shareBtn.querySelector('span').textContent = 'Share Receipt';
             }
         }
         
@@ -1715,14 +1807,15 @@ class SplitMate {
     }
     
     /**
-     * Generate a PNG receipt image for sharing with a friend using Canvas API
+     * Generate a shareable PNG receipt image for any transaction using Canvas API.
+     * If transaction.friendSplit exists → "friend owes you" style.
+     * Otherwise → clean expense summary style.
      */
     async generateFriendReceiptImage(transaction) {
-        const fs = transaction.friendSplit;
-        if (!fs) throw new Error('No friend split data on this transaction');
-        
+        const fs = transaction.friendSplit; // may be null
         const p1Name = window.i18n ? window.i18n.getP1Name() : 'Partner 1';
-        const whoPaidDisplay = transaction.whoPaid === 'me' ? p1Name : (window.i18n ? window.i18n.getP2Name() : 'Partner 2');
+        const p2Name = window.i18n ? window.i18n.getP2Name() : 'Partner 2';
+        const whoPaidDisplay = transaction.whoPaid === 'me' ? p1Name : p2Name;
         const merchant = transaction.notes || 'Expense';
         const date = new Date(transaction.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
@@ -1776,33 +1869,7 @@ class SplitMate {
         ctx.fillStyle = appGrad;
         ctx.fillText('SplitMate', 60, 76);
         
-        // Subtitle
-        ctx.font = '500 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.45)';
-        ctx.fillText('Expense Split Receipt', 60, 96);
-        
-        // "Please send me" header
-        ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.90)';
-        ctx.fillText(`Hey ${fs.name} \u2014 please send me`, 60, 155);
-        
-        // Big amount
-        ctx.font = 'bold 64px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-        const amtGrad = ctx.createLinearGradient(60, 170, 400, 240);
-        amtGrad.addColorStop(0, '#34d399');
-        amtGrad.addColorStop(1, '#22d3ee');
-        ctx.fillStyle = amtGrad;
-        ctx.fillText(this.formatCurrency(fs.amount), 60, 230);
-        
-        // Divider
-        ctx.strokeStyle = 'rgba(255,255,255,0.10)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(40, 252);
-        ctx.lineTo(W - 40, 252);
-        ctx.stroke();
-        
-        // Details section
+        // Details helper
         const drawDetailRow = (label, value, y, valueColor = 'rgba(255,255,255,0.80)') => {
             ctx.font = '500 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
             ctx.fillStyle = 'rgba(255,255,255,0.45)';
@@ -1813,36 +1880,109 @@ class SplitMate {
             ctx.fillText(value, W - 60, y);
             ctx.textAlign = 'left';
         };
-        
-        drawDetailRow('For', merchant, 285);
-        drawDetailRow('Paid by', whoPaidDisplay, 315);
-        drawDetailRow('Total bill', this.formatCurrency(transaction.amount), 345);
-        drawDetailRow('Your share', this.formatCurrency(fs.amount), 375, '#6ee7b7');
-        drawDetailRow('Date', date, 405);
-        
-        // Bottom card — payment prompt
-        ctx.fillStyle = 'rgba(52,211,153,0.08)';
-        rrect(40, 428, W - 80, 80, 14);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(52,211,153,0.25)';
-        ctx.lineWidth = 1;
-        rrect(40, 428, W - 80, 80, 14);
-        ctx.stroke();
 
-        ctx.font = 'bold 17px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-        ctx.fillStyle = '#6ee7b7';
-        ctx.textAlign = 'center';
-        ctx.fillText(`Send ${this.formatCurrency(fs.amount)} to settle up`, W / 2, 458);
-        ctx.font = '500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.38)';
-        ctx.fillText('Venmo \u00b7 Zelle \u00b7 Cash App \u00b7 or however works for you!', W / 2, 483);
-        ctx.textAlign = 'left';
+        if (fs) {
+            // ── FRIEND SPLIT style ──────────────────────────────────────
+            ctx.font = '500 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.45)';
+            ctx.fillText('Expense Split Receipt', 60, 96);
+
+            ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.90)';
+            ctx.fillText(`Hey ${fs.name} \u2014 please send me`, 60, 155);
+
+            ctx.font = 'bold 64px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            const amtGrad = ctx.createLinearGradient(60, 170, 400, 240);
+            amtGrad.addColorStop(0, '#34d399');
+            amtGrad.addColorStop(1, '#22d3ee');
+            ctx.fillStyle = amtGrad;
+            ctx.fillText(this.formatCurrency(fs.amount), 60, 230);
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(40, 252); ctx.lineTo(W - 40, 252); ctx.stroke();
+
+            drawDetailRow('For', merchant, 285);
+            drawDetailRow('Paid by', whoPaidDisplay, 315);
+            drawDetailRow('Total bill', this.formatCurrency(transaction.amount), 345);
+            drawDetailRow('Your share', this.formatCurrency(fs.amount), 375, '#6ee7b7');
+            drawDetailRow('Date', date, 405);
+
+            ctx.fillStyle = 'rgba(52,211,153,0.08)';
+            rrect(40, 428, W - 80, 80, 14); ctx.fill();
+            ctx.strokeStyle = 'rgba(52,211,153,0.25)'; ctx.lineWidth = 1;
+            rrect(40, 428, W - 80, 80, 14); ctx.stroke();
+
+            ctx.font = 'bold 17px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillStyle = '#6ee7b7'; ctx.textAlign = 'center';
+            ctx.fillText(`Send ${this.formatCurrency(fs.amount)} to settle up`, W / 2, 458);
+            ctx.font = '500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.38)';
+            ctx.fillText('Venmo \u00b7 Zelle (501) 282-5870 \u00b7 Cash App', W / 2, 483);
+            ctx.textAlign = 'left';
+        } else {
+            // ── STANDARD EXPENSE RECEIPT style ─────────────────────────
+            // Compute each partner's share
+            let p1Share, p2Share;
+            if (transaction.isFromReceipt && transaction.receiptBreakdown) {
+                const bd = transaction.receiptBreakdown;
+                if (transaction.whoPaid === 'me') {
+                    p2Share = bd.ayakoOwes;
+                    p1Share = transaction.amount - p2Share;
+                } else {
+                    p1Share = bd.bryanTotal;
+                    p2Share = transaction.amount - p1Share;
+                }
+            } else {
+                p1Share = transaction.amount / 2;
+                p2Share = transaction.amount / 2;
+            }
+            const owingName  = transaction.whoPaid === 'me' ? p2Name : p1Name;
+            const owingShare = transaction.whoPaid === 'me' ? p2Share : p1Share;
+
+            ctx.font = '500 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.45)';
+            ctx.fillText('Expense Receipt', 60, 96);
+
+            ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.80)';
+            ctx.fillText(merchant, 60, 155);
+
+            ctx.font = 'bold 64px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            const amtGrad2 = ctx.createLinearGradient(60, 170, 400, 240);
+            amtGrad2.addColorStop(0, '#34d399');
+            amtGrad2.addColorStop(1, '#22d3ee');
+            ctx.fillStyle = amtGrad2;
+            ctx.fillText(this.formatCurrency(transaction.amount), 60, 230);
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(40, 252); ctx.lineTo(W - 40, 252); ctx.stroke();
+
+            drawDetailRow('Paid by', whoPaidDisplay, 285);
+            drawDetailRow(`${p1Name}'s share`, this.formatCurrency(p1Share), 315, '#6ee7b7');
+            drawDetailRow(`${p2Name}'s share`, this.formatCurrency(p2Share), 345, '#6ee7b7');
+            drawDetailRow('Date', date, 375);
+
+            ctx.fillStyle = 'rgba(52,211,153,0.08)';
+            rrect(40, 408, W - 80, 90, 14); ctx.fill();
+            ctx.strokeStyle = 'rgba(52,211,153,0.25)'; ctx.lineWidth = 1;
+            rrect(40, 408, W - 80, 90, 14); ctx.stroke();
+
+            ctx.font = 'bold 17px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillStyle = '#6ee7b7'; ctx.textAlign = 'center';
+            ctx.fillText(`${owingName} owes ${this.formatCurrency(owingShare)}`, W / 2, 438);
+            ctx.font = '500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.38)';
+            ctx.fillText('Zelle (501) 282-5870 \u00b7 Venmo \u00b7 Cash App', W / 2, 462);
+            ctx.textAlign = 'left';
+        }
 
         // Footer
         ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
         ctx.fillStyle = 'rgba(255,255,255,0.20)';
         ctx.textAlign = 'center';
-        ctx.fillText('Generated with SplitMate \u2022 Expense Splitter for Couples', W / 2, 516);
+        ctx.fillText('Generated with SplitMate \u2022 Expense Splitter for Couples', W / 2, 530);
         ctx.textAlign = 'left';
         
         return new Promise((resolve, reject) => {
@@ -1854,13 +1994,14 @@ class SplitMate {
     }
     
     /**
-     * Share a friend receipt image using the Web Share API (with download fallback)
+     * Share a receipt image for any transaction using the Web Share API (with download fallback)
      */
     async shareWithFriend(transaction) {
-        if (!transaction || !transaction.friendSplit) return;
+        if (!transaction) return;
         
-        const fs = transaction.friendSplit;
+        const fs = transaction.friendSplit; // may be null
         const shareBtn = this.shareWithFriendBtn;
+        const merchant = transaction.notes || 'Expense';
         
         // Show loading state
         const originalText = shareBtn ? shareBtn.querySelector('span').textContent : '';
@@ -1871,9 +2012,18 @@ class SplitMate {
         
         try {
             const blob = await this.generateFriendReceiptImage(transaction);
-            const fileName = `splitmate-${fs.name.toLowerCase().replace(/\s+/g, '-')}.png`;
+            const slug = merchant.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 30);
+            const fileName = `splitmate-${slug || 'receipt'}.png`;
             const file = new File([blob], fileName, { type: 'image/png' });
-            const shareText = `Hey ${fs.name}! You owe me ${this.formatCurrency(fs.amount)} for ${transaction.notes || 'an expense'}. Here's the receipt breakdown!`;
+
+            let shareTitle, shareText;
+            if (fs) {
+                shareTitle = `${fs.name} owes ${this.formatCurrency(fs.amount)} – SplitMate`;
+                shareText  = `Hey ${fs.name}! You owe me ${this.formatCurrency(fs.amount)} for ${merchant}. Here's the receipt breakdown!`;
+            } else {
+                shareTitle = `${merchant} – SplitMate`;
+                shareText  = `Expense receipt: ${merchant} · ${this.formatCurrency(transaction.amount)}`;
+            }
             
             const downloadImage = () => {
                 const url = URL.createObjectURL(blob);
@@ -1888,27 +2038,11 @@ class SplitMate {
             
             // Case 1: Full file share via Web Share API
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    title: `${fs.name} owes ${this.formatCurrency(fs.amount)} – SplitMate`,
-                    text: shareText,
-                    files: [file]
-                });
+                await navigator.share({ title: shareTitle, text: shareText, files: [file] });
             } else {
-                // Case 2: Share API exists but no file support, OR no Share API at all
-                // Always download the PNG so the user gets the receipt image
                 downloadImage();
-                // Also try text-only share as a bonus (non-blocking)
                 if (navigator.share) {
-                    try {
-                        await navigator.share({
-                            title: `${fs.name} owes ${this.formatCurrency(fs.amount)} – SplitMate`,
-                            text: shareText
-                        });
-                    } catch (_) {
-                        // Text share dismissed or failed — the download already happened, so that's fine
-                    }
-                } else {
-                    alert(`Receipt image saved! Share it with ${fs.name} to request ${this.formatCurrency(fs.amount)}.`);
+                    try { await navigator.share({ title: shareTitle, text: shareText }); } catch (_) {}
                 }
             }
         } catch (err) {

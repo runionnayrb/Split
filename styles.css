@@ -271,6 +271,33 @@ body {
 }
 
 /* ---- Language toggle ---- */
+.home-link {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: var(--glass-bg-mid);
+  border: 1px solid var(--glass-border-hi);
+  border-radius: var(--radius-pill);
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: var(--transition);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.home-link:hover {
+  background: var(--glass-bg-hi);
+  color: var(--text-primary);
+  border-color: rgba(139,92,246,0.45);
+}
+
+.home-link:active { transform: scale(0.95); }
+
 .language-toggle {
   position: absolute;
   top: 16px;

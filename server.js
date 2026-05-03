@@ -450,7 +450,9 @@ const server = http.createServer(async (req, res) => {
         }
 
         // Serve static files
-        let filePath = pathname === '/' ? '/index.html' : pathname;
+        let filePath = pathname === '/'    ? '/landing.html'
+                     : pathname === '/app' ? '/index.html'
+                     : pathname;
         filePath = path.join(__dirname, filePath);
 
         if (!fs.existsSync(filePath)) {

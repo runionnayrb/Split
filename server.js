@@ -414,10 +414,25 @@ const server = http.createServer(async (req, res) => {
             if (!db) { json(res, 503, { error: 'Database unavailable' }); return; }
             const decoded = verifyToken(req);
             if (!decoded) { json(res, 401, { error: 'Unauthorized' }); return; }
-            const body = JSON.parse((await readBody(req)).toString());
+            let body;
+            try { body = JSON.parse((await readBody(req)).toString()); }
+            catch(e) { json(res, 400, { error: 'Invalid JSON' }); return; }
+            if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+                json(res, 400, { error: 'Invalid payload' }); return;
+            }
             const settings = {};
             for (const k of ['cashapp', 'venmo', 'zelle']) {
-                if (body[k] !== undefined) settings[k] = body[k];
+                const v = body[k];
+                if (v === undefined) continue;
+                if (typeof v !== 'object' || v === null || Array.isArray(v)) {
+                    json(res, 400, { error: `Invalid value for ${k}` }); return;
+                }
+                settings[k] = {
+                    enabled: !!v.enabled,
+                    ...(k === 'cashapp'  && { tag:      typeof v.tag      === 'string' ? v.tag.trim()      : '' }),
+                    ...(k === 'venmo'    && { username: typeof v.username === 'string' ? v.username.trim() : '' }),
+                    ...(k === 'zelle'    && { phone:    typeof v.phone    === 'string' ? v.phone.trim()    : '' }),
+                };
             }
             db.prepare('UPDATE users SET payment_settings_json = ? WHERE id = ?')
               .run(JSON.stringify(settings), decoded.userId);

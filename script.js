@@ -3198,7 +3198,13 @@ class SplitMate {
 
         if (s.cashapp && s.cashapp.enabled && s.cashapp.tag) {
             hasAny = true;
-            const tag = s.cashapp.tag.replace(/^\$/, '');
+            // Normalize all common input formats to bare cashtag:
+            // "$bryan", "bryan", "cash.app/$bryan", "https://cash.app/$bryan"
+            let rawTag = s.cashapp.tag.trim();
+            rawTag = rawTag.replace(/^https?:\/\//i, '');   // strip protocol
+            rawTag = rawTag.replace(/^cash\.app\//i, '');   // strip domain
+            rawTag = rawTag.replace(/^\$/, '');              // strip leading $
+            const tag = rawTag;
             const a = document.createElement('a');
             a.href = `https://cash.app/$${tag}/${amountStr}`;
             a.target = '_blank';

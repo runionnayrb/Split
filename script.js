@@ -92,6 +92,9 @@ class SplitMate {
         // In-memory translation cache (session only)
         this.translationCache = new Map();
         this.openAIAvailable = null; // null = unchecked, true/false after first check
+
+        // Payment method settings cache (loaded from server or localStorage)
+        this.paymentSettings = null;
         
         // Settings modal elements
         this.settingsModal = document.getElementById('settingsModal');
@@ -133,6 +136,9 @@ class SplitMate {
         // Partner listeners
         this.setupPartnerListeners();
 
+        // Payment methods card listeners
+        this.setupPaymentMethodsCard();
+
         // Auth — async, runs after initial render
         this.initAuth();
     }
@@ -159,9 +165,12 @@ class SplitMate {
         if (navBtn) navBtn.classList.add('active');
 
         // Pre-fill settings fields when switching to settings tab
-        if (tab === 'settings' && window.i18n) {
-            this.partner1Input.value = window.i18n.getP1Name();
-            this.partner2Input.value = window.i18n.getP2Name();
+        if (tab === 'settings') {
+            if (window.i18n) {
+                this.partner1Input.value = window.i18n.getP1Name();
+                this.partner2Input.value = window.i18n.getP2Name();
+            }
+            this.loadPaymentSettings().then(() => this.prefillPaymentSettingsForm());
         }
     }
 
@@ -1941,6 +1950,15 @@ class SplitMate {
             document.getElementById('payTransactionMessage').before(friendInfoDiv);
         }
         
+        // Render pay-now buttons for this transaction
+        const payNowSection = document.getElementById('payNowSection');
+        if (payNowSection) payNowSection.innerHTML = '';
+        if (transaction.youOwe > 0) {
+            this.loadPaymentSettings().then(() => {
+                this.renderPayNowSection(Math.abs(transaction.youOwe), transaction.notes || '');
+            });
+        }
+
         // Show modal with iOS-style animation
         this.payTransactionModal.style.display = 'block';
         document.body.style.overflow = 'hidden';
@@ -2075,6 +2093,7 @@ class SplitMate {
      * Otherwise → clean expense summary style.
      */
     async generateFriendReceiptImage(transaction) {
+        await this.loadPaymentSettings();
         const fs = transaction.friendSplit; // may be null
         const p1Name = window.i18n ? window.i18n.getP1Name() : 'Partner 1';
         const p2Name = window.i18n ? window.i18n.getP2Name() : 'Partner 2';
@@ -2181,7 +2200,8 @@ class SplitMate {
             ctx.fillText(`Send ${this.formatCurrency(fs.amount)} to settle up`, W / 2, 458);
             ctx.font = '500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
             ctx.fillStyle = 'rgba(255,255,255,0.38)';
-            ctx.fillText('Venmo \u00b7 Zelle (501) 282-5870 \u00b7 Cash App', W / 2, 483);
+            const payLine1 = this.buildPaymentLine();
+            if (payLine1) ctx.fillText(payLine1, W / 2, 483);
             ctx.textAlign = 'left';
         } else {
             // ── STANDARD EXPENSE RECEIPT style ─────────────────────────
@@ -2237,7 +2257,8 @@ class SplitMate {
             ctx.fillText(`${owingName} owes ${this.formatCurrency(owingShare)}`, W / 2, 438);
             ctx.font = '500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
             ctx.fillStyle = 'rgba(255,255,255,0.38)';
-            ctx.fillText('Zelle (501) 282-5870 \u00b7 Venmo \u00b7 Cash App', W / 2, 462);
+            const payLine2 = this.buildPaymentLine();
+            if (payLine2) ctx.fillText(payLine2, W / 2, 462);
             ctx.textAlign = 'left';
         }
 
@@ -2857,6 +2878,7 @@ class SplitMate {
         this.authToken   = token;
         this.currentUser = user;
         this.isGuest     = false;
+        this.paymentSettings = null; // force re-fetch from server after login
         localStorage.setItem('splitmate-token', token);
 
         // Update partner names in i18n from account
@@ -2941,6 +2963,7 @@ class SplitMate {
         this.authToken   = null;
         this.currentUser = null;
         this.isGuest     = false;
+        this.paymentSettings = null; // clear cache on logout
         localStorage.removeItem('splitmate-token');
         this.transactions = [];
         this.totals = { me: 0, spouse: 0 };
@@ -3092,6 +3115,214 @@ class SplitMate {
         document.getElementById('inviteCodeInput')?.addEventListener('keydown', e => {
             if (e.key === 'Enter') { e.preventDefault(); this.acceptInviteCode(); }
         });
+    }
+
+    // ── Payment Methods ────────────────────────────────────────────────────
+
+    /**
+     * Load payment settings from server (authenticated) or localStorage (guest).
+     * Result is cached in this.paymentSettings for the session.
+     */
+    async loadPaymentSettings() {
+        if (this.paymentSettings !== null) return this.paymentSettings;
+        if (this.authToken) {
+            try {
+                const res = await fetch('/api/payment-settings', {
+                    headers: { 'Authorization': 'Bearer ' + this.authToken }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    this.paymentSettings = data.settings || {};
+                    localStorage.setItem('splitmate_payment_settings', JSON.stringify(this.paymentSettings));
+                    return this.paymentSettings;
+                }
+            } catch (e) {}
+        }
+        try {
+            const raw = localStorage.getItem('splitmate_payment_settings');
+            this.paymentSettings = raw ? JSON.parse(raw) : {};
+        } catch (e) {
+            this.paymentSettings = {};
+        }
+        return this.paymentSettings;
+    }
+
+    /**
+     * Save payment settings to server (authenticated) and localStorage.
+     */
+    async savePaymentSettings(settings) {
+        this.paymentSettings = settings;
+        try { localStorage.setItem('splitmate_payment_settings', JSON.stringify(settings)); } catch(e) {}
+        if (this.authToken) {
+            try {
+                await fetch('/api/payment-settings', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + this.authToken
+                    },
+                    body: JSON.stringify(settings)
+                });
+            } catch (e) {}
+        }
+    }
+
+    /**
+     * Build the payment methods line for the shared receipt image.
+     * Returns a string like "Cash App · Venmo · Zelle (501) 282-5870"
+     * or empty string if nothing is configured.
+     */
+    buildPaymentLine() {
+        const s = this.paymentSettings || {};
+        const parts = [];
+        if (s.cashapp && s.cashapp.enabled && s.cashapp.tag) parts.push('Cash App');
+        if (s.venmo && s.venmo.enabled && s.venmo.username) parts.push('Venmo');
+        if (s.zelle && s.zelle.enabled && s.zelle.phone) parts.push('Zelle ' + s.zelle.phone);
+        return parts.join(' \u00b7 ');
+    }
+
+    /**
+     * Render dynamic Pay Now buttons inside #payNowSection in the bottom sheet.
+     * CashApp and Venmo are deep-link anchors; Zelle is a copy row.
+     */
+    renderPayNowSection(owedAmount, description) {
+        const section = document.getElementById('payNowSection');
+        if (!section) return;
+        section.innerHTML = '';
+        const s = this.paymentSettings || {};
+        const amountStr = owedAmount.toFixed(2);
+        const noteEnc = encodeURIComponent(description || 'SplitMate expense');
+        const wrap = document.createElement('div');
+        wrap.className = 'pay-now-section';
+        let hasAny = false;
+
+        if (s.cashapp && s.cashapp.enabled && s.cashapp.tag) {
+            hasAny = true;
+            const tag = s.cashapp.tag.replace(/^\$/, '');
+            const a = document.createElement('a');
+            a.href = `https://cash.app/$${tag}/${amountStr}`;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.className = 'pay-now-btn pay-now-cashapp';
+            a.innerHTML = `<span class="pnb-icon">$</span><span class="pnb-label">Pay via Cash App</span><span class="pnb-amount">$${amountStr}</span>`;
+            wrap.appendChild(a);
+        }
+
+        if (s.venmo && s.venmo.enabled && s.venmo.username) {
+            hasAny = true;
+            const username = encodeURIComponent(s.venmo.username);
+            const a = document.createElement('a');
+            a.href = `venmo://paycharge?txn=pay&recipients=${username}&amount=${amountStr}&note=${noteEnc}`;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.className = 'pay-now-btn pay-now-venmo';
+            a.innerHTML = `<span class="pnb-icon">V</span><span class="pnb-label">Pay via Venmo</span><span class="pnb-amount">$${amountStr}</span>`;
+            wrap.appendChild(a);
+        }
+
+        if (s.zelle && s.zelle.enabled && s.zelle.phone) {
+            hasAny = true;
+            const raw = s.zelle.phone.replace(/\D/g, '');
+            const display = raw.length === 10
+                ? `(${raw.slice(0,3)}) ${raw.slice(3,6)}-${raw.slice(6)}`
+                : s.zelle.phone;
+            const zRow = document.createElement('div');
+            zRow.className = 'pay-now-zelle';
+            zRow.innerHTML = `
+                <div class="pnz-left">
+                    <span class="pnz-dot"></span>
+                    <span class="pnz-text">Send via <strong>Zelle</strong> to</span>
+                </div>
+                <div class="pnz-right">
+                    <span class="pnz-phone">${display}</span>
+                    <button class="pnz-copy" data-phone="${raw || s.zelle.phone}">Copy</button>
+                </div>
+            `;
+            zRow.querySelector('.pnz-copy').addEventListener('click', function() {
+                navigator.clipboard.writeText(this.dataset.phone).then(() => {
+                    this.textContent = 'Copied!';
+                    setTimeout(() => { this.textContent = 'Copy'; }, 1800);
+                }).catch(() => {});
+            });
+            wrap.appendChild(zRow);
+        }
+
+        if (hasAny) section.appendChild(wrap);
+    }
+
+    /**
+     * Pre-fill the Payment Methods settings card with saved values.
+     */
+    prefillPaymentSettingsForm() {
+        const s = this.paymentSettings || {};
+        const get = id => document.getElementById(id);
+
+        const cashEnabled = !!(s.cashapp && s.cashapp.enabled);
+        if (get('pmCashappEnabled')) {
+            get('pmCashappEnabled').checked = cashEnabled;
+            get('pmCashappBody').classList.toggle('open', cashEnabled);
+            if (s.cashapp && s.cashapp.tag) get('pmCashappTag').value = s.cashapp.tag;
+        }
+
+        const venmoEnabled = !!(s.venmo && s.venmo.enabled);
+        if (get('pmVenmoEnabled')) {
+            get('pmVenmoEnabled').checked = venmoEnabled;
+            get('pmVenmoBody').classList.toggle('open', venmoEnabled);
+            if (s.venmo && s.venmo.username) get('pmVenmoUsername').value = s.venmo.username;
+        }
+
+        const zelleEnabled = !!(s.zelle && s.zelle.enabled);
+        if (get('pmZelleEnabled')) {
+            get('pmZelleEnabled').checked = zelleEnabled;
+            get('pmZelleBody').classList.toggle('open', zelleEnabled);
+            if (s.zelle && s.zelle.phone) get('pmZellePhone').value = s.zelle.phone;
+        }
+    }
+
+    /**
+     * Wire up toggle switches and save button for the Payment Methods card.
+     */
+    setupPaymentMethodsCard() {
+        const pairs = [
+            ['pmCashappEnabled', 'pmCashappBody'],
+            ['pmVenmoEnabled',   'pmVenmoBody'],
+            ['pmZelleEnabled',   'pmZelleBody'],
+        ];
+        for (const [checkId, bodyId] of pairs) {
+            const chk  = document.getElementById(checkId);
+            const body = document.getElementById(bodyId);
+            if (chk && body) {
+                chk.addEventListener('change', () => {
+                    body.classList.toggle('open', chk.checked);
+                });
+            }
+        }
+
+        const saveBtn = document.getElementById('savePaymentMethods');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', async () => {
+                const get = id => document.getElementById(id);
+                const settings = {
+                    cashapp: {
+                        enabled: !!get('pmCashappEnabled')?.checked,
+                        tag: (get('pmCashappTag')?.value || '').trim()
+                    },
+                    venmo: {
+                        enabled: !!get('pmVenmoEnabled')?.checked,
+                        username: (get('pmVenmoUsername')?.value || '').trim()
+                    },
+                    zelle: {
+                        enabled: !!get('pmZelleEnabled')?.checked,
+                        phone: (get('pmZellePhone')?.value || '').trim()
+                    }
+                };
+                await this.savePaymentSettings(settings);
+                const span = saveBtn.querySelector('span');
+                const orig = span ? span.textContent : '';
+                if (span) span.textContent = 'Saved ✓';
+                setTimeout(() => { if (span) span.textContent = orig; }, 1500);
+            });
+        }
     }
 }
 

@@ -479,6 +479,71 @@
                     </button>
                 </div>
 
+                <!-- Payment Methods -->
+                <div class="settings-card" id="paymentMethodsCard">
+                    <h3 class="settings-card-title">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                        Payment Methods
+                    </h3>
+                    <p class="settings-card-desc" style="margin-bottom:16px;">Choose how your partner can pay you back. Tapping a method opens the app with the amount already loaded.</p>
+
+                    <!-- Cash App -->
+                    <div class="pm-method-row">
+                        <div class="pm-method-header">
+                            <span class="pm-method-icon pm-cashapp-icon">$</span>
+                            <span class="pm-method-name">Cash App</span>
+                            <label class="pm-switch">
+                                <input type="checkbox" id="pmCashappEnabled">
+                                <span class="pm-slider"></span>
+                            </label>
+                        </div>
+                        <div class="pm-method-body" id="pmCashappBody">
+                            <input type="text" id="pmCashappTag" placeholder="$your-cashtag  (e.g. $bryan)" class="pm-input" autocorrect="off" autocapitalize="none" spellcheck="false">
+                        </div>
+                    </div>
+
+                    <!-- Venmo -->
+                    <div class="pm-method-row">
+                        <div class="pm-method-header">
+                            <span class="pm-method-icon pm-venmo-icon">V</span>
+                            <span class="pm-method-name">Venmo</span>
+                            <label class="pm-switch">
+                                <input type="checkbox" id="pmVenmoEnabled">
+                                <span class="pm-slider"></span>
+                            </label>
+                        </div>
+                        <div class="pm-method-body" id="pmVenmoBody">
+                            <input type="text" id="pmVenmoUsername" placeholder="Your Venmo username" class="pm-input" autocorrect="off" autocapitalize="none" spellcheck="false">
+                        </div>
+                    </div>
+
+                    <!-- Zelle -->
+                    <div class="pm-method-row">
+                        <div class="pm-method-header">
+                            <span class="pm-method-icon pm-zelle-icon">Z</span>
+                            <span class="pm-method-name">Zelle</span>
+                            <label class="pm-switch">
+                                <input type="checkbox" id="pmZelleEnabled">
+                                <span class="pm-slider"></span>
+                            </label>
+                        </div>
+                        <div class="pm-method-body" id="pmZelleBody">
+                            <input type="tel" id="pmZellePhone" placeholder="Your phone number" class="pm-input">
+                            <p class="pm-method-note">Zelle has no payment link — your partner will see this number and copy it to pay via their bank app.</p>
+                        </div>
+                    </div>
+
+                    <p class="pm-apple-note">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        Apple Pay requires merchant registration and isn't available for peer-to-peer repayments.
+                    </p>
+
+                    <button id="savePaymentMethods" class="btn-primary" style="margin-top:6px">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span>Save Payment Methods</span>
+                    </button>
+                </div>
+
                 <!-- Account -->
                 <div class="settings-card" id="accountCard">
                     <h3 class="settings-card-title">
@@ -670,16 +735,7 @@
                     <img id="receiptImage" class="receipt-image" data-i18n-alt="receiptPreview" alt="Receipt">
                 </div>
                 <p id="payTransactionMessage"></p>
-                <div class="zelle-info-card">
-                    <div class="zelle-info-left">
-                        <span class="zelle-logo-dot"></span>
-                        <span class="zelle-info-label">Pay via <strong>Zelle</strong></span>
-                    </div>
-                    <div class="zelle-info-right">
-                        <span class="zelle-phone">(501) 282-5870</span>
-                        <button class="zelle-copy-btn" onclick="navigator.clipboard.writeText('5012825870').then(()=>{this.textContent='Copied!';setTimeout(()=>{this.textContent='Copy'},1800)})">Copy</button>
-                    </div>
-                </div>
+                <div id="payNowSection"></div>
 
                 <!-- Edit Transaction Panel (hidden until Edit is tapped) -->
                 <div id="editTransactionPanel" class="edit-tx-panel hidden">

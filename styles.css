@@ -1423,6 +1423,317 @@ body {
   font-size: 1rem;
 }
 
+/* ============================================================
+   PAYMENT METHODS SETTINGS CARD
+   ============================================================ */
+.pm-method-row {
+  border-top: 1px solid rgba(255,255,255,0.07);
+  padding-top: 12px;
+  margin-top: 12px;
+}
+
+.pm-method-row:first-of-type {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.pm-method-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pm-method-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+
+.pm-cashapp-icon {
+  background: rgba(0, 194, 68, 0.20);
+  border: 1px solid rgba(0, 194, 68, 0.35);
+  color: #00c244;
+}
+
+.pm-venmo-icon {
+  background: rgba(61, 149, 206, 0.20);
+  border: 1px solid rgba(61, 149, 206, 0.35);
+  color: #3d95ce;
+}
+
+.pm-zelle-icon {
+  background: rgba(106, 13, 173, 0.25);
+  border: 1px solid rgba(139, 92, 246, 0.40);
+  color: #c084fc;
+}
+
+.pm-method-name {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* iOS-style toggle switch */
+.pm-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 26px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.pm-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.pm-slider {
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 13px;
+  transition: background 0.22s, border-color 0.22s;
+}
+
+.pm-slider::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.55);
+  transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), background 0.22s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+}
+
+.pm-switch input:checked + .pm-slider {
+  background: linear-gradient(135deg, #0ea5e9, #6366f1);
+  border-color: transparent;
+}
+
+.pm-switch input:checked + .pm-slider::before {
+  transform: translateX(18px) translateY(-50%);
+  background: #fff;
+}
+
+.pm-method-body {
+  display: none;
+  margin-top: 10px;
+  padding-left: 38px;
+}
+
+.pm-method-body.open {
+  display: block;
+}
+
+.pm-input {
+  width: 100%;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.18s, background 0.18s;
+  font-family: inherit;
+}
+
+.pm-input::placeholder {
+  color: rgba(255,255,255,0.28);
+}
+
+.pm-input:focus {
+  border-color: rgba(99,202,247,0.45);
+  background: rgba(255,255,255,0.10);
+}
+
+.pm-method-note {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 7px;
+  line-height: 1.4;
+}
+
+.pm-apple-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  font-size: 0.74rem;
+  color: rgba(255,255,255,0.28);
+  margin-top: 16px;
+  line-height: 1.4;
+}
+
+.pm-apple-note svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ============================================================
+   PAY NOW SECTION — bottom sheet dynamic payment buttons
+   ============================================================ */
+.pay-now-section {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pay-now-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  text-decoration: none;
+  font-family: inherit;
+  transition: opacity 0.18s, transform 0.18s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pay-now-btn:active {
+  opacity: 0.78;
+  transform: scale(0.98);
+}
+
+.pay-now-cashapp {
+  background: rgba(0, 194, 68, 0.14);
+  border: 1px solid rgba(0, 194, 68, 0.32);
+}
+
+.pay-now-venmo {
+  background: rgba(61, 149, 206, 0.14);
+  border: 1px solid rgba(61, 149, 206, 0.32);
+}
+
+.pnb-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.82rem;
+  flex-shrink: 0;
+}
+
+.pay-now-cashapp .pnb-icon {
+  background: rgba(0, 194, 68, 0.25);
+  color: #00c244;
+}
+
+.pay-now-venmo .pnb-icon {
+  background: rgba(61, 149, 206, 0.25);
+  color: #3d95ce;
+}
+
+.pnb-label {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.pay-now-cashapp .pnb-label {
+  color: #4ade80;
+}
+
+.pay-now-venmo .pnb-label {
+  color: #7dd3fc;
+}
+
+.pnb-amount {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.80);
+}
+
+/* Zelle row in pay-now section */
+.pay-now-zelle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(139, 92, 246, 0.10);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 14px;
+  padding: 12px 14px;
+  gap: 10px;
+}
+
+.pnz-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pnz-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #6b21a8;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(139, 92, 246, 0.6);
+}
+
+.pnz-text {
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.65);
+}
+
+.pnz-text strong {
+  color: #c084fc;
+  font-weight: 700;
+}
+
+.pnz-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pnz-phone {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #e9d5ff;
+  letter-spacing: 0.01em;
+}
+
+.pnz-copy {
+  background: rgba(139, 92, 246, 0.22);
+  border: 1px solid rgba(139, 92, 246, 0.40);
+  color: #c084fc;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.pnz-copy:active {
+  background: rgba(139, 92, 246, 0.45);
+  color: #fff;
+}
+
 /* Zelle info card in transaction detail sheet */
 .zelle-info-card {
   display: flex;

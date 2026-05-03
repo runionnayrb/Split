@@ -60,6 +60,8 @@ try {
     `);
     // Add household_id column to users if it doesn't exist yet
     try { db.exec('ALTER TABLE users ADD COLUMN household_id INTEGER'); } catch(e) {}
+    // Add payment_settings_json column to users if it doesn't exist yet
+    try { db.exec("ALTER TABLE users ADD COLUMN payment_settings_json TEXT DEFAULT '{}'"); } catch(e) {}
     console.log('SQLite database ready');
 } catch (e) {
     console.error('Database init failed:', e.message);
@@ -391,6 +393,34 @@ const server = http.createServer(async (req, res) => {
                 db.prepare('INSERT OR REPLACE INTO user_data (user_id, transactions_json) VALUES (?, ?)').run(decoded.userId, JSON.stringify([...shared, ...existing]));
             }
             db.prepare('UPDATE users SET household_id = NULL WHERE id = ?').run(decoded.userId);
+            json(res, 200, { success: true });
+            return;
+        }
+
+        // ── Payment Settings: GET ────────────────────────────────────────────
+        if (pathname === '/api/payment-settings' && req.method === 'GET') {
+            if (!db) { json(res, 503, { error: 'Database unavailable' }); return; }
+            const decoded = verifyToken(req);
+            if (!decoded) { json(res, 401, { error: 'Unauthorized' }); return; }
+            const user = db.prepare('SELECT payment_settings_json FROM users WHERE id = ?').get(decoded.userId);
+            let settings = {};
+            try { settings = JSON.parse((user && user.payment_settings_json) || '{}'); } catch(e) {}
+            json(res, 200, { settings });
+            return;
+        }
+
+        // ── Payment Settings: PUT ────────────────────────────────────────────
+        if (pathname === '/api/payment-settings' && req.method === 'PUT') {
+            if (!db) { json(res, 503, { error: 'Database unavailable' }); return; }
+            const decoded = verifyToken(req);
+            if (!decoded) { json(res, 401, { error: 'Unauthorized' }); return; }
+            const body = JSON.parse((await readBody(req)).toString());
+            const settings = {};
+            for (const k of ['cashapp', 'venmo', 'zelle']) {
+                if (body[k] !== undefined) settings[k] = body[k];
+            }
+            db.prepare('UPDATE users SET payment_settings_json = ? WHERE id = ?')
+              .run(JSON.stringify(settings), decoded.userId);
             json(res, 200, { success: true });
             return;
         }

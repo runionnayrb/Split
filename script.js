@@ -2102,13 +2102,17 @@ class SplitMate {
         const merchant = transaction.notes || 'Expense';
         const date = new Date(transaction.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-        const W = 800, H = 560;
+        // Portrait — fills an iPhone screen when shared
+        const W = 1080, H = 1920;
+        const PAD = 80;
+        const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+
         const canvas = document.createElement('canvas');
-        canvas.width = W;
+        canvas.width  = W;
         canvas.height = H;
         const ctx = canvas.getContext('2d');
-        
-        // Helper: draw rounded rect path (polyfill for older browsers)
+
+        // ── Helpers ──────────────────────────────────────────────────────────
         const rrect = (x, y, w, h, r) => {
             ctx.beginPath();
             ctx.moveTo(x + r, y);
@@ -2122,154 +2126,198 @@ class SplitMate {
             ctx.quadraticCurveTo(x, y, x + r, y);
             ctx.closePath();
         };
-        
-        // Background gradient (dark, on-brand)
-        const bgGrad = ctx.createLinearGradient(0, 0, W, H);
-        bgGrad.addColorStop(0, '#07071a');
-        bgGrad.addColorStop(1, '#0e0e2a');
-        ctx.fillStyle = bgGrad;
-        ctx.fillRect(0, 0, W, H);
-        
-        // Top accent stripe
-        const accentGrad = ctx.createLinearGradient(0, 0, W, 0);
-        accentGrad.addColorStop(0, '#67e8f9');
-        accentGrad.addColorStop(0.5, '#38bdf8');
-        accentGrad.addColorStop(1, '#818cf8');
-        ctx.fillStyle = accentGrad;
-        ctx.fillRect(0, 0, W, 6);
-        
-        // App logo area
-        ctx.fillStyle = 'rgba(255,255,255,0.08)';
-        rrect(40, 28, W - 80, 80, 14);
-        ctx.fill();
-        
-        // App name
-        ctx.font = 'bold 32px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-        const appGrad = ctx.createLinearGradient(50, 0, 350, 0);
-        appGrad.addColorStop(0, '#67e8f9');
-        appGrad.addColorStop(0.5, '#38bdf8');
-        appGrad.addColorStop(1, '#818cf8');
-        ctx.fillStyle = appGrad;
-        ctx.fillText('SplitMate', 60, 76);
-        
-        // Details helper
-        const drawDetailRow = (label, value, y, valueColor = 'rgba(255,255,255,0.80)') => {
-            ctx.font = '500 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-            ctx.fillStyle = 'rgba(255,255,255,0.45)';
-            ctx.fillText(label, 60, y);
-            ctx.font = '600 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+
+        // Truncate text to fit a max pixel width
+        const fitText = (text, maxW, font) => {
+            ctx.font = font;
+            if (ctx.measureText(text).width <= maxW) return text;
+            let t = text;
+            while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+            return t + '…';
+        };
+
+        const drawRow = (label, value, y, valueColor = 'rgba(255,255,255,0.85)') => {
+            const rowFont = `500 30px ${FONT}`;
+            ctx.font = rowFont;
+            ctx.fillStyle = 'rgba(255,255,255,0.42)';
+            ctx.textAlign = 'left';
+            ctx.fillText(label, PAD, y);
+            ctx.font = `600 30px ${FONT}`;
             ctx.fillStyle = valueColor;
             ctx.textAlign = 'right';
-            ctx.fillText(value, W - 60, y);
+            const valStr = fitText(value, W - PAD * 2 - ctx.measureText(label).width - 40, ctx.font);
+            ctx.fillText(valStr, W - PAD, y);
             ctx.textAlign = 'left';
         };
 
+        // ── Background ───────────────────────────────────────────────────────
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+        bgGrad.addColorStop(0,   '#070718');
+        bgGrad.addColorStop(0.5, '#0b0b20');
+        bgGrad.addColorStop(1,   '#0e0e2a');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, W, H);
+
+        // Subtle radial glow top-center
+        const glow = ctx.createRadialGradient(W / 2, 0, 0, W / 2, 0, 700);
+        glow.addColorStop(0,   'rgba(56,189,248,0.12)');
+        glow.addColorStop(1,   'rgba(56,189,248,0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, W, H);
+
+        // ── Top accent bar ────────────────────────────────────────────────────
+        const accentGrad = ctx.createLinearGradient(0, 0, W, 0);
+        accentGrad.addColorStop(0,   '#67e8f9');
+        accentGrad.addColorStop(0.5, '#38bdf8');
+        accentGrad.addColorStop(1,   '#818cf8');
+        ctx.fillStyle = accentGrad;
+        ctx.fillRect(0, 0, W, 10);
+
+        // ── Header card ───────────────────────────────────────────────────────
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        rrect(PAD - 16, 28, W - (PAD - 16) * 2, 172, 24);
+        ctx.fill();
+
+        const appGrad = ctx.createLinearGradient(PAD, 0, PAD + 340, 0);
+        appGrad.addColorStop(0,   '#67e8f9');
+        appGrad.addColorStop(0.5, '#38bdf8');
+        appGrad.addColorStop(1,   '#818cf8');
+        ctx.font      = `bold 64px ${FONT}`;
+        ctx.fillStyle = appGrad;
+        ctx.fillText('SplitMate', PAD, 116);
+
+        ctx.font      = `500 28px ${FONT}`;
+        ctx.fillStyle = 'rgba(255,255,255,0.38)';
+        ctx.fillText(fs ? 'Expense Split Receipt' : 'Expense Receipt', PAD, 166);
+
+        // ── Hero section ──────────────────────────────────────────────────────
         if (fs) {
-            // ── FRIEND SPLIT style ──────────────────────────────────────
-            ctx.font = '500 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-            ctx.fillStyle = 'rgba(255,255,255,0.45)';
-            ctx.fillText('Expense Split Receipt', 60, 96);
+            // "Hey {name},"
+            ctx.font      = `500 42px ${FONT}`;
+            ctx.fillStyle = 'rgba(255,255,255,0.70)';
+            ctx.fillText(`Hey ${fs.name},`, PAD, 288);
 
-            ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-            ctx.fillStyle = 'rgba(255,255,255,0.90)';
-            ctx.fillText(`Hey ${fs.name} \u2014 please send me`, 60, 155);
-
-            ctx.font = 'bold 64px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-            const amtGrad = ctx.createLinearGradient(60, 170, 400, 240);
-            amtGrad.addColorStop(0, '#34d399');
-            amtGrad.addColorStop(1, '#22d3ee');
-            ctx.fillStyle = amtGrad;
-            ctx.fillText(this.formatCurrency(fs.amount), 60, 230);
-
-            ctx.strokeStyle = 'rgba(255,255,255,0.10)';
-            ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.moveTo(40, 252); ctx.lineTo(W - 40, 252); ctx.stroke();
-
-            drawDetailRow('For', merchant, 285);
-            drawDetailRow('Paid by', whoPaidDisplay, 315);
-            drawDetailRow('Total bill', this.formatCurrency(transaction.amount), 345);
-            drawDetailRow('Your share', this.formatCurrency(fs.amount), 375, '#6ee7b7');
-            drawDetailRow('Date', date, 405);
-
-            ctx.fillStyle = 'rgba(52,211,153,0.08)';
-            rrect(40, 428, W - 80, 80, 14); ctx.fill();
-            ctx.strokeStyle = 'rgba(52,211,153,0.25)'; ctx.lineWidth = 1;
-            rrect(40, 428, W - 80, 80, 14); ctx.stroke();
-
-            ctx.font = 'bold 17px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-            ctx.fillStyle = '#6ee7b7'; ctx.textAlign = 'center';
-            ctx.fillText(`Send ${this.formatCurrency(fs.amount)} to settle up`, W / 2, 458);
-            ctx.font = '500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-            ctx.fillStyle = 'rgba(255,255,255,0.38)';
-            const payLine1 = this.buildPaymentLine();
-            if (payLine1) ctx.fillText(payLine1, W / 2, 483);
-            ctx.textAlign = 'left';
+            // "please send me"
+            ctx.font      = `bold 42px ${FONT}`;
+            ctx.fillStyle = 'rgba(255,255,255,0.92)';
+            ctx.fillText('please send me', PAD, 346);
         } else {
-            // ── STANDARD EXPENSE RECEIPT style ─────────────────────────
-            // Compute each partner's share
+            ctx.font      = `bold 44px ${FONT}`;
+            ctx.fillStyle = 'rgba(255,255,255,0.88)';
+            const merchantLine = fitText(merchant, W - PAD * 2, ctx.font);
+            ctx.fillText(merchantLine, PAD, 320);
+        }
+
+        // Big amount
+        const amtGrad = ctx.createLinearGradient(PAD, 400, PAD + 600, 530);
+        amtGrad.addColorStop(0, '#34d399');
+        amtGrad.addColorStop(1, '#22d3ee');
+        ctx.font      = `bold 130px ${FONT}`;
+        ctx.fillStyle = amtGrad;
+        const amtStr  = this.formatCurrency(fs ? fs.amount : transaction.amount);
+        ctx.fillText(amtStr, PAD, 520);
+
+        // ── Divider ───────────────────────────────────────────────────────────
+        ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+        ctx.lineWidth   = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(PAD, 564);
+        ctx.lineTo(W - PAD, 564);
+        ctx.stroke();
+
+        // ── Detail rows card ──────────────────────────────────────────────────
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+        rrect(PAD - 16, 594, W - (PAD - 16) * 2, 526, 24);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+        ctx.lineWidth   = 1;
+        rrect(PAD - 16, 594, W - (PAD - 16) * 2, 526, 24);
+        ctx.stroke();
+
+        const ROW_STEP = 88;
+        if (fs) {
+            drawRow('For',        fitText(merchant, 480, `600 30px ${FONT}`), 666);
+            drawRow('Paid by',    whoPaidDisplay,                              754);
+            drawRow('Total bill', this.formatCurrency(transaction.amount),     842);
+            drawRow('Your share', this.formatCurrency(fs.amount),              930,  '#6ee7b7');
+            drawRow('Date',       date,                                        1018);
+        } else {
             let p1Share, p2Share;
             if (transaction.isFromReceipt && transaction.receiptBreakdown) {
                 const bd = transaction.receiptBreakdown;
-                if (transaction.whoPaid === 'me') {
-                    p2Share = bd.ayakoOwes;
-                    p1Share = transaction.amount - p2Share;
-                } else {
-                    p1Share = bd.bryanTotal;
-                    p2Share = transaction.amount - p1Share;
-                }
+                p2Share  = transaction.whoPaid === 'me' ? bd.ayakoOwes : transaction.amount - bd.bryanTotal;
+                p1Share  = transaction.amount - p2Share;
             } else {
-                p1Share = transaction.amount / 2;
-                p2Share = transaction.amount / 2;
+                p1Share = p2Share = transaction.amount / 2;
             }
             const owingName  = transaction.whoPaid === 'me' ? p2Name : p1Name;
             const owingShare = transaction.whoPaid === 'me' ? p2Share : p1Share;
 
-            ctx.font = '500 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-            ctx.fillStyle = 'rgba(255,255,255,0.45)';
-            ctx.fillText('Expense Receipt', 60, 96);
-
-            ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-            ctx.fillStyle = 'rgba(255,255,255,0.80)';
-            ctx.fillText(merchant, 60, 155);
-
-            ctx.font = 'bold 64px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-            const amtGrad2 = ctx.createLinearGradient(60, 170, 400, 240);
-            amtGrad2.addColorStop(0, '#34d399');
-            amtGrad2.addColorStop(1, '#22d3ee');
-            ctx.fillStyle = amtGrad2;
-            ctx.fillText(this.formatCurrency(transaction.amount), 60, 230);
-
-            ctx.strokeStyle = 'rgba(255,255,255,0.10)';
-            ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.moveTo(40, 252); ctx.lineTo(W - 40, 252); ctx.stroke();
-
-            drawDetailRow('Paid by', whoPaidDisplay, 285);
-            drawDetailRow(`${p1Name}'s share`, this.formatCurrency(p1Share), 315, '#6ee7b7');
-            drawDetailRow(`${p2Name}'s share`, this.formatCurrency(p2Share), 345, '#6ee7b7');
-            drawDetailRow('Date', date, 375);
-
-            ctx.fillStyle = 'rgba(52,211,153,0.08)';
-            rrect(40, 408, W - 80, 90, 14); ctx.fill();
-            ctx.strokeStyle = 'rgba(52,211,153,0.25)'; ctx.lineWidth = 1;
-            rrect(40, 408, W - 80, 90, 14); ctx.stroke();
-
-            ctx.font = 'bold 17px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-            ctx.fillStyle = '#6ee7b7'; ctx.textAlign = 'center';
-            ctx.fillText(`${owingName} owes ${this.formatCurrency(owingShare)}`, W / 2, 438);
-            ctx.font = '500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-            ctx.fillStyle = 'rgba(255,255,255,0.38)';
-            const payLine2 = this.buildPaymentLine();
-            if (payLine2) ctx.fillText(payLine2, W / 2, 462);
-            ctx.textAlign = 'left';
+            drawRow('For',              fitText(merchant, 480, `600 30px ${FONT}`), 666);
+            drawRow('Paid by',          whoPaidDisplay,                              754);
+            drawRow(`${p1Name}'s share`, this.formatCurrency(p1Share),              842,  '#6ee7b7');
+            drawRow(`${p2Name}'s share`, this.formatCurrency(p2Share),              930,  '#6ee7b7');
+            drawRow('Date',             date,                                        1018);
         }
 
-        // Footer
-        ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.20)';
+        // Row dividers inside card
+        for (let ry = 710; ry <= 980; ry += ROW_STEP) {
+            ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+            ctx.lineWidth   = 1;
+            ctx.beginPath();
+            ctx.moveTo(PAD, ry);
+            ctx.lineTo(W - PAD, ry);
+            ctx.stroke();
+        }
+
+        // ── Settle-up card ────────────────────────────────────────────────────
+        const settleY = 1172, settleH = 268;
+        ctx.fillStyle = 'rgba(52,211,153,0.09)';
+        rrect(PAD - 16, settleY, W - (PAD - 16) * 2, settleH, 28);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(52,211,153,0.30)';
+        ctx.lineWidth   = 1.5;
+        rrect(PAD - 16, settleY, W - (PAD - 16) * 2, settleH, 28);
+        ctx.stroke();
+
+        const settleLabel = fs
+            ? `Send ${this.formatCurrency(fs.amount)} to settle up`
+            : `${transaction.whoPaid === 'me' ? p2Name : p1Name} owes ${this.formatCurrency(
+                  (() => {
+                      if (transaction.isFromReceipt && transaction.receiptBreakdown) {
+                          const bd = transaction.receiptBreakdown;
+                          return transaction.whoPaid === 'me' ? bd.ayakoOwes : bd.bryanTotal;
+                      }
+                      return transaction.amount / 2;
+                  })()
+              )}`;
+
+        ctx.font      = `bold 36px ${FONT}`;
+        ctx.fillStyle = '#6ee7b7';
         ctx.textAlign = 'center';
-        ctx.fillText('Generated with SplitMate \u2022 Expense Splitter for Couples', W / 2, 530);
+        ctx.fillText(settleLabel, W / 2, settleY + 94);
+
+        const payLine = this.buildPaymentLine();
+        if (payLine) {
+            ctx.font      = `500 26px ${FONT}`;
+            ctx.fillStyle = 'rgba(255,255,255,0.45)';
+            ctx.fillText(payLine, W / 2, settleY + 152);
+        }
+
+        // ── Decorative bottom glow ────────────────────────────────────────────
+        const bottomGlow = ctx.createRadialGradient(W / 2, H, 0, W / 2, H, 600);
+        bottomGlow.addColorStop(0,   'rgba(129,140,248,0.10)');
+        bottomGlow.addColorStop(1,   'rgba(129,140,248,0)');
+        ctx.fillStyle = bottomGlow;
+        ctx.fillRect(0, H - 600, W, 600);
+
+        // ── Footer ────────────────────────────────────────────────────────────
+        ctx.font      = `500 24px ${FONT}`;
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.textAlign = 'center';
+        ctx.fillText('Generated with SplitMate \u2022 Expense Splitter for Couples', W / 2, H - 52);
         ctx.textAlign = 'left';
-        
+
         return new Promise((resolve, reject) => {
             canvas.toBlob(blob => {
                 if (blob) resolve(blob);

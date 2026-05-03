@@ -3155,7 +3155,7 @@ class SplitMate {
         try { localStorage.setItem('splitmate_payment_settings', JSON.stringify(settings)); } catch(e) {}
         if (this.authToken) {
             try {
-                await fetch('/api/payment-settings', {
+                const res = await fetch('/api/payment-settings', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -3163,8 +3163,12 @@ class SplitMate {
                     },
                     body: JSON.stringify(settings)
                 });
-            } catch (e) {}
+                if (!res.ok) return false;
+            } catch (e) {
+                return false;
+            }
         }
+        return true;
     }
 
     /**
@@ -3322,11 +3326,15 @@ class SplitMate {
                         phone: (get('pmZellePhone')?.value || '').trim()
                     }
                 };
-                await this.savePaymentSettings(settings);
+                const ok = await this.savePaymentSettings(settings);
                 const span = saveBtn.querySelector('span');
                 const orig = span ? span.textContent : '';
-                if (span) span.textContent = 'Saved ✓';
-                setTimeout(() => { if (span) span.textContent = orig; }, 1500);
+                if (span) span.textContent = ok ? 'Saved ✓' : 'Saved locally ✓';
+                if (!ok) saveBtn.title = 'Could not sync to server — saved on this device only';
+                setTimeout(() => {
+                    if (span) span.textContent = orig;
+                    saveBtn.title = '';
+                }, 2000);
             });
         }
     }

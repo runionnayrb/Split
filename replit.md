@@ -24,6 +24,10 @@ SplitMate has been enhanced with receipt scanning capabilities using a hybrid ar
 - **index.html**: Main HTML structure containing the expense form, balance summary, and transaction history
 - **styles.css**: Modern, responsive CSS with gradient backgrounds and clean UI design
 - **script.js**: Core application logic implemented as a SplitMate class
+- **landing.html**: Marketing landing page at `/landing.html` — hero, before/after, how-it-works, features grid, FAQ accordion, CTA banner, footer
+- **landing.css**: Shared stylesheet for all landing/legal pages — full design token system matching the app
+- **terms.html**: Terms of Service page at `/terms.html`
+- **privacy.html**: Privacy Policy page at `/privacy.html`
 
 ### 2. Core Functionality
 - **Dual Input Modes**: Manual expense entry and receipt scanning via tabs

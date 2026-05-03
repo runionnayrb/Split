@@ -208,14 +208,6 @@ class SplitMate {
     }
 
     /**
-     * Returns true if text contains non-Latin script characters
-     * (Japanese, Chinese, Korean, Arabic, Cyrillic, Devanagari, etc.)
-     */
-    containsNonLatinScript(text) {
-        return /[\u0400-\u04FF\u0600-\u06FF\u0900-\u097F\u3040-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uAC00-\uD7AF]/.test(text || '');
-    }
-
-    /**
      * Check once whether the server has an OpenAI key available
      */
     async checkOpenAIAvailable() {

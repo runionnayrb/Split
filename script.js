@@ -126,6 +126,10 @@ class SplitMate {
         this.setupBottomNav();
         this.switchNavTab('split');
 
+        // Scope toggle + partner listeners
+        this.setupScopeToggle();
+        this.setupPartnerListeners();
+
         // Auth — async, runs after initial render
         this.initAuth();
     }
@@ -1210,6 +1214,9 @@ class SplitMate {
         
         // Get friend split data
         const friendSplit = this.getFriendSplitData('manual', amount);
+
+        // Get scope from toggle (default shared)
+        const scope = this.currentScope || 'shared';
         
         // Create transaction object
         const transaction = {
@@ -1221,7 +1228,8 @@ class SplitMate {
             notes: notes || '',
             // For 50/50 split, each person owes half of what the other paid
             youOwe: whoPaid === 'spouse' ? amount / 2 : -(amount / 2),
-            friendSplit: friendSplit || null
+            friendSplit: friendSplit || null,
+            scope: scope
         };
         
         // Add to transactions array (newest first)
@@ -1264,11 +1272,11 @@ class SplitMate {
      * Update the balance summary at the top
      */
     updateBalanceDisplay() {
-        // Calculate totals and net balance from only unpaid transactions
+        // Calculate totals and net balance from only unpaid SHARED transactions
         const unpaidTotals = { me: 0, spouse: 0 };
         let netBalance = 0;
         
-        this.transactions.filter(t => !t.settled).forEach(transaction => {
+        this.transactions.filter(t => !t.settled && t.scope !== 'personal').forEach(transaction => {
             unpaidTotals[transaction.whoPaid] += transaction.amount;
             
             // For receipt transactions, use the exact youOwe amount
@@ -2721,6 +2729,9 @@ class SplitMate {
         this.showGuestBanner();
         this.updateAuthUI();
         this.setCardsVisible(false);
+        // Hide partner card for guests
+        const pc = document.getElementById('partnerCard');
+        if (pc) pc.style.display = 'none';
     }
 
     async onAuthSuccess(token, user, loadFromServer) {
@@ -2742,6 +2753,10 @@ class SplitMate {
         this.hideGuestBanner();
         this.updateDisplay();
         this.updateAuthUI();
+        // Show partner card and load partner status
+        const pc = document.getElementById('partnerCard');
+        if (pc) pc.style.display = '';
+        this.checkPartnerStatus();
     }
 
     async verifyAndLoad() {
@@ -2754,6 +2769,10 @@ class SplitMate {
             await this.loadFromServer();
             this.updateDisplay();
             this.updateAuthUI();
+            // Show partner card and load partner status
+            const pc = document.getElementById('partnerCard');
+            if (pc) pc.style.display = '';
+            this.checkPartnerStatus();
         } catch (e) {
             // Token invalid — clear and prompt login
             this.authToken = null;
@@ -2841,6 +2860,136 @@ class SplitMate {
         if (!visible && navBtn && navBtn.classList.contains('active')) {
             this.switchNavTab('split');
         }
+    }
+
+    // ── Partner linking ────────────────────────────────────────────────────
+
+    async checkPartnerStatus() {
+        if (!this.authToken) return;
+        try {
+            const res  = await fetch('/api/partner/status', { headers: { 'Authorization': 'Bearer ' + this.authToken } });
+            if (!res.ok) return;
+            const data = await res.json();
+            this.partnerLinked = data.linked;
+            this.updatePartnerUI(data);
+        } catch(e) { /* silent */ }
+    }
+
+    updatePartnerUI(data) {
+        const linkedEl   = document.getElementById('partnerLinkedState');
+        const unlinkedEl = document.getElementById('partnerUnlinkedState');
+        const emailEl    = document.getElementById('partnerLinkedEmail');
+        const codeRow    = document.getElementById('inviteCodeRow');
+        const codeText   = document.getElementById('inviteCodeText');
+        const genBtn     = document.getElementById('generateInviteBtn');
+
+        if (data.linked && data.partner) {
+            if (linkedEl)   linkedEl.style.display   = '';
+            if (unlinkedEl) unlinkedEl.style.display  = 'none';
+            if (emailEl)    emailEl.textContent        = data.partner.email;
+        } else {
+            if (linkedEl)   linkedEl.style.display   = 'none';
+            if (unlinkedEl) unlinkedEl.style.display  = '';
+            if (data.inviteCode) {
+                if (codeRow)  { codeRow.style.display  = 'flex'; }
+                if (codeText) { codeText.textContent    = data.inviteCode; }
+                if (genBtn)   { genBtn.textContent = '↻ New Code'; }
+            }
+        }
+    }
+
+    async generateInviteCode() {
+        const btn = document.getElementById('generateInviteBtn');
+        if (btn) { btn.disabled = true; btn.textContent = 'Generating…'; }
+        try {
+            const res  = await fetch('/api/partner/invite', { method: 'POST', headers: { 'Authorization': 'Bearer ' + this.authToken } });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed');
+            const codeRow  = document.getElementById('inviteCodeRow');
+            const codeText = document.getElementById('inviteCodeText');
+            if (codeRow)  codeRow.style.display = 'flex';
+            if (codeText) codeText.textContent   = data.code;
+            if (btn)      btn.textContent         = '↻ New Code';
+        } catch(e) {
+            alert(e.message);
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    async acceptInviteCode() {
+        const input  = document.getElementById('inviteCodeInput');
+        const errEl  = document.getElementById('inviteError');
+        const btn    = document.getElementById('acceptInviteBtn');
+        const code   = (input?.value || '').trim().toUpperCase();
+        if (!code) return;
+        if (errEl) errEl.style.display = 'none';
+        if (btn)   { btn.disabled = true; btn.textContent = 'Joining…'; }
+        try {
+            const res  = await fetch('/api/partner/accept', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + this.authToken },
+                body: JSON.stringify({ code })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed');
+            // Reload data and refresh UI
+            await this.loadFromServer();
+            this.updateDisplay();
+            this.updatePartnerUI({ linked: true, partner: data.partner });
+            if (input) input.value = '';
+        } catch(e) {
+            if (errEl) { errEl.textContent = e.message; errEl.style.display = 'block'; }
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = 'Join'; }
+        }
+    }
+
+    async unlinkPartner() {
+        if (!confirm('Unlink your partner? Your shared expenses will stay in your history as personal transactions.')) return;
+        try {
+            const res = await fetch('/api/partner/unlink', { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + this.authToken } });
+            if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed'); }
+            await this.loadFromServer();
+            this.updateDisplay();
+            this.updatePartnerUI({ linked: false, partner: null, inviteCode: null });
+        } catch(e) {
+            alert(e.message);
+        }
+    }
+
+    setupScopeToggle() {
+        this.currentScope = 'shared';
+        const sharedBtn   = document.getElementById('scopeSharedBtn');
+        const personalBtn = document.getElementById('scopePersonalBtn');
+        if (!sharedBtn || !personalBtn) return;
+        sharedBtn.addEventListener('click', () => {
+            this.currentScope = 'shared';
+            sharedBtn.classList.add('scope-btn-active');
+            personalBtn.classList.remove('scope-btn-active');
+        });
+        personalBtn.addEventListener('click', () => {
+            this.currentScope = 'personal';
+            personalBtn.classList.add('scope-btn-active');
+            sharedBtn.classList.remove('scope-btn-active');
+        });
+    }
+
+    setupPartnerListeners() {
+        document.getElementById('generateInviteBtn')?.addEventListener('click', () => this.generateInviteCode());
+        document.getElementById('acceptInviteBtn')?.addEventListener('click',   () => this.acceptInviteCode());
+        document.getElementById('unlinkPartnerBtn')?.addEventListener('click',  () => this.unlinkPartner());
+        document.getElementById('copyInviteBtn')?.addEventListener('click', () => {
+            const code = document.getElementById('inviteCodeText')?.textContent;
+            if (code) {
+                navigator.clipboard?.writeText(code).catch(() => {});
+                const btn = document.getElementById('copyInviteBtn');
+                if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`; }, 2000); }
+            }
+        });
+        document.getElementById('inviteCodeInput')?.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); this.acceptInviteCode(); }
+        });
     }
 }
 

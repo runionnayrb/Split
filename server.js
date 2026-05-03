@@ -40,7 +40,26 @@ try {
             updated_at        TEXT    DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id)
         );
+        CREATE TABLE IF NOT EXISTS households (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at TEXT    DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS household_data (
+            household_id      INTEGER PRIMARY KEY,
+            transactions_json TEXT    DEFAULT '[]',
+            updated_at        TEXT    DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS household_invites (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            code       TEXT    UNIQUE NOT NULL,
+            inviter_id INTEGER NOT NULL,
+            expires_at TEXT    NOT NULL,
+            used       INTEGER DEFAULT 0,
+            created_at TEXT    DEFAULT CURRENT_TIMESTAMP
+        );
     `);
+    // Add household_id column to users if it doesn't exist yet
+    try { db.exec('ALTER TABLE users ADD COLUMN household_id INTEGER'); } catch(e) {}
     console.log('SQLite database ready');
 } catch (e) {
     console.error('Database init failed:', e.message);
@@ -237,8 +256,20 @@ const server = http.createServer(async (req, res) => {
             if (!db) { json(res, 503, { error: 'Database unavailable' }); return; }
             const decoded = verifyToken(req);
             if (!decoded) { json(res, 401, { error: 'Unauthorized' }); return; }
-            const row = db.prepare('SELECT * FROM user_data WHERE user_id = ?').get(decoded.userId);
-            json(res, 200, { transactions: row ? JSON.parse(row.transactions_json || '[]') : [] });
+            const user = db.prepare('SELECT * FROM users WHERE id = ?').get(decoded.userId);
+            // Personal transactions (scope='personal')
+            const personalRow = db.prepare('SELECT * FROM user_data WHERE user_id = ?').get(decoded.userId);
+            const personal = (personalRow ? JSON.parse(personalRow.transactions_json || '[]') : [])
+                .map(t => ({ ...t, scope: 'personal' }));
+            // Shared transactions from household
+            let shared = [];
+            if (user && user.household_id) {
+                const sharedRow = db.prepare('SELECT * FROM household_data WHERE household_id = ?').get(user.household_id);
+                shared = (sharedRow ? JSON.parse(sharedRow.transactions_json || '[]') : [])
+                    .map(t => ({ ...t, scope: 'shared' }));
+            }
+            const all = [...shared, ...personal].sort((a, b) => new Date(b.date) - new Date(a.date));
+            json(res, 200, { transactions: all });
             return;
         }
 
@@ -248,13 +279,118 @@ const server = http.createServer(async (req, res) => {
             const decoded = verifyToken(req);
             if (!decoded) { json(res, 401, { error: 'Unauthorized' }); return; }
             const body = JSON.parse((await readBody(req)).toString());
+            const user = db.prepare('SELECT * FROM users WHERE id = ?').get(decoded.userId);
+            const all      = body.transactions || [];
+            const personal = all.filter(t => t.scope === 'personal');
+            const shared   = all.filter(t => t.scope !== 'personal');
+            // Save personal
             db.prepare(`
                 INSERT INTO user_data (user_id, transactions_json, updated_at)
                 VALUES (?, ?, CURRENT_TIMESTAMP)
                 ON CONFLICT(user_id) DO UPDATE SET
                     transactions_json = excluded.transactions_json,
                     updated_at        = excluded.updated_at
-            `).run(decoded.userId, JSON.stringify(body.transactions || []));
+            `).run(decoded.userId, JSON.stringify(personal));
+            // Save shared (only if in a household)
+            if (user && user.household_id) {
+                db.prepare(`
+                    INSERT INTO household_data (household_id, transactions_json, updated_at)
+                    VALUES (?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(household_id) DO UPDATE SET
+                        transactions_json = excluded.transactions_json,
+                        updated_at        = excluded.updated_at
+                `).run(user.household_id, JSON.stringify(shared));
+            }
+            json(res, 200, { success: true });
+            return;
+        }
+
+        // ── Partner: status ───────────────────────────────────────────────────
+        if (pathname === '/api/partner/status' && req.method === 'GET') {
+            if (!db) { json(res, 503, { error: 'Database unavailable' }); return; }
+            const decoded = verifyToken(req);
+            if (!decoded) { json(res, 401, { error: 'Unauthorized' }); return; }
+            const user = db.prepare('SELECT * FROM users WHERE id = ?').get(decoded.userId);
+            let partner = null;
+            if (user && user.household_id) {
+                partner = db.prepare('SELECT id, email FROM users WHERE household_id = ? AND id != ?').get(user.household_id, decoded.userId);
+            }
+            const invite = db.prepare(`SELECT code FROM household_invites WHERE inviter_id = ? AND used = 0 AND expires_at > datetime('now') ORDER BY created_at DESC LIMIT 1`).get(decoded.userId);
+            json(res, 200, { linked: !!partner, partner: partner || null, inviteCode: invite ? invite.code : null });
+            return;
+        }
+
+        // ── Partner: generate invite code ─────────────────────────────────────
+        if (pathname === '/api/partner/invite' && req.method === 'POST') {
+            if (!db) { json(res, 503, { error: 'Database unavailable' }); return; }
+            const decoded = verifyToken(req);
+            if (!decoded) { json(res, 401, { error: 'Unauthorized' }); return; }
+            const user = db.prepare('SELECT * FROM users WHERE id = ?').get(decoded.userId);
+            if (user && user.household_id) { json(res, 400, { error: 'Already linked to a partner' }); return; }
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = null;
+            for (let i = 0; i < 10; i++) {
+                const attempt = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+                try {
+                    db.prepare(`INSERT INTO household_invites (code, inviter_id, expires_at) VALUES (?, ?, datetime('now', '+24 hours'))`).run(attempt, decoded.userId);
+                    code = attempt;
+                    break;
+                } catch(e) { /* duplicate, retry */ }
+            }
+            if (!code) { json(res, 500, { error: 'Could not generate code, please try again' }); return; }
+            json(res, 200, { code });
+            return;
+        }
+
+        // ── Partner: accept invite code ───────────────────────────────────────
+        if (pathname === '/api/partner/accept' && req.method === 'POST') {
+            if (!db) { json(res, 503, { error: 'Database unavailable' }); return; }
+            const decoded = verifyToken(req);
+            if (!decoded) { json(res, 401, { error: 'Unauthorized' }); return; }
+            const body = JSON.parse((await readBody(req)).toString());
+            const code = (body.code || '').toUpperCase().trim();
+            if (!code) { json(res, 400, { error: 'Code is required' }); return; }
+            const user = db.prepare('SELECT * FROM users WHERE id = ?').get(decoded.userId);
+            if (user && user.household_id) { json(res, 400, { error: 'You are already linked to a partner' }); return; }
+            const invite = db.prepare(`SELECT * FROM household_invites WHERE code = ? AND used = 0 AND expires_at > datetime('now')`).get(code);
+            if (!invite) { json(res, 400, { error: 'Invalid or expired code — check the code and try again' }); return; }
+            if (invite.inviter_id === decoded.userId) { json(res, 400, { error: 'You cannot use your own invite code' }); return; }
+            const inviter = db.prepare('SELECT * FROM users WHERE id = ?').get(invite.inviter_id);
+            if (inviter && inviter.household_id) { json(res, 400, { error: 'That invite is no longer valid' }); return; }
+            // Create household
+            const householdId = db.prepare('INSERT INTO households DEFAULT VALUES').run().lastInsertRowid;
+            db.prepare('UPDATE users SET household_id = ? WHERE id IN (?, ?)').run(householdId, invite.inviter_id, decoded.userId);
+            db.prepare('UPDATE household_invites SET used = 1 WHERE id = ?').run(invite.id);
+            // Migrate inviter's existing transactions to shared household data
+            const inviterData = db.prepare('SELECT transactions_json FROM user_data WHERE user_id = ?').get(invite.inviter_id);
+            if (inviterData) {
+                const existing = JSON.parse(inviterData.transactions_json || '[]');
+                const asShared = existing.filter(t => t.scope !== 'personal').map(t => ({ ...t, scope: 'shared' }));
+                const asPersonal = existing.filter(t => t.scope === 'personal');
+                db.prepare('INSERT OR REPLACE INTO household_data (household_id, transactions_json) VALUES (?, ?)').run(householdId, JSON.stringify(asShared));
+                db.prepare('UPDATE user_data SET transactions_json = ? WHERE user_id = ?').run(JSON.stringify(asPersonal), invite.inviter_id);
+            }
+            const partner = db.prepare('SELECT id, email FROM users WHERE id = ?').get(invite.inviter_id);
+            json(res, 200, { success: true, partner });
+            return;
+        }
+
+        // ── Partner: unlink ───────────────────────────────────────────────────
+        if (pathname === '/api/partner/unlink' && req.method === 'DELETE') {
+            if (!db) { json(res, 503, { error: 'Database unavailable' }); return; }
+            const decoded = verifyToken(req);
+            if (!decoded) { json(res, 401, { error: 'Unauthorized' }); return; }
+            const user = db.prepare('SELECT * FROM users WHERE id = ?').get(decoded.userId);
+            if (!user || !user.household_id) { json(res, 400, { error: 'Not linked to a partner' }); return; }
+            // Copy shared transactions to this user's personal data before unlinking
+            const sharedRow = db.prepare('SELECT transactions_json FROM household_data WHERE household_id = ?').get(user.household_id);
+            if (sharedRow) {
+                const shared = JSON.parse(sharedRow.transactions_json || '[]').map(t => ({ ...t, scope: 'personal' }));
+                const personalRow = db.prepare('SELECT transactions_json FROM user_data WHERE user_id = ?').get(decoded.userId);
+                const existing = personalRow ? JSON.parse(personalRow.transactions_json || '[]') : [];
+                db.prepare('INSERT OR REPLACE INTO user_data (user_id, transactions_json) VALUES (?, ?)').run(decoded.userId, JSON.stringify([...shared, ...existing]));
+            }
+            db.prepare('UPDATE users SET household_id = NULL WHERE id = ?').run(decoded.userId);
             json(res, 200, { success: true });
             return;
         }

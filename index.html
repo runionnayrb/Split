@@ -241,6 +241,18 @@
             <form id="expenseForm">
                 <!-- Manual Entry panel -->
                 <div id="manualForm" class="manual-form hidden">
+                    <!-- Shared / Personal scope toggle -->
+                    <div class="scope-toggle-wrap">
+                        <button type="button" class="scope-btn scope-btn-active" id="scopeSharedBtn" data-scope="shared">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            Shared
+                        </button>
+                        <button type="button" class="scope-btn" id="scopePersonalBtn" data-scope="personal">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            Personal
+                        </button>
+                    </div>
+
                     <div class="form-group">
                         <label for="whoPaid" data-i18n="whoPaid">Who paid?</label>
                         <select id="whoPaid" required>
@@ -501,6 +513,60 @@
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
                             Sign In / Create Account
                         </button>
+                    </div>
+                </div>
+
+                <!-- Partner Access — hidden for guests, shown on auth -->
+                <div class="settings-card" id="partnerCard" style="display:none">
+                    <h3 class="settings-card-title">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        Partner Access
+                    </h3>
+
+                    <!-- Linked state -->
+                    <div id="partnerLinkedState" style="display:none">
+                        <div class="partner-linked-row">
+                            <div class="partner-linked-avatar">👫</div>
+                            <div class="partner-linked-info">
+                                <div class="partner-linked-email" id="partnerLinkedEmail"></div>
+                                <div class="partner-linked-label">Sharing all expenses</div>
+                            </div>
+                        </div>
+                        <button id="unlinkPartnerBtn" class="btn-danger" style="margin-top:14px;width:100%">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/><line x1="4" y1="4" x2="20" y2="20" stroke-width="2.5"/></svg>
+                            Unlink Partner
+                        </button>
+                    </div>
+
+                    <!-- Unlinked state -->
+                    <div id="partnerUnlinkedState">
+                        <p class="settings-card-desc" style="margin-bottom:16px;">Invite your partner so you both see the same shared expenses and balance in real time.</p>
+
+                        <!-- Your invite code -->
+                        <div class="invite-section" id="inviteCodeSection">
+                            <div class="invite-section-label">Your invite code</div>
+                            <div class="invite-code-row" id="inviteCodeRow" style="display:none">
+                                <span class="invite-code-text" id="inviteCodeText"></span>
+                                <button class="invite-copy-btn" id="copyInviteBtn" title="Copy code">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                    Copy
+                                </button>
+                            </div>
+                            <button class="btn-secondary" id="generateInviteBtn" style="width:100%;margin-bottom:16px">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                Generate Invite Code
+                            </button>
+                        </div>
+
+                        <!-- Accept a code -->
+                        <div class="invite-section">
+                            <div class="invite-section-label">Have your partner's code?</div>
+                            <div class="invite-accept-row">
+                                <input type="text" id="inviteCodeInput" placeholder="Enter code" maxlength="6" class="invite-code-input" autocomplete="off" autocapitalize="characters">
+                                <button id="acceptInviteBtn" class="btn-primary" style="flex-shrink:0">Join</button>
+                            </div>
+                            <div id="inviteError" class="invite-error-msg" style="display:none"></div>
+                        </div>
                     </div>
                 </div>
 

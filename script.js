@@ -208,10 +208,11 @@ class SplitMate {
     }
 
     /**
-     * Returns true if text contains Japanese characters
+     * Returns true if text contains non-Latin script characters
+     * (Japanese, Chinese, Korean, Arabic, Cyrillic, Devanagari, etc.)
      */
-    containsJapanese(text) {
-        return /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/.test(text || '');
+    containsNonLatinScript(text) {
+        return /[\u0400-\u04FF\u0600-\u06FF\u0900-\u097F\u3040-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uAC00-\uD7AF]/.test(text || '');
     }
 
     /**
@@ -253,6 +254,8 @@ class SplitMate {
 
         if (elements.length === 0) return;
 
+        const targetLang = window.i18n ? window.i18n.currentLanguage : 'en';
+
         // Inject loading pills for elements that don't have one yet
         elements.forEach(wrap => {
             if (!wrap.querySelector('.tx-translation')) {
@@ -263,9 +266,8 @@ class SplitMate {
             }
         });
 
-        const currentLang = window.i18n ? window.i18n.currentLanguage : 'en';
         const uniqueTexts = [...new Set(elements.map(el => el.dataset.translateText))];
-        const toFetch = uniqueTexts.filter(t => !this.translationCache.has(t));
+        const toFetch = uniqueTexts.filter(t => !this.translationCache.has(`${t}::${targetLang}`));
 
         if (toFetch.length > 0) {
             await Promise.all(toFetch.map(async (text) => {
@@ -273,11 +275,11 @@ class SplitMate {
                     const res = await fetch('/api/translate', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ text, targetLanguage: currentLang })
+                        body: JSON.stringify({ text, targetLanguage: targetLang })
                     });
                     if (res.ok) {
                         const data = await res.json();
-                        if (data.translation) this.translationCache.set(text, data.translation);
+                        if (data.translation) this.translationCache.set(`${text}::${targetLang}`, data.translation);
                     }
                 } catch (e) {
                     console.warn('Translation failed for:', text);
@@ -287,7 +289,7 @@ class SplitMate {
 
         elements.forEach(wrap => {
             const original = wrap.dataset.translateText;
-            const translation = this.translationCache.get(original);
+            const translation = this.translationCache.get(`${original}::${targetLang}`);
             const transEl = wrap.querySelector('.tx-translation');
             if (translation && transEl) {
                 transEl.textContent = translation; // textContent — safe against XSS
@@ -1547,6 +1549,9 @@ class SplitMate {
             this.paidTransactionsBody, paid, false,
             this.t('noSettledTransactions', 'No settled transactions yet.')
         );
+
+        // Translate any non-Latin descriptions for the current language
+        this.translateVisibleDescriptions();
     }
 
     /**
@@ -1596,18 +1601,19 @@ class SplitMate {
         const rawLabel = this.getCategoryDisplay(transaction.category);
         const desc = transaction.notes || rawLabel.replace(/^\S+\s*/, '');
 
-        // Build description HTML — auto-translate Japanese when in EN mode
+        // Build description HTML — auto-translate non-Latin text on language toggle
         const currentLang = window.i18n ? window.i18n.currentLanguage : 'en';
-        const hasJP = this.containsJapanese(desc);
-        const cached = hasJP ? this.translationCache.get(desc) : null;
-        const needsFetch = hasJP && currentLang === 'en' && !cached;
+        const hasNonLatin = this.containsNonLatinScript(desc);
+        const cacheKey = `${desc}::${currentLang}`;
+        const cached = hasNonLatin ? this.translationCache.get(cacheKey) : null;
+        const needsFetch = hasNonLatin && !cached;
         const safeDesc = desc.replace(/"/g, '&quot;');
         // Only pre-render loading pill once availability is confirmed true;
         // if still null, translateVisibleDescriptions() will inject it after confirming.
         const showLoadingPill = needsFetch && this.openAIAvailable === true;
         // Cached translation is set via textContent after innerHTML to prevent XSS.
-        const hasCachedTranslation = !!(cached && currentLang === 'en');
-        const descHTML = hasJP
+        const hasCachedTranslation = !!cached;
+        const descHTML = hasNonLatin
             ? `<div class="tx-desc-wrap"${needsFetch ? ` data-translate-text="${safeDesc}"` : ''}><span class="tx-card-desc">${desc}</span>${hasCachedTranslation ? '<span class="tx-translation"></span>' : (showLoadingPill ? '<span class="tx-translation tx-translation-loading">···</span>' : '')}</div>`
             : `<span class="tx-card-desc">${desc}</span>`;
 

@@ -2993,3 +2993,177 @@ body {
   .auth-name-row { grid-template-columns: 1fr; }
   .guest-banner { flex-direction: column; text-align: center; }
 }
+
+/* ── COMING SOON — Virtual Cards ─────────────────────────── */
+.cs-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 20px 48px;
+  text-align: center;
+}
+
+/* Decorative stacked cards */
+.cs-cards-preview {
+  position: relative;
+  width: 260px;
+  height: 140px;
+  margin-bottom: 32px;
+}
+
+.cs-card {
+  position: absolute;
+  width: 240px;
+  height: 148px;
+  border-radius: 16px;
+  padding: 18px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+}
+
+.cs-card-back {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  top: 12px;
+  left: 20px;
+  transform: rotate(-4deg);
+  opacity: 0.72;
+}
+
+.cs-card-front {
+  background: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 50%, #67e8f9 100%);
+  top: 0;
+  left: 0;
+  transform: rotate(2deg);
+}
+
+.cs-card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cs-card-chip {
+  width: 28px;
+  height: 20px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.55), rgba(255,255,255,0.2));
+  border: 1px solid rgba(255,255,255,0.35);
+}
+
+.cs-card-back .cs-card-chip { margin-bottom: 4px; }
+
+.cs-card-num {
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.9);
+  font-family: 'Courier New', monospace;
+}
+
+.cs-card-holder {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.75);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* Badge */
+.cs-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: rgba(103,232,249,0.1);
+  border: 1px solid rgba(103,232,249,0.25);
+  color: #67e8f9;
+  font-size: 0.73rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.cs-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #67e8f9;
+  animation: cs-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes cs-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.75); }
+}
+
+/* Heading & sub */
+.cs-heading {
+  font-size: 1.45rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #67e8f9, #38bdf8, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 10px;
+  line-height: 1.25;
+}
+
+.cs-sub {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  max-width: 300px;
+  margin: 0 0 28px;
+}
+
+/* Steps */
+.cs-steps {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 28px;
+  text-align: left;
+}
+
+.cs-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.cs-step-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.cs-step-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+}
+
+.cs-step-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+/* Footnote */
+.cs-footnote {
+  font-size: 0.73rem;
+  color: rgba(148,163,184,0.6);
+  max-width: 280px;
+  line-height: 1.55;
+  margin: 0;
+}

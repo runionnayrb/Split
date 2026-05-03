@@ -95,163 +95,73 @@
 
         <!-- ── VIRTUAL CARDS ──────────────────────────────────── -->
         <section class="virtual-cards-section tab-panel" id="tab-cards">
-            <h2 class="section-heading">
-                <svg class="section-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-                <span>Virtual Cards</span>
-                <span class="vc-badge" id="vcBadge"></span>
-            </h2>
 
-            <!-- Stripe not configured notice -->
-            <div id="vcStripeNotice" class="vc-notice hidden">
-                <div class="vc-notice-icon">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <!-- Coming Soon hero -->
+            <div class="cs-wrap">
+
+                <!-- Decorative preview cards -->
+                <div class="cs-cards-preview">
+                    <div class="cs-card cs-card-back">
+                        <div class="cs-card-chip"></div>
+                        <div class="cs-card-num">•••• •••• •••• 5678</div>
+                        <div class="cs-card-holder">Partner 2</div>
+                    </div>
+                    <div class="cs-card cs-card-front">
+                        <div class="cs-card-top-row">
+                            <div class="cs-card-chip"></div>
+                            <svg width="34" height="13" viewBox="0 0 38 14" fill="none"><ellipse cx="13" cy="7" rx="13" ry="7" fill="rgba(255,255,255,0.28)"/><ellipse cx="25" cy="7" rx="13" ry="7" fill="rgba(255,255,255,0.16)"/></svg>
+                        </div>
+                        <div class="cs-card-num">•••• •••• •••• 1234</div>
+                        <div class="cs-card-holder">Partner 1</div>
+                    </div>
                 </div>
-                <div class="vc-notice-text">
-                    <strong>Stripe not configured</strong>
-                    <p>Add <code>STRIPE_SECRET_KEY</code> to your environment variables to enable virtual cards. Requires a Stripe account approved for Issuing.</p>
+
+                <!-- Badge + heading -->
+                <div class="cs-badge">
+                    <span class="cs-badge-dot"></span>
+                    Coming Soon
                 </div>
+                <h2 class="cs-heading">Virtual Cards for Two</h2>
+                <p class="cs-sub">
+                    One shared wallet. Two cards. Every purchase tracked and split automatically — no receipts needed.
+                </p>
+
+                <!-- How it will work -->
+                <div class="cs-steps">
+                    <div class="cs-step">
+                        <div class="cs-step-icon">💳</div>
+                        <div class="cs-step-body">
+                            <div class="cs-step-title">Each partner gets a card</div>
+                            <div class="cs-step-desc">Two virtual Visa cards issued to your account — one for each of you. Use them anywhere online or add to Apple/Google Pay.</div>
+                        </div>
+                    </div>
+                    <div class="cs-step">
+                        <div class="cs-step-icon">⚡</div>
+                        <div class="cs-step-body">
+                            <div class="cs-step-title">Purchases auto-appear here</div>
+                            <div class="cs-step-desc">Every charge on either card shows up in SplitMate instantly — already categorized and attributed to the right person. No manual entry.</div>
+                        </div>
+                    </div>
+                    <div class="cs-step">
+                        <div class="cs-step-icon">⚖️</div>
+                        <div class="cs-step-body">
+                            <div class="cs-step-title">Balance updates in real time</div>
+                            <div class="cs-step-desc">Your running balance adjusts the moment a card is charged. Set a custom split ratio — 50/50 or whatever works for you.</div>
+                        </div>
+                    </div>
+                    <div class="cs-step">
+                        <div class="cs-step-icon">🔒</div>
+                        <div class="cs-step-body">
+                            <div class="cs-step-title">Secure &amp; private</div>
+                            <div class="cs-step-desc">Card numbers are hidden by default and only revealed on tap. Freeze either card instantly from the app if needed.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="cs-footnote">We'll notify you as soon as Cards goes live. In the meantime, use Scan Receipt to track expenses automatically.</p>
+
             </div>
 
-            <!-- Cards grid -->
-            <div class="vc-cards-grid" id="vcCardsGrid">
-                <!-- Partner 1 card slot -->
-                <div class="vc-card-slot" id="vcCardMe">
-                    <div class="vc-card vc-card-me" id="vcCardMeInner">
-                        <div class="vc-card-shimmer"></div>
-                        <div class="vc-card-top">
-                            <div class="vc-card-chip">
-                                <div class="vc-chip-line"></div>
-                                <div class="vc-chip-line"></div>
-                            </div>
-                            <div class="vc-card-brand">
-                                <svg width="38" height="14" viewBox="0 0 38 14" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="13" cy="7" rx="13" ry="7" fill="rgba(255,255,255,0.25)"/><ellipse cx="25" cy="7" rx="13" ry="7" fill="rgba(255,255,255,0.15)"/></svg>
-                            </div>
-                        </div>
-                        <div class="vc-card-number" id="vcNumberMe">
-                            <span class="vc-number-group">••••</span>
-                            <span class="vc-number-group">••••</span>
-                            <span class="vc-number-group">••••</span>
-                            <span class="vc-number-group vc-number-last" id="vcLast4Me">????</span>
-                        </div>
-                        <div class="vc-card-bottom">
-                            <div class="vc-card-holder">
-                                <div class="vc-label">CARD HOLDER</div>
-                                <div class="vc-value" id="vcNameMe">Partner 1</div>
-                            </div>
-                            <div class="vc-card-expiry">
-                                <div class="vc-label">EXPIRES</div>
-                                <div class="vc-value" id="vcExpiryMe">••/••</div>
-                            </div>
-                            <div class="vc-card-cvc" id="vcCvcContainerMe">
-                                <div class="vc-label">CVV</div>
-                                <div class="vc-value vc-cvc" id="vcCvcMe">•••</div>
-                            </div>
-                        </div>
-                        <div class="vc-card-reveal-hint" id="vcRevealHintMe">Tap to reveal</div>
-                    </div>
-                    <!-- Not-set-up state -->
-                    <div class="vc-setup-prompt" id="vcSetupMe">
-                        <div class="vc-setup-icon">
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="12" y1="15" x2="12" y2="15.01" stroke-width="3"/></svg>
-                        </div>
-                        <p class="vc-setup-label">No card issued yet</p>
-                        <button class="btn-vc-setup" onclick="window.splitMateApp && window.splitMateApp.virtualCard.openSetupModal('me')">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            Set Up Card
-                        </button>
-                    </div>
-                    <!-- Card actions row -->
-                    <div class="vc-card-actions hidden" id="vcActionsMe">
-                        <button class="vc-action-btn" id="vcCopyMe" title="Tap card to reveal, then copy number">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                            Copy Number
-                        </button>
-                        <button class="vc-action-btn vc-action-link" id="vcLinkMe" onclick="window.splitMateApp && window.splitMateApp.virtualCard.openLinkCardModal('me')">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                            Link Real Card
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Partner 2 card slot -->
-                <div class="vc-card-slot" id="vcCardSpouse">
-                    <div class="vc-card vc-card-spouse" id="vcCardSpouseInner">
-                        <div class="vc-card-shimmer"></div>
-                        <div class="vc-card-top">
-                            <div class="vc-card-chip">
-                                <div class="vc-chip-line"></div>
-                                <div class="vc-chip-line"></div>
-                            </div>
-                            <div class="vc-card-brand">
-                                <svg width="38" height="14" viewBox="0 0 38 14" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="13" cy="7" rx="13" ry="7" fill="rgba(255,255,255,0.25)"/><ellipse cx="25" cy="7" rx="13" ry="7" fill="rgba(255,255,255,0.15)"/></svg>
-                            </div>
-                        </div>
-                        <div class="vc-card-number" id="vcNumberSpouse">
-                            <span class="vc-number-group">••••</span>
-                            <span class="vc-number-group">••••</span>
-                            <span class="vc-number-group">••••</span>
-                            <span class="vc-number-group vc-number-last" id="vcLast4Spouse">????</span>
-                        </div>
-                        <div class="vc-card-bottom">
-                            <div class="vc-card-holder">
-                                <div class="vc-label">CARD HOLDER</div>
-                                <div class="vc-value" id="vcNameSpouse">Partner 2</div>
-                            </div>
-                            <div class="vc-card-expiry">
-                                <div class="vc-label">EXPIRES</div>
-                                <div class="vc-value" id="vcExpirySpouse">••/••</div>
-                            </div>
-                            <div class="vc-card-cvc" id="vcCvcContainerSpouse">
-                                <div class="vc-label">CVV</div>
-                                <div class="vc-value vc-cvc" id="vcCvcSpouse">•••</div>
-                            </div>
-                        </div>
-                        <div class="vc-card-reveal-hint" id="vcRevealHintSpouse">Tap to reveal</div>
-                    </div>
-                    <!-- Not-set-up state -->
-                    <div class="vc-setup-prompt" id="vcSetupSpouse">
-                        <div class="vc-setup-icon">
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="12" y1="15" x2="12" y2="15.01" stroke-width="3"/></svg>
-                        </div>
-                        <p class="vc-setup-label">No card issued yet</p>
-                        <button class="btn-vc-setup" onclick="window.splitMateApp && window.splitMateApp.virtualCard.openSetupModal('spouse')">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            Set Up Card
-                        </button>
-                    </div>
-                    <!-- Card actions row -->
-                    <div class="vc-card-actions hidden" id="vcActionsSpouse">
-                        <button class="vc-action-btn" id="vcCopySpouse" title="Tap card to reveal, then copy number">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                            Copy Number
-                        </button>
-                        <button class="vc-action-btn vc-action-link" id="vcLinkSpouse" onclick="window.splitMateApp && window.splitMateApp.virtualCard.openLinkCardModal('spouse')">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                            Link Real Card
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Split ratio row -->
-            <div class="vc-split-row" id="vcSplitRow">
-                <span class="vc-split-label">Split ratio</span>
-                <div class="vc-split-control">
-                    <span class="vc-split-name" id="vcSplitNameMe">Me</span>
-                    <input type="range" id="vcSplitSlider" class="vc-split-slider" min="0" max="100" value="50" step="5">
-                    <span class="vc-split-name" id="vcSplitNameSpouse">Partner</span>
-                </div>
-                <span class="vc-split-pct" id="vcSplitPct">50% / 50%</span>
-            </div>
-
-            <!-- Recent VC charges -->
-            <div class="vc-transactions" id="vcTransactions" style="display:none">
-                <div class="vc-tx-header">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                    Recent Card Charges
-                </div>
-                <div id="vcTxList" class="vc-tx-list"></div>
-            </div>
         </section>
 
         <!-- ── ADD EXPENSE ─────────────────────────────────── -->

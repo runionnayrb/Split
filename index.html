@@ -642,8 +642,46 @@
                         <button class="zelle-copy-btn" onclick="navigator.clipboard.writeText('5012825870').then(()=>{this.textContent='Copied!';setTimeout(()=>{this.textContent='Copy'},1800)})">Copy</button>
                     </div>
                 </div>
+
+                <!-- Edit Transaction Panel (hidden until Edit is tapped) -->
+                <div id="editTransactionPanel" class="edit-tx-panel hidden">
+                    <div class="edit-tx-title">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        Edit Transaction
+                    </div>
+                    <div class="form-group">
+                        <label for="editDescription">Description</label>
+                        <input type="text" id="editDescription" maxlength="100" placeholder="What was this for?">
+                    </div>
+                    <div class="form-group">
+                        <label for="editAmount">Amount ($)</label>
+                        <input type="number" id="editAmount" step="0.01" min="0" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="editCategory">Category</label>
+                        <select id="editCategory">
+                            <option value="groceries">🥬 Groceries</option>
+                            <option value="dining">🍽️ Dining</option>
+                            <option value="travel">✈️ Travel</option>
+                            <option value="shopping">🛍️ Shopping</option>
+                            <option value="other">📋 Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editWhoPaid">Who paid?</label>
+                        <select id="editWhoPaid">
+                            <option value="me" id="editWhoPaidP1">Bryan</option>
+                            <option value="spouse" id="editWhoPaidP2">Ayako</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editDate">Date</label>
+                        <input type="date" id="editDate">
+                    </div>
+                </div>
             </div>
             <div class="bottom-sheet-actions">
+                <!-- Detail mode buttons -->
                 <button id="confirmPayTransaction" class="btn-primary">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                     <span data-i18n="payBryanShare">Mark as Paid</span>
@@ -652,12 +690,24 @@
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                     <span>Share Receipt</span>
                 </button>
-                <button id="cancelPayTransaction"  class="btn-secondary">
+                <button id="editTransactionBtn" class="btn-edit">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    <span>Edit</span>
+                </button>
+                <button id="cancelPayTransaction" class="btn-secondary">
                     <span data-i18n="cancel">Cancel</span>
                 </button>
                 <button id="deleteTransaction" class="btn-danger hidden">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                     <span data-i18n="deleteReceiptButton">Delete</span>
+                </button>
+                <!-- Edit mode buttons (hidden in detail mode) -->
+                <button id="saveEditBtn" class="btn-primary hidden">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>Save Changes</span>
+                </button>
+                <button id="cancelEditBtn" class="btn-secondary hidden">
+                    <span>Discard</span>
                 </button>
             </div>
         </div>

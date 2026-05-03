@@ -40,7 +40,16 @@ class SplitMate {
         this.confirmPayTransactionBtn = document.getElementById('confirmPayTransaction');
         this.cancelPayTransactionBtn = document.getElementById('cancelPayTransaction');
         this.deleteTransactionBtn = document.getElementById('deleteTransaction');
-        this.closeBottomSheetBtn = document.getElementById('closeBottomSheet');
+        this.editTransactionBtn   = document.getElementById('editTransactionBtn');
+        this.saveEditBtn          = document.getElementById('saveEditBtn');
+        this.cancelEditBtn        = document.getElementById('cancelEditBtn');
+        this.editTransactionPanel = document.getElementById('editTransactionPanel');
+        this.editDescription      = document.getElementById('editDescription');
+        this.editAmount           = document.getElementById('editAmount');
+        this.editCategory         = document.getElementById('editCategory');
+        this.editWhoPaid          = document.getElementById('editWhoPaid');
+        this.editDate             = document.getElementById('editDate');
+        this.closeBottomSheetBtn  = document.getElementById('closeBottomSheet');
         
         // Delete confirmation modal elements
         this.deleteConfirmModal = document.getElementById('deleteConfirmModal');
@@ -302,6 +311,24 @@ class SplitMate {
         }
         
         // Delete transaction button
+        if (this.editTransactionBtn) {
+            this.editTransactionBtn.addEventListener('click', () => {
+                this.enterEditMode(this.currentPaymentTransaction);
+            });
+        }
+
+        if (this.saveEditBtn) {
+            this.saveEditBtn.addEventListener('click', () => {
+                this.saveTransactionEdit();
+            });
+        }
+
+        if (this.cancelEditBtn) {
+            this.cancelEditBtn.addEventListener('click', () => {
+                this.exitEditMode();
+            });
+        }
+
         if (this.deleteTransactionBtn) {
             this.deleteTransactionBtn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -1792,20 +1819,120 @@ class SplitMate {
      * Hide individual payment modal with iOS-style animation
      */
     hidePayTransactionModal() {
-        // Start exit animation
+        this.exitEditMode(true); // ensure edit panel is cleaned up silently
         this.payTransactionModal.classList.remove('show');
-        
-        // After animation completes, hide the modal
         setTimeout(() => {
             this.payTransactionModal.style.display = 'none';
             document.body.style.overflow = 'auto';
             this.currentPaymentTransaction = null;
-            // Clean up injected sections
             const existingFriendInfo = document.getElementById('friendSplitModalInfo');
             if (existingFriendInfo) existingFriendInfo.remove();
-        }, 300); // Match the CSS transition duration
+        }, 300);
     }
-    
+
+    /**
+     * Enter edit mode — slide in the edit form inside the bottom sheet.
+     */
+    enterEditMode(transaction) {
+        if (!transaction) return;
+
+        // Update partner name options to match current names
+        const p1Name = window.i18n ? window.i18n.getP1Name() : 'Partner 1';
+        const p2Name = window.i18n ? window.i18n.getP2Name() : 'Partner 2';
+        const p1Opt = document.getElementById('editWhoPaidP1');
+        const p2Opt = document.getElementById('editWhoPaidP2');
+        if (p1Opt) p1Opt.textContent = p1Name;
+        if (p2Opt) p2Opt.textContent = p2Name;
+
+        // Pre-fill the form fields
+        if (this.editDescription) this.editDescription.value = transaction.notes || '';
+        if (this.editAmount)      this.editAmount.value      = transaction.amount || '';
+        if (this.editCategory)    this.editCategory.value    = transaction.category || 'other';
+        if (this.editWhoPaid)     this.editWhoPaid.value     = transaction.whoPaid || 'me';
+        if (this.editDate) {
+            // Format date as YYYY-MM-DD for input[type=date]
+            const d = new Date(transaction.date);
+            const yyyy = d.getFullYear();
+            const mm   = String(d.getMonth() + 1).padStart(2, '0');
+            const dd   = String(d.getDate()).padStart(2, '0');
+            this.editDate.value = `${yyyy}-${mm}-${dd}`;
+        }
+
+        // Show edit panel
+        if (this.editTransactionPanel) this.editTransactionPanel.classList.remove('hidden');
+
+        // Swap action buttons: hide detail buttons, show edit buttons
+        if (this.confirmPayTransactionBtn) this.confirmPayTransactionBtn.classList.add('hidden');
+        if (this.shareWithFriendBtn)       this.shareWithFriendBtn.classList.add('hidden');
+        if (this.editTransactionBtn)       this.editTransactionBtn.classList.add('hidden');
+        if (this.cancelPayTransactionBtn)  this.cancelPayTransactionBtn.classList.add('hidden');
+        if (this.deleteTransactionBtn)     this.deleteTransactionBtn.classList.add('hidden');
+        if (this.saveEditBtn)              this.saveEditBtn.classList.remove('hidden');
+        if (this.cancelEditBtn)            this.cancelEditBtn.classList.remove('hidden');
+    }
+
+    /**
+     * Exit edit mode — restore the detail view.
+     * @param {boolean} silent - if true, just reset state without re-opening modal
+     */
+    exitEditMode(silent = false) {
+        if (this.editTransactionPanel) this.editTransactionPanel.classList.add('hidden');
+
+        if (this.saveEditBtn)  this.saveEditBtn.classList.add('hidden');
+        if (this.cancelEditBtn) this.cancelEditBtn.classList.add('hidden');
+
+        if (!silent) {
+            // Restore all detail-mode buttons
+            if (this.confirmPayTransactionBtn) this.confirmPayTransactionBtn.classList.remove('hidden');
+            if (this.shareWithFriendBtn)       this.shareWithFriendBtn.classList.remove('hidden');
+            if (this.editTransactionBtn)       this.editTransactionBtn.classList.remove('hidden');
+            if (this.cancelPayTransactionBtn)  this.cancelPayTransactionBtn.classList.remove('hidden');
+            if (this.deleteTransactionBtn)     this.deleteTransactionBtn.classList.remove('hidden');
+        }
+    }
+
+    /**
+     * Validate the edit form, update the transaction, and save.
+     */
+    saveTransactionEdit() {
+        const transaction = this.currentPaymentTransaction;
+        if (!transaction) return;
+
+        const newAmount = parseFloat(this.editAmount ? this.editAmount.value : '');
+        if (isNaN(newAmount) || newAmount <= 0) {
+            alert('Please enter a valid amount.');
+            return;
+        }
+
+        const amountChanged = Math.abs(newAmount - transaction.amount) > 0.001;
+
+        // Apply updates
+        transaction.notes    = (this.editDescription ? this.editDescription.value.trim() : '') || transaction.notes;
+        transaction.amount   = newAmount;
+        transaction.category = this.editCategory ? this.editCategory.value : transaction.category;
+        transaction.whoPaid  = this.editWhoPaid  ? this.editWhoPaid.value  : transaction.whoPaid;
+        if (this.editDate && this.editDate.value) {
+            transaction.date = new Date(this.editDate.value + 'T12:00:00').toISOString();
+        }
+
+        // Recalculate youOwe: always 50/50 of the new amount
+        transaction.youOwe = newAmount / 2;
+
+        // If a receipt transaction had its amount changed, convert to simple 50/50
+        if (amountChanged && transaction.isFromReceipt) {
+            transaction.isFromReceipt     = false;
+            transaction.receiptBreakdown  = null;
+        }
+
+        // Persist and refresh
+        this.saveToStorage();
+        this.updateDisplay();
+
+        // Exit edit mode and re-render the modal with updated data
+        this.exitEditMode(true);
+        this.showPayTransactionModal(transaction);
+    }
+
     /**
      * Generate a shareable PNG receipt image for any transaction using Canvas API.
      * If transaction.friendSplit exists → "friend owes you" style.

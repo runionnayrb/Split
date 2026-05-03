@@ -2137,12 +2137,13 @@ class SplitMate {
         };
 
         const drawRow = (label, value, y, valueColor = 'rgba(255,255,255,0.85)') => {
-            const rowFont = `500 30px ${FONT}`;
-            ctx.font = rowFont;
+            const labelFont = `500 38px ${FONT}`;
+            const valueFont = `600 38px ${FONT}`;
+            ctx.font = labelFont;
             ctx.fillStyle = 'rgba(255,255,255,0.42)';
             ctx.textAlign = 'left';
             ctx.fillText(label, PAD, y);
-            ctx.font = `600 30px ${FONT}`;
+            ctx.font = valueFont;
             ctx.fillStyle = valueColor;
             ctx.textAlign = 'right';
             const valStr = fitText(value, W - PAD * 2 - ctx.measureText(label).width - 40, ctx.font);
@@ -2271,7 +2272,10 @@ class SplitMate {
         }
 
         // ── Settle-up card ────────────────────────────────────────────────────
-        const settleY = 1172, settleH = 268;
+        const payLines   = this.buildPaymentLines();
+        const PAY_STEP   = 44;                              // px between pay lines
+        const settleY    = 1172;
+        const settleH    = 140 + (payLines.length > 0 ? 60 + PAY_STEP * payLines.length : 0);
         ctx.fillStyle = 'rgba(52,211,153,0.09)';
         rrect(PAD - 16, settleY, W - (PAD - 16) * 2, settleH, 28);
         ctx.fill();
@@ -2292,16 +2296,23 @@ class SplitMate {
                   })()
               )}`;
 
-        ctx.font      = `bold 36px ${FONT}`;
+        ctx.font      = `bold 40px ${FONT}`;
         ctx.fillStyle = '#6ee7b7';
         ctx.textAlign = 'center';
-        ctx.fillText(settleLabel, W / 2, settleY + 94);
+        ctx.fillText(settleLabel, W / 2, settleY + 80);
 
-        const payLine = this.buildPaymentLine();
-        if (payLine) {
+        if (payLines.length > 0) {
+            // Label above payment methods
             ctx.font      = `500 26px ${FONT}`;
-            ctx.fillStyle = 'rgba(255,255,255,0.45)';
-            ctx.fillText(payLine, W / 2, settleY + 152);
+            ctx.fillStyle = 'rgba(255,255,255,0.35)';
+            ctx.fillText('Send payment via:', W / 2, settleY + 124);
+
+            // One method per line, clearly readable
+            payLines.forEach((line, i) => {
+                ctx.font      = `600 30px ${FONT}`;
+                ctx.fillStyle = 'rgba(255,255,255,0.72)';
+                ctx.fillText(line, W / 2, settleY + 124 + 40 + PAY_STEP * (i + 1));
+            });
         }
 
         // ── Decorative bottom glow ────────────────────────────────────────────
@@ -3228,17 +3239,44 @@ class SplitMate {
     }
 
     /**
-     * Build the payment methods line for the shared receipt image.
-     * Returns a string like "Cash App · Venmo · Zelle (501) 282-5870"
-     * or empty string if nothing is configured.
+     * Format a 10-digit phone string as (XXX) XXX-XXXX.
+     * Falls back to the original string if it can't be parsed.
+     */
+    formatPhone(raw) {
+        const digits = (raw || '').replace(/\D/g, '');
+        if (digits.length === 10) return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+        if (digits.length === 11 && digits[0] === '1') return `(${digits.slice(1,4)}) ${digits.slice(4,7)}-${digits.slice(7)}`;
+        return raw;
+    }
+
+    /**
+     * Build individual payment method lines for the shared receipt image.
+     * Returns an array of strings — one per enabled method — e.g.:
+     *   ["Cash App $bryan", "Venmo @ayako", "Zelle (501) 282-5870"]
+     * Returns [] if nothing is configured.
+     */
+    buildPaymentLines() {
+        const s = this.paymentSettings || {};
+        const lines = [];
+        if (s.cashapp && s.cashapp.enabled && s.cashapp.tag) {
+            let tag = s.cashapp.tag.trim().replace(/^https?:\/\//i, '').replace(/^cash\.app\//i, '').replace(/^\$/, '');
+            lines.push(`Cash App  $${tag}`);
+        }
+        if (s.venmo && s.venmo.enabled && s.venmo.username) {
+            let u = s.venmo.username.trim().replace(/^@/, '');
+            lines.push(`Venmo  @${u}`);
+        }
+        if (s.zelle && s.zelle.enabled && s.zelle.phone) {
+            lines.push(`Zelle  ${this.formatPhone(s.zelle.phone)}`);
+        }
+        return lines;
+    }
+
+    /**
+     * @deprecated — use buildPaymentLines() for canvas; kept for any legacy callers.
      */
     buildPaymentLine() {
-        const s = this.paymentSettings || {};
-        const parts = [];
-        if (s.cashapp && s.cashapp.enabled && s.cashapp.tag) parts.push('Cash App');
-        if (s.venmo && s.venmo.enabled && s.venmo.username) parts.push('Venmo');
-        if (s.zelle && s.zelle.enabled && s.zelle.phone) parts.push('Zelle ' + s.zelle.phone);
-        return parts.join(' \u00b7 ');
+        return this.buildPaymentLines().join(' \u00b7 ');
     }
 
     /**
@@ -3288,10 +3326,8 @@ class SplitMate {
 
         if (s.zelle && s.zelle.enabled && s.zelle.phone) {
             hasAny = true;
+            const display = this.formatPhone(s.zelle.phone);
             const raw = s.zelle.phone.replace(/\D/g, '');
-            const display = raw.length === 10
-                ? `(${raw.slice(0,3)}) ${raw.slice(3,6)}-${raw.slice(6)}`
-                : s.zelle.phone;
             const zRow = document.createElement('div');
             zRow.className = 'pay-now-zelle';
             zRow.innerHTML = `

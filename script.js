@@ -59,6 +59,12 @@ class SplitMate {
         this.receiptImageContainer = document.getElementById('receiptImageContainer');
         this.receiptImage = document.getElementById('receiptImage');
         this.currentPaymentTransaction = null;
+
+        // Auth state
+        this.authToken = null;
+        this.currentUser = null;
+        this.isGuest = false;
+        this.syncDebounceTimer = null;
         
         // Receipt upload elements
         this.manualTab = document.getElementById('manualTab');
@@ -119,6 +125,9 @@ class SplitMate {
         // Bottom nav
         this.setupBottomNav();
         this.switchNavTab('split');
+
+        // Auth — async, runs after initial render
+        this.initAuth();
     }
     
     /**
@@ -2504,13 +2513,13 @@ class SplitMate {
             totals: this.totals,
             lastUpdated: new Date().toISOString()
         };
-        
         try {
             localStorage.setItem('splitmate-data', JSON.stringify(data));
         } catch (error) {
             console.error('Failed to save data to localStorage:', error);
-            alert('Warning: Your data could not be saved. Please check if your browser supports localStorage.');
         }
+        // Silently sync to server when authenticated
+        this.syncToServer();
     }
     
     /**
@@ -2571,11 +2580,8 @@ class SplitMate {
     loadFromStorage() {
         try {
             const savedData = localStorage.getItem('splitmate-data');
-            
             if (savedData) {
                 const data = JSON.parse(savedData);
-                
-                // Validate data structure
                 if (data.transactions && data.totals) {
                     this.transactions = data.transactions;
                     this.totals = data.totals;
@@ -2585,7 +2591,241 @@ class SplitMate {
             }
         } catch (error) {
             console.error('Failed to load data from localStorage:', error);
-            // Continue with empty data
+        }
+    }
+
+    // ── Authentication ─────────────────────────────────────────────────────
+
+    initAuth() {
+        this.authToken = localStorage.getItem('splitmate-token') || null;
+        this.setupAuthListeners();
+        if (this.authToken) {
+            this.verifyAndLoad();   // async — verifies token, loads server data
+        } else {
+            this.showAuthOverlay();
+        }
+    }
+
+    showAuthOverlay() {
+        const overlay = document.getElementById('authOverlay');
+        if (overlay) overlay.classList.add('visible');
+    }
+
+    hideAuthOverlay() {
+        const overlay = document.getElementById('authOverlay');
+        if (overlay) overlay.classList.remove('visible');
+    }
+
+    showGuestBanner() {
+        const el = document.getElementById('guestBanner');
+        if (el) el.style.display = 'flex';
+    }
+
+    hideGuestBanner() {
+        const el = document.getElementById('guestBanner');
+        if (el) el.style.display = 'none';
+    }
+
+    switchAuthTab(tab) {
+        const sf = document.getElementById('signinForm');
+        const rf = document.getElementById('registerForm');
+        const sb = document.getElementById('showSigninBtn');
+        const rb = document.getElementById('showRegisterBtn');
+        if (tab === 'signin') {
+            if (sf) sf.style.display = '';
+            if (rf) rf.style.display = 'none';
+            if (sb) sb.classList.add('active');
+            if (rb) rb.classList.remove('active');
+        } else {
+            if (sf) sf.style.display = 'none';
+            if (rf) rf.style.display = '';
+            if (sb) sb.classList.remove('active');
+            if (rb) rb.classList.add('active');
+        }
+    }
+
+    setupAuthListeners() {
+        document.getElementById('showSigninBtn')?.addEventListener('click', () => this.switchAuthTab('signin'));
+        document.getElementById('showRegisterBtn')?.addEventListener('click', () => this.switchAuthTab('register'));
+
+        document.getElementById('signinForm')?.addEventListener('submit', e => { e.preventDefault(); this.handleSignIn(); });
+        document.getElementById('registerForm')?.addEventListener('submit', e => { e.preventDefault(); this.handleRegister(); });
+
+        document.getElementById('guestModeBtn')?.addEventListener('click', () => this.handleGuestMode());
+
+        document.getElementById('saveToAccountBtn')?.addEventListener('click', () => {
+            this.switchAuthTab('register');
+            this.showAuthOverlay();
+        });
+
+        document.getElementById('openAuthBtn')?.addEventListener('click', () => {
+            this.switchAuthTab('signin');
+            this.showAuthOverlay();
+        });
+
+        document.getElementById('logoutBtn')?.addEventListener('click', () => this.logoutUser());
+    }
+
+    async handleSignIn() {
+        const email    = document.getElementById('signinEmail')?.value?.trim();
+        const password = document.getElementById('signinPassword')?.value;
+        const errEl    = document.getElementById('signinError');
+        if (!email || !password) { if (errEl) errEl.textContent = 'Please enter your email and password.'; return; }
+        if (errEl) errEl.textContent = '';
+
+        const btn = document.querySelector('#signinForm .auth-submit-btn');
+        if (btn) { btn.textContent = 'Signing in…'; btn.disabled = true; }
+        try {
+            const res  = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Sign in failed');
+            await this.onAuthSuccess(data.token, data.user, true);
+        } catch (e) {
+            if (errEl) errEl.textContent = e.message;
+        } finally {
+            if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
+        }
+    }
+
+    async handleRegister() {
+        const email    = document.getElementById('registerEmail')?.value?.trim();
+        const password = document.getElementById('registerPassword')?.value;
+        const p1Name   = document.getElementById('registerP1Name')?.value?.trim() || 'Partner 1';
+        const p2Name   = document.getElementById('registerP2Name')?.value?.trim() || 'Partner 2';
+        const errEl    = document.getElementById('registerError');
+        if (!email || !password) { if (errEl) errEl.textContent = 'Please enter your email and password.'; return; }
+        if (password.length < 6) { if (errEl) errEl.textContent = 'Password must be at least 6 characters.'; return; }
+        if (errEl) errEl.textContent = '';
+
+        const btn = document.querySelector('#registerForm .auth-submit-btn');
+        if (btn) { btn.textContent = 'Creating account…'; btn.disabled = true; }
+        try {
+            const res  = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password, p1Name, p2Name }) });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Registration failed');
+            // Auth first, then sync any existing (guest) data to the new account
+            await this.onAuthSuccess(data.token, data.user, false);
+            await this.syncToServer();
+        } catch (e) {
+            if (errEl) errEl.textContent = e.message;
+        } finally {
+            if (btn) { btn.textContent = 'Create Account'; btn.disabled = false; }
+        }
+    }
+
+    handleGuestMode() {
+        this.authToken   = null;
+        this.currentUser = null;
+        this.isGuest     = true;
+        this.hideAuthOverlay();
+        this.showGuestBanner();
+        this.updateAuthUI();
+    }
+
+    async onAuthSuccess(token, user, loadFromServer) {
+        this.authToken   = token;
+        this.currentUser = user;
+        this.isGuest     = false;
+        localStorage.setItem('splitmate-token', token);
+
+        // Update partner names in i18n from account
+        if (user.p1Name && window.i18n) {
+            localStorage.setItem('p1Name', user.p1Name);
+            if (user.p2Name) localStorage.setItem('p2Name', user.p2Name);
+            window.dispatchEvent(new Event('partnerNamesChanged'));
+        }
+
+        if (loadFromServer) await this.loadFromServer();
+
+        this.hideAuthOverlay();
+        this.hideGuestBanner();
+        this.updateDisplay();
+        this.updateAuthUI();
+    }
+
+    async verifyAndLoad() {
+        try {
+            const res = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + this.authToken } });
+            if (!res.ok) throw new Error('Invalid token');
+            const { user } = await res.json();
+            this.currentUser = user;
+            this.isGuest     = false;
+            await this.loadFromServer();
+            this.updateDisplay();
+            this.updateAuthUI();
+        } catch (e) {
+            // Token invalid — clear and prompt login
+            this.authToken = null;
+            localStorage.removeItem('splitmate-token');
+            this.showAuthOverlay();
+        }
+    }
+
+    async loadFromServer() {
+        try {
+            const res = await fetch('/api/userdata', { headers: { 'Authorization': 'Bearer ' + this.authToken } });
+            if (!res.ok) return;
+            const { transactions } = await res.json();
+            if (!Array.isArray(transactions)) return;
+            this.transactions = transactions;
+            // Recalculate totals from loaded transactions
+            this.totals = { me: 0, spouse: 0 };
+            this.transactions.forEach(t => {
+                if (t.whoPaid === 'me') this.totals.me += t.amount;
+                else this.totals.spouse += t.amount;
+            });
+            // Mirror to localStorage
+            localStorage.setItem('splitmate-data', JSON.stringify({ transactions: this.transactions, totals: this.totals, lastUpdated: new Date().toISOString() }));
+        } catch (e) {
+            console.error('Failed to load from server:', e);
+        }
+    }
+
+    syncToServer() {
+        if (!this.authToken) return;
+        clearTimeout(this.syncDebounceTimer);
+        this.syncDebounceTimer = setTimeout(async () => {
+            try {
+                await fetch('/api/userdata', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + this.authToken },
+                    body: JSON.stringify({ transactions: this.transactions })
+                });
+            } catch (e) {
+                console.error('Server sync failed:', e);
+            }
+        }, 800);
+    }
+
+    logoutUser() {
+        if (!confirm('Sign out? Your local data will be cleared from this device.')) return;
+        this.authToken   = null;
+        this.currentUser = null;
+        this.isGuest     = false;
+        localStorage.removeItem('splitmate-token');
+        this.transactions = [];
+        this.totals = { me: 0, spouse: 0 };
+        localStorage.removeItem('splitmate-data');
+        this.updateDisplay();
+        this.updateAuthUI();
+        this.showAuthOverlay();
+    }
+
+    updateAuthUI() {
+        const accountInfo  = document.getElementById('accountInfo');
+        const accountEmail = document.getElementById('accountEmail');
+        const logoutBtn    = document.getElementById('logoutBtn');
+        const loginPrompt  = document.getElementById('loginPrompt');
+
+        if (this.currentUser) {
+            if (accountInfo)  accountInfo.style.display  = 'block';
+            if (accountEmail) accountEmail.textContent    = this.currentUser.email;
+            if (logoutBtn)    logoutBtn.style.display     = 'block';
+            if (loginPrompt)  loginPrompt.style.display   = 'none';
+        } else {
+            if (accountInfo)  accountInfo.style.display   = 'none';
+            if (logoutBtn)    logoutBtn.style.display      = 'none';
+            if (loginPrompt)  loginPrompt.style.display    = 'block';
         }
     }
 }

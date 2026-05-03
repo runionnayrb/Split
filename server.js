@@ -12,6 +12,46 @@ const PORT = process.env.PORT || 5000;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || 'splitmate-jwt-secret-change-in-production';
+
+// Auth dependencies
+const bcrypt = require('bcryptjs');
+const jwt    = require('jsonwebtoken');
+const Database = require('better-sqlite3');
+
+// Initialize SQLite database
+let db = null;
+try {
+    const dataDir = path.join(__dirname, 'data');
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+    db = new Database(path.join(dataDir, 'splitmate.db'));
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            email         TEXT    UNIQUE NOT NULL,
+            password_hash TEXT    NOT NULL,
+            p1_name       TEXT    DEFAULT 'Partner 1',
+            p2_name       TEXT    DEFAULT 'Partner 2',
+            created_at    TEXT    DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS user_data (
+            user_id           INTEGER PRIMARY KEY,
+            transactions_json TEXT    DEFAULT '[]',
+            updated_at        TEXT    DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        );
+    `);
+    console.log('SQLite database ready');
+} catch (e) {
+    console.error('Database init failed:', e.message);
+}
+
+function verifyToken(req) {
+    const auth = req.headers['authorization'];
+    if (!auth || !auth.startsWith('Bearer ')) return null;
+    try { return jwt.verify(auth.slice(7), JWT_SECRET); }
+    catch (e) { return null; }
+}
 
 // Initialize Stripe if key is available
 let stripe = null;
@@ -140,6 +180,94 @@ const server = http.createServer(async (req, res) => {
                 const idx = sseClients.indexOf(res);
                 if (idx !== -1) sseClients.splice(idx, 1);
             });
+            return;
+        }
+
+        // ── Auth: Register ────────────────────────────────────────────────────
+        if (pathname === '/api/auth/register' && req.method === 'POST') {
+            if (!db) { json(res, 503, { error: 'Database unavailable' }); return; }
+            const body = JSON.parse((await readBody(req)).toString());
+            const { email, password, p1Name, p2Name } = body;
+            if (!email || !password || password.length < 6) {
+                json(res, 400, { error: 'Email and password (min 6 chars) are required' }); return;
+            }
+            try {
+                const hash = bcrypt.hashSync(password, 10);
+                const ins  = db.prepare('INSERT INTO users (email, password_hash, p1_name, p2_name) VALUES (?, ?, ?, ?)');
+                const r    = ins.run(email.toLowerCase().trim(), hash, p1Name || 'Partner 1', p2Name || 'Partner 2');
+                const user = db.prepare('SELECT id, email, p1_name, p2_name FROM users WHERE id = ?').get(r.lastInsertRowid);
+                db.prepare('INSERT OR IGNORE INTO user_data (user_id) VALUES (?)').run(user.id);
+                const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
+                json(res, 200, { token, user: { id: user.id, email: user.email, p1Name: user.p1_name, p2Name: user.p2_name } });
+            } catch (e) {
+                if (e.message.includes('UNIQUE')) json(res, 400, { error: 'An account with that email already exists' });
+                else { console.error(e); json(res, 500, { error: 'Registration failed' }); }
+            }
+            return;
+        }
+
+        // ── Auth: Login ───────────────────────────────────────────────────────
+        if (pathname === '/api/auth/login' && req.method === 'POST') {
+            if (!db) { json(res, 503, { error: 'Database unavailable' }); return; }
+            const body = JSON.parse((await readBody(req)).toString());
+            const { email, password } = body;
+            if (!email || !password) { json(res, 400, { error: 'Email and password are required' }); return; }
+            const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase().trim());
+            if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+                json(res, 401, { error: 'Incorrect email or password' }); return;
+            }
+            const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
+            json(res, 200, { token, user: { id: user.id, email: user.email, p1Name: user.p1_name, p2Name: user.p2_name } });
+            return;
+        }
+
+        // ── Auth: Verify token / get current user ─────────────────────────────
+        if (pathname === '/api/auth/me' && req.method === 'GET') {
+            if (!db) { json(res, 503, { error: 'Database unavailable' }); return; }
+            const decoded = verifyToken(req);
+            if (!decoded) { json(res, 401, { error: 'Unauthorized' }); return; }
+            const user = db.prepare('SELECT id, email, p1_name, p2_name FROM users WHERE id = ?').get(decoded.userId);
+            if (!user) { json(res, 401, { error: 'User not found' }); return; }
+            json(res, 200, { user: { id: user.id, email: user.email, p1Name: user.p1_name, p2Name: user.p2_name } });
+            return;
+        }
+
+        // ── User data: load ───────────────────────────────────────────────────
+        if (pathname === '/api/userdata' && req.method === 'GET') {
+            if (!db) { json(res, 503, { error: 'Database unavailable' }); return; }
+            const decoded = verifyToken(req);
+            if (!decoded) { json(res, 401, { error: 'Unauthorized' }); return; }
+            const row = db.prepare('SELECT * FROM user_data WHERE user_id = ?').get(decoded.userId);
+            json(res, 200, { transactions: row ? JSON.parse(row.transactions_json || '[]') : [] });
+            return;
+        }
+
+        // ── User data: save ───────────────────────────────────────────────────
+        if (pathname === '/api/userdata' && req.method === 'POST') {
+            if (!db) { json(res, 503, { error: 'Database unavailable' }); return; }
+            const decoded = verifyToken(req);
+            if (!decoded) { json(res, 401, { error: 'Unauthorized' }); return; }
+            const body = JSON.parse((await readBody(req)).toString());
+            db.prepare(`
+                INSERT INTO user_data (user_id, transactions_json, updated_at)
+                VALUES (?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(user_id) DO UPDATE SET
+                    transactions_json = excluded.transactions_json,
+                    updated_at        = excluded.updated_at
+            `).run(decoded.userId, JSON.stringify(body.transactions || []));
+            json(res, 200, { success: true });
+            return;
+        }
+
+        // ── Auth: Update partner names ────────────────────────────────────────
+        if (pathname === '/api/auth/profile' && req.method === 'PUT') {
+            if (!db) { json(res, 503, { error: 'Database unavailable' }); return; }
+            const decoded = verifyToken(req);
+            if (!decoded) { json(res, 401, { error: 'Unauthorized' }); return; }
+            const body = JSON.parse((await readBody(req)).toString());
+            db.prepare('UPDATE users SET p1_name = ?, p2_name = ? WHERE id = ?')
+              .run(body.p1Name || 'Partner 1', body.p2Name || 'Partner 2', decoded.userId);
+            json(res, 200, { success: true });
             return;
         }
 

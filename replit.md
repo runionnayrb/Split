@@ -10,13 +10,22 @@ Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-SplitMate has been enhanced with receipt scanning capabilities using a hybrid architecture:
+SplitMate uses a full-stack hybrid architecture:
 
 - **Frontend**: HTML/CSS/JavaScript single-page application with dual input modes
-- **Backend**: Node.js server for OpenAI API integration and secure key handling
-- **Data Storage**: Browser's localStorage for persistence
-- **Architecture Pattern**: Object-oriented JavaScript with SplitMate class + ReceiptProcessor
+- **Backend**: Node.js server for OpenAI API, auth, and data sync
+- **Data Storage**: SQLite (`data/splitmate.db`) for user accounts + server-side transactions; browser localStorage as local cache
+- **Auth**: JWT tokens (30-day expiry), bcryptjs password hashing, `better-sqlite3`
+- **Architecture Pattern**: Object-oriented JavaScript with SplitMate class + ReceiptProcessor + AuthManager methods
 - **API Integration**: OpenAI GPT-4o Vision API for receipt text extraction and parsing
+
+### Auth Flow
+1. `/app` loads → `initAuth()` checks for `splitmate-token` in localStorage
+2. If token found → `verifyAndLoad()` validates with `/api/auth/me`, then fetches data from `/api/userdata`
+3. If no token → auth overlay shown (Sign In / Create Account / Try it now)
+4. Guest mode → localStorage only, guest banner shown with "Create account" CTA
+5. Every `saveToStorage()` → debounced 800ms sync to `/api/userdata` when authenticated
+6. Registration migrates any current in-memory (guest) data to the new account automatically
 
 ## Key Components
 

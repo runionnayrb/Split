@@ -13,6 +13,50 @@
     <script src="i18n.js"></script>
 </head>
 <body>
+
+    <!-- ── AUTH OVERLAY ────────────────────────────────────── -->
+    <div id="authOverlay" class="auth-overlay">
+        <div class="auth-card glass-card">
+            <div class="auth-logo">SplitMate</div>
+            <p class="auth-tagline">Your expenses. Your account.<br>Always in sync.</p>
+
+            <div class="auth-tabs">
+                <button class="auth-tab-btn active" id="showSigninBtn">Sign In</button>
+                <button class="auth-tab-btn" id="showRegisterBtn">Create Account</button>
+            </div>
+
+            <!-- Sign In Form -->
+            <form id="signinForm" class="auth-form">
+                <input type="email"    class="auth-input" id="signinEmail"    placeholder="Email address"  autocomplete="email">
+                <input type="password" class="auth-input" id="signinPassword" placeholder="Password"        autocomplete="current-password">
+                <button type="submit" class="auth-submit-btn">Sign In</button>
+                <p class="auth-error" id="signinError"></p>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" class="auth-form" style="display:none">
+                <input type="email"    class="auth-input" id="registerEmail"    placeholder="Email address"              autocomplete="email">
+                <input type="password" class="auth-input" id="registerPassword" placeholder="Password (min 6 characters)" autocomplete="new-password">
+                <div class="auth-name-row">
+                    <input type="text" class="auth-input" id="registerP1Name" placeholder="Your name (e.g. Bryan)">
+                    <input type="text" class="auth-input" id="registerP2Name" placeholder="Partner's name (e.g. Ayako)">
+                </div>
+                <button type="submit" class="auth-submit-btn">Create Account</button>
+                <p class="auth-error" id="registerError"></p>
+            </form>
+
+            <button id="guestModeBtn" class="auth-guest-btn">
+                Just want to try it? Continue without an account →
+            </button>
+        </div>
+    </div>
+
+    <!-- ── GUEST BANNER ─────────────────────────────────────── -->
+    <div id="guestBanner" class="guest-banner" style="display:none">
+        <span>👤 Guest mode — data stays on this device only</span>
+        <button id="saveToAccountBtn">Create account to save →</button>
+    </div>
+
     <div class="container">
 
         <!-- ── HEADER ─────────────────────────────────────── -->
@@ -523,6 +567,31 @@
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                         <span data-i18n="saveSettings">Save Names</span>
                     </button>
+                </div>
+
+                <!-- Account -->
+                <div class="settings-card" id="accountCard">
+                    <h3 class="settings-card-title">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        Account
+                    </h3>
+                    <!-- Logged in state -->
+                    <div id="accountInfo" style="display:none">
+                        <p class="settings-card-desc" id="accountEmail" style="color:var(--accent);font-weight:600;margin-bottom:12px;word-break:break-all;"></p>
+                        <p class="settings-card-desc" style="margin-bottom:14px;">Your transactions sync automatically across sessions.</p>
+                        <button id="logoutBtn" class="btn-danger" style="display:none">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                            Sign Out
+                        </button>
+                    </div>
+                    <!-- Guest / logged-out state -->
+                    <div id="loginPrompt">
+                        <p class="settings-card-desc" style="margin-bottom:14px;">Sign in to sync your data across devices and never lose a transaction.</p>
+                        <button id="openAuthBtn" class="btn-primary">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                            Sign In / Create Account
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Balance / Settle Up -->

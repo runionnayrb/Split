@@ -10,7 +10,10 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.9.0",
     "canvas": "^3.1.2",
+    "jsonwebtoken": "^9.0.3",
     "openai": "^5.10.2",
     "pdf-parse": "^1.1.1",
     "pdfjs-dist": "^5.3.93",

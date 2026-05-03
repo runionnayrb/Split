@@ -2720,6 +2720,7 @@ class SplitMate {
         this.hideAuthOverlay();
         this.showGuestBanner();
         this.updateAuthUI();
+        this.setCardsVisible(false);
     }
 
     async onAuthSuccess(token, user, loadFromServer) {
@@ -2822,10 +2823,23 @@ class SplitMate {
             if (accountEmail) accountEmail.textContent    = this.currentUser.email;
             if (logoutBtn)    logoutBtn.style.display     = 'block';
             if (loginPrompt)  loginPrompt.style.display   = 'none';
+            this.setCardsVisible(true);
         } else {
             if (accountInfo)  accountInfo.style.display   = 'none';
             if (logoutBtn)    logoutBtn.style.display      = 'none';
             if (loginPrompt)  loginPrompt.style.display    = 'block';
+            this.setCardsVisible(false);
+        }
+    }
+
+    setCardsVisible(visible) {
+        const navBtn = document.querySelector('.nav-item[data-tab="cards"]');
+        const panel  = document.getElementById('tab-cards');
+        if (navBtn) navBtn.style.display = visible ? '' : 'none';
+        if (panel)  panel.style.display  = visible ? '' : 'none';
+        // If hiding while cards tab is active, switch to split
+        if (!visible && navBtn && navBtn.classList.contains('active')) {
+            this.switchNavTab('split');
         }
     }
 }

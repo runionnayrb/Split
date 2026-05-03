@@ -235,14 +235,33 @@ class SplitMate {
 
     /**
      * Find all transaction cards marked for translation, fetch+cache (in-memory),
-     * then update the DOM in place — shows a "..." loading pill while fetching
+     * inject a loading pill, then resolve to translated text or an error state.
      */
     async translateVisibleDescriptions() {
         const available = await this.checkOpenAIAvailable();
-        if (!available) return;
-
         const elements = Array.from(document.querySelectorAll('[data-translate-text]'));
+
+        if (!available) {
+            // OpenAI not configured — remove translate markers and any stale loading pills
+            elements.forEach(wrap => {
+                const pill = wrap.querySelector('.tx-translation');
+                if (pill) pill.remove();
+                delete wrap.dataset.translateText;
+            });
+            return;
+        }
+
         if (elements.length === 0) return;
+
+        // Inject loading pills for elements that don't have one yet
+        elements.forEach(wrap => {
+            if (!wrap.querySelector('.tx-translation')) {
+                const pill = document.createElement('span');
+                pill.className = 'tx-translation tx-translation-loading';
+                pill.textContent = '···';
+                wrap.appendChild(pill);
+            }
+        });
 
         const currentLang = window.i18n ? window.i18n.currentLanguage : 'en';
         const uniqueTexts = [...new Set(elements.map(el => el.dataset.translateText))];
@@ -271,10 +290,12 @@ class SplitMate {
             const translation = this.translationCache.get(original);
             const transEl = wrap.querySelector('.tx-translation');
             if (translation && transEl) {
-                transEl.textContent = translation;
+                transEl.textContent = translation; // textContent — safe against XSS
                 transEl.classList.remove('tx-translation-loading');
-            } else if (!translation && transEl) {
-                transEl.remove();
+            } else if (transEl) {
+                transEl.textContent = 'Could not translate';
+                transEl.classList.remove('tx-translation-loading');
+                transEl.classList.add('tx-translation-error');
             }
             delete wrap.dataset.translateText;
         });
@@ -1581,16 +1602,13 @@ class SplitMate {
         const cached = hasJP ? this.translationCache.get(desc) : null;
         const needsFetch = hasJP && currentLang === 'en' && !cached;
         const safeDesc = desc.replace(/"/g, '&quot;');
-        let translationLineHTML = '';
-        if (hasJP && currentLang === 'en') {
-            if (cached) {
-                translationLineHTML = `<span class="tx-translation">${cached}</span>`;
-            } else if (this.openAIAvailable !== false) {
-                translationLineHTML = `<span class="tx-translation tx-translation-loading">···</span>`;
-            }
-        }
+        // Only pre-render loading pill once availability is confirmed true;
+        // if still null, translateVisibleDescriptions() will inject it after confirming.
+        const showLoadingPill = needsFetch && this.openAIAvailable === true;
+        // Cached translation is set via textContent after innerHTML to prevent XSS.
+        const hasCachedTranslation = !!(cached && currentLang === 'en');
         const descHTML = hasJP
-            ? `<div class="tx-desc-wrap"${needsFetch ? ` data-translate-text="${safeDesc}"` : ''}><span class="tx-card-desc">${desc}</span>${translationLineHTML}</div>`
+            ? `<div class="tx-desc-wrap"${needsFetch ? ` data-translate-text="${safeDesc}"` : ''}><span class="tx-card-desc">${desc}</span>${hasCachedTranslation ? '<span class="tx-translation"></span>' : (showLoadingPill ? '<span class="tx-translation tx-translation-loading">···</span>' : '')}</div>`
             : `<span class="tx-card-desc">${desc}</span>`;
 
         if (isUnpaid) {
@@ -1650,6 +1668,10 @@ class SplitMate {
                     ${friendBadge}
                 </div>
             `;
+            if (hasCachedTranslation) {
+                const el = card.querySelector('.tx-translation');
+                if (el) el.textContent = cached;
+            }
 
             if (owedAmount) {
                 card.addEventListener('click', () => this.showPayTransactionModal(transaction));
@@ -1672,6 +1694,10 @@ class SplitMate {
                     <div class="tx-card-settled-info">Settled ${settledDate}</div>
                 </div>
             `;
+            if (hasCachedTranslation) {
+                const el = card.querySelector('.tx-translation');
+                if (el) el.textContent = cached;
+            }
 
             card.addEventListener('click', () => this.showPayTransactionModal(transaction));
         }

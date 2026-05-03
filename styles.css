@@ -1621,6 +1621,12 @@ body {
   letter-spacing: 0.1em;
 }
 
+.tx-translation-error {
+  color: var(--red);
+  opacity: 0.55;
+  font-style: normal;
+}
+
 .tx-card-amount {
   font-size: 0.95rem;
   font-weight: 700;

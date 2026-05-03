@@ -1218,39 +1218,6 @@ body {
   font-size: 1rem;
 }
 
-/* Zelle QR section in transaction detail sheet */
-.zelle-qr-section {
-  margin-top: 16px;
-  text-align: center;
-}
-
-.zelle-qr-inner {
-  display: inline-block;
-  background: #ffffff;
-  border-radius: 18px;
-  padding: 14px 14px 10px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.32);
-}
-
-.zelle-qr-img {
-  display: block;
-  width: 160px;
-  height: 160px;
-  border-radius: 8px;
-  object-fit: contain;
-}
-
-.zelle-qr-label {
-  margin: 8px 0 0;
-  font-size: 0.80rem;
-  color: #6b21a8;
-  font-weight: 500;
-}
-
-.zelle-qr-label strong {
-  font-weight: 800;
-}
-
 /* Share with friend button */
 .btn-friend-share {
   display: flex;

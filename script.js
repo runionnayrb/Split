@@ -1686,21 +1686,6 @@ class SplitMate {
             document.getElementById('payTransactionMessage').before(friendInfoDiv);
         }
         
-        // Inject Zelle QR section (show whenever P1 is owed — youOwe > 0 from P2's perspective)
-        const existingZelle = document.getElementById('zelleQrSection');
-        if (existingZelle) existingZelle.remove();
-
-        const zelleDiv = document.createElement('div');
-        zelleDiv.id = 'zelleQrSection';
-        zelleDiv.className = 'zelle-qr-section';
-        zelleDiv.innerHTML = `
-            <div class="zelle-qr-inner">
-                <img src="/zelle-qr.png" class="zelle-qr-img" alt="Zelle QR Code">
-                <p class="zelle-qr-label">Scan to pay via <strong>Zelle</strong></p>
-            </div>
-        `;
-        document.getElementById('payTransactionMessage').after(zelleDiv);
-
         // Show modal with iOS-style animation
         this.payTransactionModal.style.display = 'block';
         document.body.style.overflow = 'hidden';
@@ -1726,8 +1711,6 @@ class SplitMate {
             // Clean up injected sections
             const existingFriendInfo = document.getElementById('friendSplitModalInfo');
             if (existingFriendInfo) existingFriendInfo.remove();
-            const existingZelle = document.getElementById('zelleQrSection');
-            if (existingZelle) existingZelle.remove();
         }, 300); // Match the CSS transition duration
     }
     
@@ -1743,15 +1726,7 @@ class SplitMate {
         const merchant = transaction.notes || 'Expense';
         const date = new Date(transaction.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-        // Pre-load Zelle QR code
-        const qrImg = await new Promise(resolve => {
-            const img = new Image();
-            img.onload  = () => resolve(img);
-            img.onerror = () => resolve(null);
-            img.src = '/zelle-qr.png';
-        });
-
-        const W = 800, H = qrImg ? 760 : 560;
+        const W = 800, H = 560;
         const canvas = document.createElement('canvas');
         canvas.width = W;
         canvas.height = H;
@@ -1860,37 +1835,14 @@ class SplitMate {
         ctx.fillText(`Send ${this.formatCurrency(fs.amount)} to settle up`, W / 2, 458);
         ctx.font = '500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
         ctx.fillStyle = 'rgba(255,255,255,0.38)';
-        ctx.fillText('Scan the Zelle QR below \u2014 or use any app you prefer', W / 2, 483);
+        ctx.fillText('Venmo \u00b7 Zelle \u00b7 Cash App \u00b7 or however works for you!', W / 2, 483);
         ctx.textAlign = 'left';
 
-        // Zelle QR section
-        if (qrImg) {
-            const qrSize = 170;
-            const qrX = W / 2 - qrSize / 2;
-            const qrY = 530;
-
-            // White rounded card behind QR
-            ctx.fillStyle = '#ffffff';
-            rrect(qrX - 16, qrY - 16, qrSize + 32, qrSize + 54, 18);
-            ctx.fill();
-
-            // QR image
-            ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
-
-            // "Scan to pay via Zelle" label
-            ctx.font = 'bold 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-            ctx.fillStyle = '#6b21a8';
-            ctx.textAlign = 'center';
-            ctx.fillText('Scan to pay via Zelle', W / 2, qrY + qrSize + 26);
-            ctx.textAlign = 'left';
-        }
-
         // Footer
-        const footerY = qrImg ? 748 : 516;
         ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
         ctx.fillStyle = 'rgba(255,255,255,0.20)';
         ctx.textAlign = 'center';
-        ctx.fillText('Generated with SplitMate \u2022 Expense Splitter for Couples', W / 2, footerY);
+        ctx.fillText('Generated with SplitMate \u2022 Expense Splitter for Couples', W / 2, 516);
         ctx.textAlign = 'left';
         
         return new Promise((resolve, reject) => {

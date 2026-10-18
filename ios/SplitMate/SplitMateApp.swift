@@ -1,53 +1,74 @@
 import SwiftUI
 
-/// Native iOS shell for SplitMate. The app itself (auth, sync, receipt
-/// scanning) lives on the server, so this loads it full-screen in a WebView.
 @main
 struct SplitMateApp: App {
+    @State private var store = AppStore()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
+                .environment(store)
                 .preferredColorScheme(.dark)
+                .tint(Theme.sky)
         }
     }
 }
 
-enum AppConfig {
-    static let startURL = URL(string: "https://split-mate.replit.app/app")!
-    static let background = Color(red: 7 / 255, green: 7 / 255, blue: 26 / 255) // #07071a
-}
-
-struct ContentView: View {
-    @State private var loadFailed = false
-    @State private var reloadToken = 0
+struct RootView: View {
+    @Environment(AppStore.self) private var store
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        ZStack {
-            AppConfig.background.ignoresSafeArea()
-
-            WebView(url: AppConfig.startURL, loadFailed: $loadFailed, reloadToken: reloadToken)
-                .ignoresSafeArea()
-
-            if loadFailed {
-                VStack(spacing: 16) {
-                    Image(systemName: "wifi.exclamationmark")
-                        .font(.system(size: 44))
-                        .foregroundStyle(.secondary)
-                    Text("Can't reach SplitMate")
-                        .font(.headline)
-                    Text("Check your connection and try again.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Button("Try Again") {
-                        loadFailed = false
-                        reloadToken += 1
-                    }
-                    .buttonStyle(.borderedProminent)
+        Group {
+            switch store.session {
+            case .loading:
+                ZStack {
+                    AppBackground()
+                    ProgressView()
                 }
-                .padding()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(AppConfig.background)
+            case .signedOut:
+                AuthView()
+            case .guest, .signedIn:
+                MainTabView()
             }
         }
+        .animation(.default, value: store.session)
+        .task { await store.start() }
+        .onChange(of: scenePhase) { _, phase in
+            // Pick up changes your partner made while the app was in the background.
+            if phase == .active { Task { await store.refresh() } }
+        }
+        .alert("SplitMate", isPresented: Binding(get: { store.errorMessage != nil },
+                                                 set: { if !$0 { store.errorMessage = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(store.errorMessage ?? "")
+        }
+    }
+}
+
+struct MainTabView: View {
+    enum Tab: Hashable { case split, history, cards, settings }
+
+    @Environment(AppStore.self) private var store
+    @State private var selection: Tab = .split
+
+    var body: some View {
+        TabView(selection: $selection) {
+            SwiftUI.Tab("Split", systemImage: "plus.circle.fill", value: .split) {
+                SplitView()
+            }
+            SwiftUI.Tab("History", systemImage: "list.bullet.rectangle.portrait", value: .history) {
+                HistoryView()
+            }
+            .badge(store.unpaid.count)
+            SwiftUI.Tab("Cards", systemImage: "creditcard", value: .cards) {
+                CardsView()
+            }
+            SwiftUI.Tab("Settings", systemImage: "gearshape", value: .settings) {
+                SettingsView()
+            }
+        }
+        .tabBarMinimizeBehavior(.onScrollDown)
     }
 }
